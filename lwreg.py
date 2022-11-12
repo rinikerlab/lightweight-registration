@@ -1,10 +1,16 @@
 #! /bin/env python
+
+# Copyright (C) 2022 Greg Landrum
+# All rights reserved
+# This file is part of lwreg.
+# The contents are covered by the terms of the MIT license
+# which is included in the file LICENSE, 
 import click
 import sqlite3
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 from rdkit.Chem import RegistrationHash
-
+import utils
 import json
 _config = {}
 
@@ -37,7 +43,15 @@ def cli():
 
 
 @cli.command()
-def initdb():
+@click.option(
+    "--confirm",
+    default='no',
+)
+def initdb(confirm='no'):
+    if confirm != 'yes':
+        click.echo("inidb not confirmed, aborting")
+        return
+
     print(f'dbname: {_config["dbfile"]}')
     cn = _connect()
     curs = cn.cursor()
@@ -50,7 +64,9 @@ def initdb():
         'create table molblocks (molregno int primary key, molblock text)')
     curs.execute('drop table if exists hashes')
     curs.execute(
-        'create table hashes (molregno int primary key, fullhash text unique, formula text, smiles text, nochi_smiles text, tautomer text, nochi_tautomer text, escape_layer text, sgroup_data text)'
+        '''create table hashes (molregno int primary key, fullhash text unique, 
+          formula text, canonical_smiles text, no_stereo_smiles text, 
+          tautomer_hash text, no_stereo_tautomer_hash text, "escape" text, sgroup_data text)'''
     )
 
 
@@ -63,21 +79,76 @@ def initdb():
     "--escape",
     default=None,
 )
-def register(molfile=None, molblock=None, smiles=None, escape=None):
-    if smiles is not None:
-        mol = Chem.MolFromSmiles(smiles)
-        datatype = 'smiles'
-        ind = smiles
-        molb = Chem.MolToV3KMolBlock(mol)
+@click.option(
+    "--layers",
+    default='ALL',
+)
+@click.option(
+    "--no-verbose",
+    default=False,
+    is_flag=True
+)
+def query(layers='ALL',molfile=None, molblock=None, smiles=None, escape=None, no_verbose=True):
+    tpl = utils.parse_mol(molfile=molfile,molblock=molblock,smiles=smiles,config=_config)
+    sMol = utils.standardize_mol(tpl.mol,config=_config)
+    mhash,hlayers = utils.hash_mol(sMol,escape=escape,config=_config)
+
+    cn = _connect()
+    curs = cn.cursor()
+    layers = layers.upper()
+    if layers=='ALL':
+        curs.execute('select molregno from hashes where fullhash=?',(mhash,))
+    else:
+        vals = []
+        query = []
+
+        for lyr in layers.split(','):
+            k = getattr(RegistrationHash.HashLayer,lyr)
+            vals.append(hlayers[k])
+            query.append(f'"{lyr}"=?')
+
+        query = ' and '.join(query)
+        print(query)
+        print(vals)
+        curs.execute(f'select molregno from hashes where {query}',vals)
+    
+    res = [x[0] for x in curs.fetchall()]
+    if not no_verbose:
+        if res:
+            print(' '.join(str(x) for x in res))
+        else:
+            print('not found')
+
+    return res
+
+@cli.command()
+@click.option(
+    "--smiles",
+    default=None,
+)
+@click.option(
+    "--escape",
+    default=None,
+)
+@click.option(
+    "--no-verbose",
+    default=False,
+    is_flag=True
+)
+def register(molfile=None, molblock=None, smiles=None, escape=None, no_verbose=True):
+    tpl = utils.parse_mol(molfile=molfile,molblock=molblock,smiles=smiles,config=_config)
+    
+    molb = Chem.MolToV3KMolBlock(tpl.mol)
     cn = _connect()
     mrn = _getNextRegno(cn)
     curs = cn.cursor()
     curs.execute('insert into orig_data values (?, ?, ?)',
-                 (mrn, ind, datatype))
+                 (mrn, tpl.rawdata, tpl.datatype))
     curs.execute('insert into molblocks values (?, ?)', (mrn, molb))
-    sMol = rdMolStandardize.FragmentParent(mol)
-    layers = RegistrationHash.GetMolLayers(sMol,escape=escape)
-    mhash = RegistrationHash.GetMolHash(layers)
+
+    sMol = utils.standardize_mol(tpl.mol,config=_config)
+
+    mhash,layers = utils.hash_mol(sMol,escape=escape,config=_config)
 
     # will fail if the fullhash is already there
     curs.execute('insert into hashes values (?,?,?,?,?,?,?,?,?)', (
@@ -93,7 +164,9 @@ def register(molfile=None, molblock=None, smiles=None, escape=None):
     ))
 
     cn.commit()
-
+    if not no_verbose:
+        print(mrn)
+    return mrn
 
 @cli.command()
 @click.option('--who', default='world')

@@ -16,6 +16,17 @@ def parse_mol(molfile=None, molblock=None, smiles=None, config=None):
         mol = Chem.MolFromSmiles(smiles)
         datatype = 'smiles'
         raw = smiles
+    elif molblock is not None:
+        mol = Chem.MolFromMolBlock(molblock)
+        datatype = 'mol'
+        raw = molblock
+    elif molfile is not None:
+        with open(molfile,'r') as inf:
+            molblock = inf.read()
+        mol = Chem.MolFromMolBlock(molblock)
+        datatype = 'mol'
+        raw = molblock
+
     return MolTuple(mol,datatype,raw)
     
 def standardize_mol(mol, config=None):

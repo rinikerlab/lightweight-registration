@@ -70,6 +70,52 @@ def initdb(confirm='no'):
     )
 
 
+
+@cli.command()
+@click.option(
+    "--ids",
+    default=None,
+)
+@click.option(
+    "--id",
+    default=None,
+)
+@click.option(
+    "--as_submitted",
+    default=False,
+    is_flag=True
+)
+@click.option(
+    "--no-verbose",
+    default=False,
+    is_flag=True
+)
+def retrieve(ids=None, id=None, as_submitted=False, no_verbose=True):
+    if id is not None:
+        ids = [int(id)]
+    if ids is not None:
+        if type(ids)==str:
+            ids = [int(x) for x in ids.split(',')]
+    cn = _connect()
+    curs = cn.cursor()
+    if as_submitted:
+        qry = 'molregno,data,datatype from orig_data'
+    else:
+        qry = "molregno,molblock,'mol' from molblocks"
+    qs = ','.join('?'*len(ids))
+    curs.execute(f'select {qry} where molregno in ({qs})',ids)
+    
+    res = curs.fetchall()
+    if not no_verbose:
+        if res:
+            for entry in res:
+                print(entry)
+        else:
+            print('not found')
+
+    return res
+
+
 @cli.command()
 @click.option(
     "--smiles",
@@ -101,15 +147,14 @@ def query(layers='ALL',molfile=None, molblock=None, smiles=None, escape=None, no
     else:
         vals = []
         query = []
-
-        for lyr in layers.split(','):
+        if type(layers)==str:
+            layers = layers.split(',')
+        for lyr in layers:
             k = getattr(RegistrationHash.HashLayer,lyr)
             vals.append(hlayers[k])
             query.append(f'"{lyr}"=?')
 
         query = ' and '.join(query)
-        print(query)
-        print(vals)
         curs.execute(f'select molregno from hashes where {query}',vals)
     
     res = [x[0] for x in curs.fetchall()]

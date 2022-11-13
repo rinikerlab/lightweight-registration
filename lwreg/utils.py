@@ -137,6 +137,7 @@ def register(config=None,
 
 def query(config=None,
           layers='ALL',
+          mol=None,
           molfile=None,
           molblock=None,
           smiles=None,
@@ -145,7 +146,8 @@ def query(config=None,
     if config is None:
         config = _configure()
 
-    tpl = _parse_mol(molfile=molfile,
+    tpl = _parse_mol(mol=mol,
+                     molfile=molfile,
                      molblock=molblock,
                      smiles=smiles,
                      config=config)
@@ -154,16 +156,19 @@ def query(config=None,
 
     cn = _connect(config)
     curs = cn.cursor()
-    layers = layers.upper()
     if layers == 'ALL':
         curs.execute('select molregno from hashes where fullhash=?', (mhash, ))
     else:
         vals = []
         query = []
         if type(layers) == str:
-            layers = layers.split(',')
+            layers = layers.upper().split(',')
         for lyr in layers:
-            k = getattr(RegistrationHash.HashLayer, lyr)
+            if type(lyr) == str:
+                k = getattr(RegistrationHash.HashLayer, lyr)
+            else:
+                k = lyr
+                lyr = str(lyr).split('.')[-1]
             vals.append(hlayers[k])
             query.append(f'"{lyr}"=?')
 

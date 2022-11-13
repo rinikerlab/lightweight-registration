@@ -2,7 +2,7 @@
 # All rights reserved
 # This file is part of lwreg.
 # The contents are covered by the terms of the MIT license
-# which is included in the file LICENSE, 
+# which is included in the file LICENSE,
 
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
@@ -10,10 +10,10 @@ from rdkit.Chem import RegistrationHash
 import json
 import sqlite3
 
-
 from collections import namedtuple
 
 _config = {}
+
 
 def _configure(filename='./config.json'):
     global _config
@@ -22,15 +22,17 @@ def _configure(filename='./config.json'):
             _config = json.load(inf)
     return _config
 
+
 def _connect(config):
-    cn = config.get('connection',None)
+    cn = config.get('connection', None)
     if not cn:
         uri = False
         dbnm = config['dbfile']
         if dbnm.startswith('file::'):
-            uri=True
-        cn = sqlite3.connect(dbnm,uri=uri)
+            uri = True
+        cn = sqlite3.connect(dbnm, uri=uri)
     return cn
+
 
 def _getNextRegno(cn):
     curs = cn.cursor()
@@ -42,7 +44,10 @@ def _getNextRegno(cn):
         res = row[0] + 1
     return res
 
-MolTuple = namedtuple('MolTuple',('mol','datatype','rawdata'))
+
+MolTuple = namedtuple('MolTuple', ('mol', 'datatype', 'rawdata'))
+
+
 def _parse_mol(mol=None, molfile=None, molblock=None, smiles=None, config={}):
     if mol is not None:
         datatype = 'pkl'
@@ -56,44 +61,57 @@ def _parse_mol(mol=None, molfile=None, molblock=None, smiles=None, config={}):
         datatype = 'mol'
         raw = molblock
     elif molfile is not None:
-        with open(molfile,'r') as inf:
+        with open(molfile, 'r') as inf:
             molblock = inf.read()
         mol = Chem.MolFromMolBlock(molblock)
         datatype = 'mol'
         raw = molblock
 
-    return MolTuple(mol,datatype,raw)
-    
+    return MolTuple(mol, datatype, raw)
+
+
 def standardize_mol(mol, config=None):
     if config is None:
         config = _configure()
     sMol = rdMolStandardize.FragmentParent(mol)
     return sMol
 
-def hash_mol(mol,escape=None,config=None):
-    if config is None:
-        config = _configure()
-    layers = RegistrationHash.GetMolLayers(mol,escape=escape)
-    mhash = RegistrationHash.GetMolHash(layers)
-    return mhash,layers
 
-def register(config=None, mol=None, molfile=None, molblock=None, smiles=None, escape=None, no_verbose=True):
+def hash_mol(mol, escape=None, config=None):
     if config is None:
         config = _configure()
-    tpl = _parse_mol(mol=mol,molfile=molfile,molblock=molblock,smiles=smiles,config=_config)
-    
+    layers = RegistrationHash.GetMolLayers(mol, escape=escape)
+    mhash = RegistrationHash.GetMolHash(layers)
+    return mhash, layers
+
+
+def register(config=None,
+             mol=None,
+             molfile=None,
+             molblock=None,
+             smiles=None,
+             escape=None,
+             no_verbose=True):
+    if config is None:
+        config = _configure()
+    tpl = _parse_mol(mol=mol,
+                     molfile=molfile,
+                     molblock=molblock,
+                     smiles=smiles,
+                     config=_config)
+
     molb = Chem.MolToV3KMolBlock(tpl.mol)
     cn = _connect(config)
     mrn = _getNextRegno(cn)
     curs = cn.cursor()
     try:
         curs.execute('insert into orig_data values (?, ?, ?)',
-                    (mrn, tpl.rawdata, tpl.datatype))
+                     (mrn, tpl.rawdata, tpl.datatype))
         curs.execute('insert into molblocks values (?, ?)', (mrn, molb))
 
-        sMol = standardize_mol(tpl.mol,config=_config)
+        sMol = standardize_mol(tpl.mol, config=_config)
 
-        mhash,layers = hash_mol(sMol,escape=escape,config=_config)
+        mhash, layers = hash_mol(sMol, escape=escape, config=_config)
 
         # will fail if the fullhash is already there
         curs.execute('insert into hashes values (?,?,?,?,?,?,?,?,?)', (
@@ -116,32 +134,42 @@ def register(config=None, mol=None, molfile=None, molblock=None, smiles=None, es
         print(mrn)
     return mrn
 
-def query(config=None,layers='ALL',molfile=None, molblock=None, smiles=None, escape=None, no_verbose=True):
+
+def query(config=None,
+          layers='ALL',
+          molfile=None,
+          molblock=None,
+          smiles=None,
+          escape=None,
+          no_verbose=True):
     if config is None:
         config = _configure()
 
-    tpl = _parse_mol(molfile=molfile,molblock=molblock,smiles=smiles,config=config)
-    sMol = standardize_mol(tpl.mol,config=config)
-    mhash,hlayers = hash_mol(sMol,escape=escape,config=config)
+    tpl = _parse_mol(molfile=molfile,
+                     molblock=molblock,
+                     smiles=smiles,
+                     config=config)
+    sMol = standardize_mol(tpl.mol, config=config)
+    mhash, hlayers = hash_mol(sMol, escape=escape, config=config)
 
     cn = _connect(config)
     curs = cn.cursor()
     layers = layers.upper()
-    if layers=='ALL':
-        curs.execute('select molregno from hashes where fullhash=?',(mhash,))
+    if layers == 'ALL':
+        curs.execute('select molregno from hashes where fullhash=?', (mhash, ))
     else:
         vals = []
         query = []
-        if type(layers)==str:
+        if type(layers) == str:
             layers = layers.split(',')
         for lyr in layers:
-            k = getattr(RegistrationHash.HashLayer,lyr)
+            k = getattr(RegistrationHash.HashLayer, lyr)
             vals.append(hlayers[k])
             query.append(f'"{lyr}"=?')
 
         query = ' and '.join(query)
-        curs.execute(f'select molregno from hashes where {query}',vals)
-    
+        curs.execute(f'select molregno from hashes where {query}', vals)
+
     res = [x[0] for x in curs.fetchall()]
     if not no_verbose:
         if res:
@@ -151,13 +179,18 @@ def query(config=None,layers='ALL',molfile=None, molblock=None, smiles=None, esc
 
     return res
 
-def retrieve(config=None, ids=None, id=None, as_submitted=False, no_verbose=True):
+
+def retrieve(config=None,
+             ids=None,
+             id=None,
+             as_submitted=False,
+             no_verbose=True):
     if config is None:
         config = _configure()
     if id is not None:
         ids = [int(id)]
     if ids is not None:
-        if type(ids)==str:
+        if type(ids) == str:
             ids = [int(x) for x in ids.split(',')]
     cn = _connect(config)
     curs = cn.cursor()
@@ -165,9 +198,9 @@ def retrieve(config=None, ids=None, id=None, as_submitted=False, no_verbose=True
         qry = 'molregno,data,datatype from orig_data'
     else:
         qry = "molregno,molblock,'mol' from molblocks"
-    qs = ','.join('?'*len(ids))
-    curs.execute(f'select {qry} where molregno in ({qs})',ids)
-    
+    qs = ','.join('?' * len(ids))
+    curs.execute(f'select {qry} where molregno in ({qs})', ids)
+
     res = curs.fetchall()
     if not no_verbose:
         if res:
@@ -177,6 +210,7 @@ def retrieve(config=None, ids=None, id=None, as_submitted=False, no_verbose=True
             print('not found')
 
     return res
+
 
 def initdb(config=None):
     if config is None:

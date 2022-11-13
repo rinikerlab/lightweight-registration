@@ -4,13 +4,15 @@
 # All rights reserved
 # This file is part of lwreg.
 # The contents are covered by the terms of the MIT license
-# which is included in the file LICENSE, 
+# which is included in the file LICENSE,
 import click
 from . import utils
+
 
 @click.group()
 def cli():
     utils._configure()
+
 
 @cli.command()
 @click.option(
@@ -23,6 +25,7 @@ def initdb(confirm='no'):
         return
     utils.initdb()
 
+
 @cli.command()
 @click.option(
     "--ids",
@@ -32,16 +35,8 @@ def initdb(confirm='no'):
     "--id",
     default=None,
 )
-@click.option(
-    "--as_submitted",
-    default=False,
-    is_flag=True
-)
-@click.option(
-    "--no-verbose",
-    default=False,
-    is_flag=True
-)
+@click.option("--as_submitted", default=False, is_flag=True)
+@click.option("--no-verbose", default=False, is_flag=True)
 def retrieve(**kwargs):
     return utils.retrieve(**kwargs)
 
@@ -59,13 +54,10 @@ def retrieve(**kwargs):
     "--layers",
     default='ALL',
 )
-@click.option(
-    "--no-verbose",
-    default=False,
-    is_flag=True
-)
+@click.option("--no-verbose", default=False, is_flag=True)
 def query(**kwargs):
     return utils.query(**kwargs)
+
 
 @cli.command()
 @click.option(
@@ -76,11 +68,7 @@ def query(**kwargs):
     "--escape",
     default=None,
 )
-@click.option(
-    "--no-verbose",
-    default=False,
-    is_flag=True
-)
+@click.option("--no-verbose", default=False, is_flag=True)
 def register(**kwargs):
     return utils.register(**kwargs)
 

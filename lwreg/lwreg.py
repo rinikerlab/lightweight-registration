@@ -6,7 +6,7 @@
 # The contents are covered by the terms of the MIT license
 # which is included in the file LICENSE, 
 import click
-import utils
+from . import utils
 
 @click.group()
 def cli():

@@ -22,8 +22,14 @@ def _configure(filename='./config.json'):
             _config = json.load(inf)
     return _config
 
-def _connect():
-    cn = sqlite3.connect(_config['dbfile'])
+def _connect(config):
+    cn = config.get('connection',None)
+    if not cn:
+        uri = False
+        dbnm = config['dbfile']
+        if dbnm.startswith('file::'):
+            uri=True
+        cn = sqlite3.connect(dbnm,uri=uri)
     return cn
 
 def _getNextRegno(cn):
@@ -74,7 +80,7 @@ def register(config=None, molfile=None, molblock=None, smiles=None, escape=None,
     tpl = _parse_mol(molfile=molfile,molblock=molblock,smiles=smiles,config=_config)
     
     molb = Chem.MolToV3KMolBlock(tpl.mol)
-    cn = _connect()
+    cn = _connect(config)
     mrn = _getNextRegno(cn)
     curs = cn.cursor()
     curs.execute('insert into orig_data values (?, ?, ?)',
@@ -111,7 +117,7 @@ def query(config=None,layers='ALL',molfile=None, molblock=None, smiles=None, esc
     sMol = standardize_mol(tpl.mol,config=config)
     mhash,hlayers = hash_mol(sMol,escape=escape,config=config)
 
-    cn = _connect()
+    cn = _connect(config)
     curs = cn.cursor()
     layers = layers.upper()
     if layers=='ALL':
@@ -146,7 +152,7 @@ def retrieve(config=None, ids=None, id=None, as_submitted=False, no_verbose=True
     if ids is not None:
         if type(ids)==str:
             ids = [int(x) for x in ids.split(',')]
-    cn = _connect()
+    cn = _connect(config)
     curs = cn.cursor()
     if as_submitted:
         qry = 'molregno,data,datatype from orig_data'
@@ -168,7 +174,7 @@ def retrieve(config=None, ids=None, id=None, as_submitted=False, no_verbose=True
 def initdb(config=None):
     if config is None:
         config = _configure()
-    cn = _connect()
+    cn = _connect(config)
     curs = cn.cursor()
     curs.execute('drop table if exists orig_data')
     curs.execute(

@@ -43,8 +43,11 @@ def _getNextRegno(cn):
     return res
 
 MolTuple = namedtuple('MolTuple',('mol','datatype','rawdata'))
-def _parse_mol(molfile=None, molblock=None, smiles=None, config={}):
-    if smiles is not None:
+def _parse_mol(mol=None, molfile=None, molblock=None, smiles=None, config={}):
+    if mol is not None:
+        datatype = 'pkl'
+        raw = mol.ToBinary()
+    elif smiles is not None:
         mol = Chem.MolFromSmiles(smiles)
         datatype = 'smiles'
         raw = smiles
@@ -74,37 +77,41 @@ def hash_mol(mol,escape=None,config=None):
     mhash = RegistrationHash.GetMolHash(layers)
     return mhash,layers
 
-def register(config=None, molfile=None, molblock=None, smiles=None, escape=None, no_verbose=True):
+def register(config=None, mol=None, molfile=None, molblock=None, smiles=None, escape=None, no_verbose=True):
     if config is None:
         config = _configure()
-    tpl = _parse_mol(molfile=molfile,molblock=molblock,smiles=smiles,config=_config)
+    tpl = _parse_mol(mol=mol,molfile=molfile,molblock=molblock,smiles=smiles,config=_config)
     
     molb = Chem.MolToV3KMolBlock(tpl.mol)
     cn = _connect(config)
     mrn = _getNextRegno(cn)
     curs = cn.cursor()
-    curs.execute('insert into orig_data values (?, ?, ?)',
-                 (mrn, tpl.rawdata, tpl.datatype))
-    curs.execute('insert into molblocks values (?, ?)', (mrn, molb))
+    try:
+        curs.execute('insert into orig_data values (?, ?, ?)',
+                    (mrn, tpl.rawdata, tpl.datatype))
+        curs.execute('insert into molblocks values (?, ?)', (mrn, molb))
 
-    sMol = standardize_mol(tpl.mol,config=_config)
+        sMol = standardize_mol(tpl.mol,config=_config)
 
-    mhash,layers = hash_mol(sMol,escape=escape,config=_config)
+        mhash,layers = hash_mol(sMol,escape=escape,config=_config)
 
-    # will fail if the fullhash is already there
-    curs.execute('insert into hashes values (?,?,?,?,?,?,?,?,?)', (
-        mrn,
-        mhash,
-        layers[RegistrationHash.HashLayer.FORMULA],
-        layers[RegistrationHash.HashLayer.CANONICAL_SMILES],
-        layers[RegistrationHash.HashLayer.NO_STEREO_SMILES],
-        layers[RegistrationHash.HashLayer.TAUTOMER_HASH],
-        layers[RegistrationHash.HashLayer.NO_STEREO_TAUTOMER_HASH],
-        layers[RegistrationHash.HashLayer.ESCAPE],
-        layers[RegistrationHash.HashLayer.SGROUP_DATA],
-    ))
+        # will fail if the fullhash is already there
+        curs.execute('insert into hashes values (?,?,?,?,?,?,?,?,?)', (
+            mrn,
+            mhash,
+            layers[RegistrationHash.HashLayer.FORMULA],
+            layers[RegistrationHash.HashLayer.CANONICAL_SMILES],
+            layers[RegistrationHash.HashLayer.NO_STEREO_SMILES],
+            layers[RegistrationHash.HashLayer.TAUTOMER_HASH],
+            layers[RegistrationHash.HashLayer.NO_STEREO_TAUTOMER_HASH],
+            layers[RegistrationHash.HashLayer.ESCAPE],
+            layers[RegistrationHash.HashLayer.SGROUP_DATA],
+        ))
 
-    cn.commit()
+        cn.commit()
+    except:
+        cn.rollback()
+        raise
     if not no_verbose:
         print(mrn)
     return mrn

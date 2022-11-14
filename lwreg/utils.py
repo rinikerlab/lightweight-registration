@@ -84,34 +84,17 @@ def hash_mol(mol, escape=None, config=None):
     mhash = RegistrationHash.GetMolHash(layers)
     return mhash, layers
 
-
-def register(config=None,
-             mol=None,
-             molfile=None,
-             molblock=None,
-             smiles=None,
-             escape=None,
-             no_verbose=True):
-    if config is None:
-        config = _configure()
-    tpl = _parse_mol(mol=mol,
-                     molfile=molfile,
-                     molblock=molblock,
-                     smiles=smiles,
-                     config=_config)
-
+def _register_mol(tpl,escape,cn,curs,config):
     molb = Chem.MolToV3KMolBlock(tpl.mol)
-    cn = _connect(config)
     mrn = _getNextRegno(cn)
-    curs = cn.cursor()
     try:
         curs.execute('insert into orig_data values (?, ?, ?)',
                      (mrn, tpl.rawdata, tpl.datatype))
         curs.execute('insert into molblocks values (?, ?)', (mrn, molb))
 
-        sMol = standardize_mol(tpl.mol, config=_config)
+        sMol = standardize_mol(tpl.mol, config=config)
 
-        mhash, layers = hash_mol(sMol, escape=escape, config=_config)
+        mhash, layers = hash_mol(sMol, escape=escape, config=config)
 
         # will fail if the fullhash is already there
         curs.execute('insert into hashes values (?,?,?,?,?,?,?,?,?)', (
@@ -130,6 +113,26 @@ def register(config=None,
     except:
         cn.rollback()
         raise
+    return mrn
+
+def register(config=None,
+             mol=None,
+             molfile=None,
+             molblock=None,
+             smiles=None,
+             escape=None,
+             no_verbose=True):
+    if config is None:
+        config = _configure()
+    tpl = _parse_mol(mol=mol,
+                     molfile=molfile,
+                     molblock=molblock,
+                     smiles=smiles,
+                     config=config)
+
+    cn = _connect(config)
+    curs = cn.cursor()
+    mrn = _register_mol(tpl,escape,cn,curs,config)
     if not no_verbose:
         print(mrn)
     return mrn

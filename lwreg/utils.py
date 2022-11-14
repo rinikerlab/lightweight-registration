@@ -137,6 +137,33 @@ def register(config=None,
         print(mrn)
     return mrn
 
+def bulk_register(config=None,
+             mols=None,
+             sdfile=None,
+             smilesfile=None,
+             no_verbose=True):
+    if config is None:
+        config = _configure()
+    mrns = []
+    cn = _connect(config)
+    curs = cn.cursor()
+    for mol in mols:
+        if mol is None:
+            mrns.append(None)
+            continue
+        tpl = _parse_mol(mol=mol,
+                        config=config)
+        try:
+            escape = None
+            mrn = _register_mol(tpl,escape,cn,curs,config)
+            mrns.append(mrn)
+        except sqlite3.IntegrityError:
+            mrns.append(None)
+    if not no_verbose:
+        print(mrns)
+    return mrns
+
+
 
 def query(config=None,
           layers='ALL',

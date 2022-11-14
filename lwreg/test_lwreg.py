@@ -43,6 +43,11 @@ class TestLWReg(unittest.TestCase):
             utils.register(mol=Chem.MolFromSmiles('C1CCC1'),
                            config=self._config), 4)
 
+    def testBulkRegister(self):
+        utils.initdb(config=self._config)
+        mols = [Chem.MolFromSmiles(x) for x in ('CCC','CCCO','C1','c1cc1','CCC','C1CC1')]
+        self.assertEqual(utils.bulk_register(mols=mols, config=self._config), [1,2,None,None,None,3])
+
     def testQuery(self):
         self.baseRegister()
         self.assertEqual(utils.query(smiles='CC(F)Cl', config=self._config),

@@ -141,6 +141,7 @@ def bulk_register(config=None,
              mols=None,
              sdfile=None,
              smilesfile=None,
+             escapeProperty=None,
              no_verbose=True):
     if config is None:
         config = _configure()
@@ -154,7 +155,10 @@ def bulk_register(config=None,
         tpl = _parse_mol(mol=mol,
                         config=config)
         try:
-            escape = None
+            if escapeProperty is not None and mol.HasProp(escapeProperty):
+                escape = mol.GetProp(escapeProperty)
+            else:
+                escape = None
             mrn = _register_mol(tpl,escape,cn,curs,config)
             mrns.append(mrn)
         except sqlite3.IntegrityError:

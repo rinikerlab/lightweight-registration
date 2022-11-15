@@ -10,6 +10,13 @@ from rdkit.Chem import RegistrationHash
 import json
 import sqlite3
 
+_violations = (sqlite3.IntegrityError, )
+try:
+    import psycopg2
+    _violations = (sqlite3.IntegrityError, psycopg2.errors.UniqueViolation)
+except ImportError:
+    psycopg2 = None
+
 from collections import namedtuple
 
 _config = {}
@@ -23,14 +30,27 @@ def _configure(filename='./config.json'):
     return _config
 
 
+replace_placeholders = lambda x: x
+
+
 def _connect(config):
+    global replace_placeholders
     cn = config.get('connection', None)
     if not cn:
-        uri = False
-        dbnm = config['dbfile']
-        if dbnm.startswith('file::'):
-            uri = True
-        cn = sqlite3.connect(dbnm, uri=uri)
+        dbtype = config.get('dbtype', 'sqlite3').lower()
+        dbnm = config['dbname']
+        if dbtype == 'sqlite3':
+
+            uri = False
+            if dbnm.startswith('file::'):
+                uri = True
+            cn = sqlite3.connect(dbnm, uri=uri)
+        elif dbtype in ('postgres', 'postgresql'):
+            if psycopg2 is None:
+                raise ValueError("psycopg2 package not installed")
+            replace_placeholders = lambda x: x.replace('?', '%s').replace(
+                '"', '')
+            cn = psycopg2.connect(dbnm)
     return cn
 
 
@@ -84,36 +104,43 @@ def hash_mol(mol, escape=None, config=None):
     mhash = RegistrationHash.GetMolHash(layers)
     return mhash, layers
 
-def _register_mol(tpl,escape,cn,curs,config):
+
+def _register_mol(tpl, escape, cn, curs, config):
     molb = Chem.MolToV3KMolBlock(tpl.mol)
     mrn = _getNextRegno(cn)
     try:
-        curs.execute('insert into orig_data values (?, ?, ?)',
-                     (mrn, tpl.rawdata, tpl.datatype))
-        curs.execute('insert into molblocks values (?, ?)', (mrn, molb))
+        curs.execute(
+            replace_placeholders('insert into orig_data values (?, ?, ?)'),
+            (mrn, tpl.rawdata, tpl.datatype))
+        curs.execute(
+            replace_placeholders('insert into molblocks values (?, ?)'),
+            (mrn, molb))
 
         sMol = standardize_mol(tpl.mol, config=config)
 
         mhash, layers = hash_mol(sMol, escape=escape, config=config)
 
         # will fail if the fullhash is already there
-        curs.execute('insert into hashes values (?,?,?,?,?,?,?,?,?)', (
-            mrn,
-            mhash,
-            layers[RegistrationHash.HashLayer.FORMULA],
-            layers[RegistrationHash.HashLayer.CANONICAL_SMILES],
-            layers[RegistrationHash.HashLayer.NO_STEREO_SMILES],
-            layers[RegistrationHash.HashLayer.TAUTOMER_HASH],
-            layers[RegistrationHash.HashLayer.NO_STEREO_TAUTOMER_HASH],
-            layers[RegistrationHash.HashLayer.ESCAPE],
-            layers[RegistrationHash.HashLayer.SGROUP_DATA],
-        ))
+        curs.execute(
+            replace_placeholders(
+                'insert into hashes values (?,?,?,?,?,?,?,?,?)'), (
+                    mrn,
+                    mhash,
+                    layers[RegistrationHash.HashLayer.FORMULA],
+                    layers[RegistrationHash.HashLayer.CANONICAL_SMILES],
+                    layers[RegistrationHash.HashLayer.NO_STEREO_SMILES],
+                    layers[RegistrationHash.HashLayer.TAUTOMER_HASH],
+                    layers[RegistrationHash.HashLayer.NO_STEREO_TAUTOMER_HASH],
+                    layers[RegistrationHash.HashLayer.ESCAPE],
+                    layers[RegistrationHash.HashLayer.SGROUP_DATA],
+                ))
 
         cn.commit()
     except:
         cn.rollback()
         raise
     return mrn
+
 
 def register(config=None,
              mol=None,
@@ -132,17 +159,18 @@ def register(config=None,
 
     cn = _connect(config)
     curs = cn.cursor()
-    mrn = _register_mol(tpl,escape,cn,curs,config)
+    mrn = _register_mol(tpl, escape, cn, curs, config)
     if not no_verbose:
         print(mrn)
     return mrn
 
+
 def bulk_register(config=None,
-             mols=None,
-             sdfile=None,
-             smilesfile=None,
-             escapeProperty=None,
-             no_verbose=True):
+                  mols=None,
+                  sdfile=None,
+                  smilesfile=None,
+                  escapeProperty=None,
+                  no_verbose=True):
     if config is None:
         config = _configure()
     mrns = []
@@ -152,21 +180,19 @@ def bulk_register(config=None,
         if mol is None:
             mrns.append(None)
             continue
-        tpl = _parse_mol(mol=mol,
-                        config=config)
+        tpl = _parse_mol(mol=mol, config=config)
         try:
             if escapeProperty is not None and mol.HasProp(escapeProperty):
                 escape = mol.GetProp(escapeProperty)
             else:
                 escape = None
-            mrn = _register_mol(tpl,escape,cn,curs,config)
+            mrn = _register_mol(tpl, escape, cn, curs, config)
             mrns.append(mrn)
-        except sqlite3.IntegrityError:
+        except _violations:
             mrns.append(None)
     if not no_verbose:
         print(mrns)
     return mrns
-
 
 
 def query(config=None,
@@ -191,7 +217,9 @@ def query(config=None,
     cn = _connect(config)
     curs = cn.cursor()
     if layers == 'ALL':
-        curs.execute('select molregno from hashes where fullhash=?', (mhash, ))
+        curs.execute(
+            replace_placeholders(
+                'select molregno from hashes where fullhash=?'), (mhash, ))
     else:
         vals = []
         query = []
@@ -206,7 +234,7 @@ def query(config=None,
             vals.append(hlayers[k])
             query.append(f'"{lyr}"=?')
 
-        query = ' and '.join(query)
+        query = replace_placeholders(' and '.join(query))
         curs.execute(f'select molregno from hashes where {query}', vals)
 
     res = [x[0] for x in curs.fetchall()]
@@ -237,7 +265,7 @@ def retrieve(config=None,
         qry = 'molregno,data,datatype from orig_data'
     else:
         qry = "molregno,molblock,'mol' from molblocks"
-    qs = ','.join('?' * len(ids))
+    qs = replace_placeholders(','.join('?' * len(ids)))
     curs.execute(f'select {qry} where molregno in ({qs})', ids)
 
     res = curs.fetchall()
@@ -269,4 +297,5 @@ def initdb(config=None):
           formula text, canonical_smiles text, no_stereo_smiles text, 
           tautomer_hash text, no_stereo_tautomer_hash text, "escape" text, sgroup_data text)'''
     )
+    cn.commit()
     return True

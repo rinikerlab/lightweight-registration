@@ -8,15 +8,21 @@ import sqlite3
 from rdkit import Chem
 from . import utils
 from rdkit.Chem import RegistrationHash
+try:
+    import psycopg2
+except ImportError:
+    psycopg2 = None
 
 
 class TestLWReg(unittest.TestCase):
+    integrityError = sqlite3.IntegrityError
+
     def setUp(self):
         if 1:
             cn = sqlite3.connect(':memory:')
             self._config = {'connection': cn}
         else:
-            self._config = {'dbfile': 'test.sqlt'}
+            self._config = {'dbname': 'test.sqlt'}
 
     def baseRegister(self):
         smis = ('CC[C@H](F)Cl', 'CC[C@@H](F)Cl', 'CCC(F)Cl', 'CC(F)(Cl)C')
@@ -32,10 +38,10 @@ class TestLWReg(unittest.TestCase):
         self.assertEqual(utils.register(smiles='CCC', config=self._config), 1)
         self.assertEqual(utils.register(smiles='CCCO', config=self._config), 2)
         self.assertRaises(
-            sqlite3.IntegrityError,
+            self.integrityError,
             lambda: utils.register(smiles='CCC', config=self._config))
         self.assertRaises(
-            sqlite3.IntegrityError,
+            self.integrityError,
             lambda: utils.register(smiles='CCC.O', config=self._config))
         self.assertEqual(utils.register(smiles='CCCOC', config=self._config),
                          3)
@@ -45,8 +51,12 @@ class TestLWReg(unittest.TestCase):
 
     def testBulkRegister(self):
         utils.initdb(config=self._config)
-        mols = [Chem.MolFromSmiles(x) for x in ('CCC','CCCO','C1','c1cc1','CCC','C1CC1')]
-        self.assertEqual(utils.bulk_register(mols=mols, config=self._config), [1,2,None,None,None,3])
+        mols = [
+            Chem.MolFromSmiles(x)
+            for x in ('CCC', 'CCCO', 'C1', 'c1cc1', 'CCC', 'C1CC1')
+        ]
+        self.assertEqual(utils.bulk_register(mols=mols, config=self._config),
+                         [1, 2, None, None, None, 3])
 
     def testQuery(self):
         self.baseRegister()
@@ -89,6 +99,17 @@ class TestLWReg(unittest.TestCase):
         mb = Chem.MolFromMolBlock(tpl[1])
         self.assertEqual(
             utils.query(smiles=Chem.MolToSmiles(mb), config=self._config), [1])
+
+
+@unittest.skipIf(psycopg2 is None, "skipping postgresql tests")
+class TestLWRegPSQL(TestLWReg):
+    integrityError = psycopg2.errors.UniqueViolation
+
+    def setUp(self):
+        self._config = {
+            'dbname': 'dbname=lwreg_tests host=localhost',
+            'dbtype': 'postgresql'
+        }
 
 
 if __name__ == '__main__':

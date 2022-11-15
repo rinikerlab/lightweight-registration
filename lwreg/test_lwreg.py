@@ -103,7 +103,7 @@ class TestLWReg(unittest.TestCase):
 
 @unittest.skipIf(psycopg2 is None, "skipping postgresql tests")
 class TestLWRegPSQL(TestLWReg):
-    integrityError = psycopg2.errors.UniqueViolation
+    integrityError = psycopg2.errors.UniqueViolation if psycopg2 else None
 
     def setUp(self):
         self._config = {

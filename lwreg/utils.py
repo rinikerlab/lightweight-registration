@@ -19,9 +19,18 @@ except ImportError:
 
 from collections import namedtuple
 
+standardizationOptions = {
+    'none': lambda x: x,
+    'fragment': rdMolStandardize.FragmentParent,
+    'charge': rdMolStandardize.ChargeParent,
+    'tautomer': rdMolStandardize.TautomerParent,
+    'super': rdMolStandardize.SuperParent,
+}
+
 defaultConfig = json.loads('''{
     "dbname": "./testdb.sqlt",
-    "standardize": "normal",
+    "dbtype": "sqlite3",
+    "standardization": "fragment",
     "removeHs": 1,
     "use3DIfPresent": 1
 }''')
@@ -40,6 +49,10 @@ def _configure(filename='./config.json'):
     return _config
 
 
+def _lookupWithDefault(config, key, defaults=defaultConfig):
+    return config.get(key, defaults[key])
+
+
 _replace_placeholders = lambda x: x
 
 
@@ -47,10 +60,9 @@ def _connect(config):
     global _replace_placeholders
     cn = config.get('connection', None)
     if not cn:
-        dbtype = config.get('dbtype', 'sqlite3').lower()
+        dbtype = _lookupWithDefault(config, 'dbtype').lower()
         dbnm = config['dbname']
         if dbtype == 'sqlite3':
-
             uri = False
             if dbnm.startswith('file::'):
                 uri = True
@@ -78,10 +90,6 @@ def _getNextRegno(cn):
 MolTuple = namedtuple('MolTuple', ('mol', 'datatype', 'rawdata'))
 
 
-def _lookupWithDefault(config, key, defaults=defaultConfig):
-    return config.get(key, defaults[key])
-
-
 def _process_molblock(molblock, config):
     mol = Chem.MolFromMolBlock(molblock,
                                removeHs=_lookupWithDefault(config, 'removeHs'))
@@ -97,7 +105,7 @@ def _parse_mol(mol=None, molfile=None, molblock=None, smiles=None, config={}):
         raw = mol.ToBinary(propertyFlags=Chem.PropertyPickleOptions.AllProps)
     elif smiles is not None:
         spp = Chem.SmilesParserParams()
-        spp.removeHs = config.get('removeHs', True)
+        spp.removeHs = _lookupWithDefault(config, 'removeHs')
         mol = Chem.MolFromSmiles(smiles, spp)
         datatype = 'smiles'
         raw = smiles
@@ -116,13 +124,25 @@ def _parse_mol(mol=None, molfile=None, molblock=None, smiles=None, config={}):
 
 
 def standardize_mol(mol, config=None):
+    """ standardizes the input molecule using the 'standardization' 
+    option in config and returns the result 
+    """
     if config is None:
         config = _configure()
-    sMol = rdMolStandardize.FragmentParent(mol)
+    sopt = _lookupWithDefault(config, 'standardization')
+    if type(sopt) == str:
+        sopt = standardizationOptions[sopt]
+    sMol = sopt(mol)
     return sMol
 
 
 def hash_mol(mol, escape=None, config=None):
+    """ returns the hash layers and corresponding hash for the molecule 
+    
+    Keyword arguments:
+    escape -- the escape layer
+    config -- configuration dict
+    """
     if config is None:
         config = _configure()
     layers = RegistrationHash.GetMolLayers(mol, escape=escape)
@@ -174,6 +194,20 @@ def register(config=None,
              smiles=None,
              escape=None,
              no_verbose=True):
+    """ registers a new molecule, assuming it doesn't already exist,
+    and returns the new registry number (molregno)
+    
+    only one of the molecule format objects should be provided
+
+    Keyword arguments:
+    config     -- configuration dict
+    mol        -- RDKit molecule object
+    molfile    -- MOL or SDF filename
+    molblock   -- MOL or SDF block
+    smiles     -- smiles
+    escape     -- the escape layer
+    no_verbose -- if this is False then the registry number will be printed
+    """
     if config is None:
         config = _configure()
     tpl = _parse_mol(mol=mol,
@@ -196,6 +230,26 @@ def bulk_register(config=None,
                   smilesfile=None,
                   escapeProperty=None,
                   no_verbose=True):
+    """ registers multiple new molecules, assuming they don't already exist,
+    and returns the new registry numbers (molregno)
+    
+    the result includes a None for each molecule which either could not be
+    processed or which is already registered
+
+    only one of the molecule format objects should be provided
+
+    Keyword arguments:
+    config         -- configuration dict
+    mols           -- an iterable of RDKit molecule objects
+    sdfile         -- SDF filename
+    escapeProperty -- the molecule property to use as the escape layer
+    no_verbose     -- if this is False then the registry numbers will be printed
+    """
+
+    if mols is None:
+        raise NotImplementedError(
+            "currently only a list of molecules can be bulk registered")
+
     if config is None:
         config = _configure()
     mrns = []
@@ -217,7 +271,7 @@ def bulk_register(config=None,
             mrns.append(None)
     if not no_verbose:
         print(mrns)
-    return mrns
+    return tuple(mrns)
 
 
 def query(config=None,
@@ -228,6 +282,21 @@ def query(config=None,
           smiles=None,
           escape=None,
           no_verbose=True):
+    """ queries to see if a molecule has already been registered,
+    and returns the corresponding registry numbers (molregnos)
+    
+    only one of the molecule format objects should be provided
+
+    Keyword arguments:
+    config     -- configuration dict
+    layers     -- hash layers to be used to determine identity
+    mol        -- RDKit molecule object
+    molfile    -- MOL or SDF filename
+    molblock   -- MOL or SDF block
+    smiles     -- smiles
+    escape     -- the escape layer
+    no_verbose -- if this is False then the registry numbers will be printed
+    """
     if config is None:
         config = _configure()
 
@@ -277,6 +346,19 @@ def retrieve(config=None,
              id=None,
              as_submitted=False,
              no_verbose=True):
+    """ returns the molecule data for one or more registry ids (molregnos)
+    The return value is a tuple of (molregno, data, format) 3-tuples    
+
+
+    only one of id or ids should be provided
+
+    Keyword arguments:
+    config       -- configuration dict
+    ids          -- an iterable of registry ids (molregnos)
+    id           -- a registry id (molregno)
+    as_submitted -- if True, then the structure will be returned as registered
+    no_verbose   -- if this is False then the registry number will be printed
+    """
     if config is None:
         config = _configure()
     if id is not None:
@@ -301,10 +383,20 @@ def retrieve(config=None,
         else:
             print('not found')
 
-    return res
+    return tuple(res)
 
 
-def initdb(config=None):
+def initdb(config=None, confirm=False):
+    """ initializes the registration database    
+
+    NOTE that this call destroys any existing information in the registration database
+
+    Keyword arguments:
+    config  -- configuration dict
+    confirm -- if set to False we immediately return
+    """
+    if not confirm:
+        return
     if config is None:
         config = _configure()
     cn = _connect(config)

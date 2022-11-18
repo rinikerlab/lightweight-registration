@@ -23,7 +23,7 @@ def initdb(confirm='no'):
     if confirm != 'yes':
         click.echo("initdb not confirmed, aborting")
         return
-    utils.initdb()
+    utils.initdb(confirm=True)
 
 
 @cli.command()

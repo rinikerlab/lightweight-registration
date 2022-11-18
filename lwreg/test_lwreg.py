@@ -18,15 +18,12 @@ class TestLWReg(unittest.TestCase):
     integrityError = sqlite3.IntegrityError
 
     def setUp(self):
-        if 1:
-            cn = sqlite3.connect(':memory:')
-            self._config = {'connection': cn}
-        else:
-            self._config = {'dbname': 'test.sqlt'}
+        cn = sqlite3.connect(':memory:')
+        self._config = {'connection': cn}
 
     def baseRegister(self):
         smis = ('CC[C@H](F)Cl', 'CC[C@@H](F)Cl', 'CCC(F)Cl', 'CC(F)(Cl)C')
-        utils.initdb(config=self._config)
+        utils.initdb(config=self._config, confirm=True)
         for smi in smis:
             utils.register(smiles=smi, config=self._config)
         mols = [Chem.MolFromSmiles(x) for x in ('Cc1[nH]ncc1', 'Cc1n[nH]cc1')]
@@ -34,7 +31,7 @@ class TestLWReg(unittest.TestCase):
             utils.register(mol=mol, config=self._config)
 
     def testRegister(self):
-        utils.initdb(config=self._config)
+        utils.initdb(config=self._config, confirm=True)
         self.assertEqual(utils.register(smiles='CCC', config=self._config), 1)
         self.assertEqual(utils.register(smiles='CCCO', config=self._config), 2)
         self.assertRaises(
@@ -50,13 +47,13 @@ class TestLWReg(unittest.TestCase):
                            config=self._config), 4)
 
     def testBulkRegister(self):
-        utils.initdb(config=self._config)
+        utils.initdb(config=self._config, confirm=True)
         mols = [
             Chem.MolFromSmiles(x)
             for x in ('CCC', 'CCCO', 'C1', 'c1cc1', 'CCC', 'C1CC1')
         ]
         self.assertEqual(utils.bulk_register(mols=mols, config=self._config),
-                         [1, 2, None, None, None, 3])
+                         (1, 2, None, None, None, 3))
 
     def testQuery(self):
         self.baseRegister()

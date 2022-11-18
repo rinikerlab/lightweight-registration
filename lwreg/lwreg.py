@@ -10,8 +10,12 @@ from . import utils
 
 
 @click.group()
-def cli():
-    utils._configure()
+@click.option(
+    "--config",
+    default='',
+)
+def cli(config=''):
+    utils._configure(filename=config)
 
 
 @cli.command()
@@ -19,7 +23,7 @@ def cli():
     "--confirm",
     default='no',
 )
-def initdb(confirm='no'):
+def initdb( confirm='no'):
     if confirm != 'yes':
         click.echo("initdb not confirmed, aborting")
         return

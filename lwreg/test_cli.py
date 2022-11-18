@@ -1,0 +1,88 @@
+# Copyright (C) 2022 Greg Landrum
+# All rights reserved
+# This file is part of lwreg.
+# The contents are covered by the terms of the MIT license
+# which is included in the file LICENSE,
+import unittest
+from click.testing import CliRunner
+from . import lwreg
+import tempfile
+
+
+class TestLWRegCLI(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.jsonf = tempfile.NamedTemporaryFile(suffix='json', mode='w+t')
+        cls.sqltf = tempfile.NamedTemporaryFile(suffix='sqlt')
+        cls.jsonf.write('''{"dbname": "%s"}''' % (cls.sqltf.name, ))
+        cls.jsonf.flush()
+        cls.configFile = cls.jsonf.name
+
+    def test1(self):
+        runner = CliRunner()
+        result = runner.invoke(
+            lwreg.cli,
+            [f'--config={self.configFile}', 'initdb', '--confirm=yes'])
+        self.assertEqual(result.exit_code, 0)
+        result = runner.invoke(
+            lwreg.cli,
+            [f'--config={self.configFile}', 'register', '--smiles=CCC'])
+        self.assertEqual(result.exit_code, 0)
+        self.assertEqual(result.output.strip(), '1')
+
+        # expected failure
+        result = runner.invoke(
+            lwreg.cli,
+            [f'--config={self.configFile}', 'register', '--smiles=CCC'])
+        self.assertEqual(result.exit_code, 1)
+        self.assertEqual(result.output.strip(), '')
+
+        result = runner.invoke(
+            lwreg.cli,
+            [f'--config={self.configFile}', 'register', '--smiles=CCCO'])
+        self.assertEqual(result.exit_code, 0)
+        self.assertEqual(result.output.strip(), '2')
+
+        result = runner.invoke(lwreg.cli, [
+            f'--config={self.configFile}', 'register', '--smiles=CCC',
+            '--escape=really'
+        ])
+        self.assertEqual(result.exit_code, 0)
+        self.assertEqual(result.output.strip(), '3')
+
+        result = runner.invoke(lwreg.cli, [
+            f'--config={self.configFile}',
+            'query',
+            '--smiles=COC',
+        ])
+        self.assertEqual(result.exit_code, 0)
+        self.assertEqual(result.output.strip(), 'not found')
+
+        result = runner.invoke(lwreg.cli, [
+            f'--config={self.configFile}',
+            'query',
+            '--smiles=CCC',
+        ])
+        self.assertEqual(result.exit_code, 0)
+        self.assertEqual(result.output.strip(), '1')
+
+        result = runner.invoke(lwreg.cli, [
+            f'--config={self.configFile}', 'query', '--smiles=CCC',
+            '--layers=FORMULA'
+        ])
+        self.assertEqual(result.exit_code, 0)
+        self.assertEqual(result.output.strip(), '1 3')
+
+        result = runner.invoke(lwreg.cli, [
+            f'--config={self.configFile}',
+            'retrieve',
+            '--id=1',
+        ])
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn("(1, ", result.output)
+        self.assertIn("M  END\\n',", result.output)
+        self.assertIn("'mol'", result.output)
+
+
+if __name__ == '__main__':
+    unittest.main()

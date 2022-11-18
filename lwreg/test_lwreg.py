@@ -19,7 +19,8 @@ class TestLWReg(unittest.TestCase):
 
     def setUp(self):
         cn = sqlite3.connect(':memory:')
-        self._config = {'connection': cn}
+        self._config = utils.defaultConfig()
+        self._config['connection'] = cn
 
     def baseRegister(self):
         smis = ('CC[C@H](F)Cl', 'CC[C@@H](F)Cl', 'CCC(F)Cl', 'CC(F)(Cl)C')
@@ -106,16 +107,23 @@ class TestLWReg(unittest.TestCase):
             self.integrityError,
             lambda: utils.register(smiles='CCC[O-]', config=lconfig))
 
+        lconfig['standardization'] = 'tautomer'
+        utils.initdb(config=lconfig, confirm=True)
+        self.assertEqual(utils.register(smiles='Cc1[nH]ncc1', config=lconfig),
+                         1)
+        self.assertRaises(
+            self.integrityError,
+            lambda: utils.register(smiles='Cc1n[nH]cc1', config=lconfig))
+
 
 @unittest.skipIf(psycopg2 is None, "skipping postgresql tests")
 class TestLWRegPSQL(TestLWReg):
     integrityError = psycopg2.errors.UniqueViolation if psycopg2 else None
 
     def setUp(self):
-        self._config = {
-            'dbname': 'dbname=lwreg_tests host=localhost',
-            'dbtype': 'postgresql'
-        }
+        self._config = utils.defaultConfig()
+        self._config['dbname'] = 'dbname=lwreg_tests host=localhost'
+        self._config['dbtype'] = 'postgresql'
 
 
 if __name__ == '__main__':

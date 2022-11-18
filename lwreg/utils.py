@@ -27,13 +27,18 @@ standardizationOptions = {
     'super': rdMolStandardize.SuperParent,
 }
 
-defaultConfig = json.loads('''{
+_defaultConfig = json.loads('''{
     "dbname": "./testdb.sqlt",
     "dbtype": "sqlite3",
     "standardization": "fragment",
     "removeHs": 1,
     "use3DIfPresent": 1
 }''')
+
+
+def defaultConfig():
+    return _defaultConfig.copy()
+
 
 _config = {}
 
@@ -45,11 +50,11 @@ def _configure(filename='./config.json'):
             with open(filename, 'r') as inf:
                 _config = json.load(inf)
         else:
-            _config = defaultConfig.copy()
+            _config = defaultConfig()
     return _config
 
 
-def _lookupWithDefault(config, key, defaults=defaultConfig):
+def _lookupWithDefault(config, key, defaults=_defaultConfig):
     return config.get(key, defaults[key])
 
 
@@ -127,8 +132,10 @@ def standardize_mol(mol, config=None):
     """ standardizes the input molecule using the 'standardization' 
     option in config and returns the result 
     """
-    if config is None:
+    if not config:
         config = _configure()
+    elif type(config) == str:
+        config = _configure(filename=config)
     sopt = _lookupWithDefault(config, 'standardization')
     if type(sopt) == str:
         sopt = standardizationOptions[sopt]
@@ -143,8 +150,10 @@ def hash_mol(mol, escape=None, config=None):
     escape -- the escape layer
     config -- configuration dict
     """
-    if config is None:
+    if not config:
         config = _configure()
+    elif type(config) == str:
+        config = _configure(filename=config)
     layers = RegistrationHash.GetMolLayers(mol, escape=escape)
     mhash = RegistrationHash.GetMolHash(layers)
     return mhash, layers
@@ -208,8 +217,10 @@ def register(config=None,
     escape     -- the escape layer
     no_verbose -- if this is False then the registry number will be printed
     """
-    if config is None:
+    if not config:
         config = _configure()
+    elif type(config) == str:
+        config = _configure(filename=config)
     tpl = _parse_mol(mol=mol,
                      molfile=molfile,
                      molblock=molblock,
@@ -250,8 +261,10 @@ def bulk_register(config=None,
         raise NotImplementedError(
             "currently only a list of molecules can be bulk registered")
 
-    if config is None:
+    if not config:
         config = _configure()
+    elif type(config) == str:
+        config = _configure(filename=config)
     mrns = []
     cn = _connect(config)
     curs = cn.cursor()
@@ -297,8 +310,10 @@ def query(config=None,
     escape     -- the escape layer
     no_verbose -- if this is False then the registry numbers will be printed
     """
-    if config is None:
+    if not config:
         config = _configure()
+    elif type(config) == str:
+        config = _configure(filename=config)
 
     tpl = _parse_mol(mol=mol,
                      molfile=molfile,
@@ -359,8 +374,10 @@ def retrieve(config=None,
     as_submitted -- if True, then the structure will be returned as registered
     no_verbose   -- if this is False then the registry number will be printed
     """
-    if config is None:
+    if not config:
         config = _configure()
+    elif type(config) == str:
+        config = _configure(filename=config)
     if id is not None:
         ids = [int(id)]
     if ids is not None:
@@ -405,8 +422,10 @@ def initdb(config=None, confirm=False):
     """
     if not confirm:
         return
-    if config is None:
+    if not config:
         config = _configure()
+    elif type(config) == str:
+        config = _configure(filename=config)
     cn = _connect(config)
     curs = cn.cursor()
 

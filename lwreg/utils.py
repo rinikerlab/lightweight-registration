@@ -131,6 +131,11 @@ def _parse_mol(mol=None, molfile=None, molblock=None, smiles=None, config={}):
 def standardize_mol(mol, config=None):
     """ standardizes the input molecule using the 'standardization' 
     option in config and returns the result 
+
+    look at standardizationOptions to see valid values for 'standardization'
+
+    Keyword arguments:
+    config -- configuration dict
     """
     if not config:
         config = _configure()
@@ -159,7 +164,8 @@ def hash_mol(mol, escape=None, config=None):
     return mhash, layers
 
 
-def _register_mol(tpl, escape, cn, curs, config):
+def _register_mol(tpl, escape, cn, curs, config, failOnDuplicate):
+    """ does the work of registering one molecule """
     molb = Chem.MolToV3KMolBlock(tpl.mol)
     mrn = _getNextRegno(cn)
     try:
@@ -190,6 +196,15 @@ def _register_mol(tpl, escape, cn, curs, config):
                 ))
 
         cn.commit()
+    except _violations:
+        cn.rollback()
+        if failOnDuplicate:
+            raise
+        else:
+            curs.execute(
+                _replace_placeholders(
+                    'select molregno from hashes where fullhash=?'), (mhash, ))
+            mrn = curs.fetchone()[0]
     except:
         cn.rollback()
         raise
@@ -202,6 +217,7 @@ def register(config=None,
              molblock=None,
              smiles=None,
              escape=None,
+             fail_on_duplicate=True,
              no_verbose=True):
     """ registers a new molecule, assuming it doesn't already exist,
     and returns the new registry number (molregno)
@@ -215,6 +231,7 @@ def register(config=None,
     molblock   -- MOL or SDF block
     smiles     -- smiles
     escape     -- the escape layer
+    failOnDuplicate -- if true then an exception is raised when trying to register a duplicate
     no_verbose -- if this is False then the registry number will be printed
     """
     if not config:
@@ -229,7 +246,7 @@ def register(config=None,
 
     cn = _connect(config)
     curs = cn.cursor()
-    mrn = _register_mol(tpl, escape, cn, curs, config)
+    mrn = _register_mol(tpl, escape, cn, curs, config, fail_on_duplicate)
     if not no_verbose:
         print(mrn)
     return mrn
@@ -240,12 +257,13 @@ def bulk_register(config=None,
                   sdfile=None,
                   smilesfile=None,
                   escapeProperty=None,
+                  failOnDuplicate=True,
                   no_verbose=True):
     """ registers multiple new molecules, assuming they don't already exist,
     and returns the new registry numbers (molregno)
     
     the result includes a None for each molecule which either could not be
-    processed or which is already registered
+    processed or which is already registered (if failOnDuplicate is True)
 
     only one of the molecule format objects should be provided
 
@@ -254,6 +272,7 @@ def bulk_register(config=None,
     mols           -- an iterable of RDKit molecule objects
     sdfile         -- SDF filename
     escapeProperty -- the molecule property to use as the escape layer
+    failOnDuplicate -- if true then None will be returned for each already-registered molecule
     no_verbose     -- if this is False then the registry numbers will be printed
     """
 
@@ -278,7 +297,7 @@ def bulk_register(config=None,
                 escape = mol.GetProp(escapeProperty)
             else:
                 escape = None
-            mrn = _register_mol(tpl, escape, cn, curs, config)
+            mrn = _register_mol(tpl, escape, cn, curs, config, failOnDuplicate)
             mrns.append(mrn)
         except _violations:
             mrns.append(None)

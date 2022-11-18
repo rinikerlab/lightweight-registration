@@ -9,6 +9,8 @@ from . import lwreg
 import tempfile
 
 
+# just some basic testing to make sure that the CLI works.
+# The real testing of the underlying library is in test_lwreg.py
 class TestLWRegCLI(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -36,6 +38,13 @@ class TestLWRegCLI(unittest.TestCase):
             [f'--config={self.configFile}', 'register', '--smiles=CCC'])
         self.assertEqual(result.exit_code, 1)
         self.assertEqual(result.output.strip(), '')
+
+        result = runner.invoke(lwreg.cli, [
+            f'--config={self.configFile}', 'register', '--smiles=CCC',
+            '--fail-on-duplicate'
+        ])
+        self.assertEqual(result.exit_code, 0)
+        self.assertEqual(result.output.strip(), '1')
 
         result = runner.invoke(
             lwreg.cli,

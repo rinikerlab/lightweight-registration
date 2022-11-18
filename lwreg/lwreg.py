@@ -23,7 +23,7 @@ def cli(config=''):
     "--confirm",
     default='no',
 )
-def initdb( confirm='no'):
+def initdb(confirm='no'):
     if confirm != 'yes':
         click.echo("initdb not confirmed, aborting")
         return
@@ -68,6 +68,7 @@ def query(**kwargs):
     "--smiles",
     default=None,
 )
+@click.option("--fail-on-duplicate", default=True, is_flag=True)
 @click.option(
     "--escape",
     default=None,

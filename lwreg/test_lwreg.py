@@ -38,6 +38,10 @@ class TestLWReg(unittest.TestCase):
         self.assertRaises(
             self.integrityError,
             lambda: utils.register(smiles='CCC', config=self._config))
+        self.assertEqual(
+            utils.register(smiles='CCCO',
+                           config=self._config,
+                           fail_on_duplicate=False), 2)
         self.assertRaises(
             self.integrityError,
             lambda: utils.register(smiles='CCC.O', config=self._config))
@@ -97,6 +101,8 @@ class TestLWReg(unittest.TestCase):
         mb = Chem.MolFromMolBlock(tpl[1])
         self.assertEqual(
             utils.query(smiles=Chem.MolToSmiles(mb), config=self._config), [1])
+        res = utils.retrieve(ids=[100], config=self._config)
+        self.assertEqual(len(res), 0)
 
     def testStandardizationOptions(self):
         lconfig = self._config.copy()

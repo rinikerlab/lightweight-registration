@@ -97,6 +97,15 @@ class TestLWReg(unittest.TestCase):
         self.assertEqual(
             utils.query(smiles=Chem.MolToSmiles(mb), config=self._config), [1])
 
+    def testStandardizationOptions(self):
+        lconfig = self._config.copy()
+        lconfig['standardization'] = 'charge'
+        utils.initdb(config=lconfig, confirm=True)
+        self.assertEqual(utils.register(smiles='CCCO', config=lconfig), 1)
+        self.assertRaises(
+            self.integrityError,
+            lambda: utils.register(smiles='CCC[O-]', config=lconfig))
+
 
 @unittest.skipIf(psycopg2 is None, "skipping postgresql tests")
 class TestLWRegPSQL(TestLWReg):

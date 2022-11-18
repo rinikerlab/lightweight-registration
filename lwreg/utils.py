@@ -386,6 +386,14 @@ def retrieve(config=None,
     return tuple(res)
 
 
+def _registerMetadata(curs, config):
+    for k, v in config.items():
+        curs.execute(
+            _replace_placeholders(
+                'insert into registration_metadata values (?,?)'),
+            (str(k), str(v)))
+
+
 def initdb(config=None, confirm=False):
     """ initializes the registration database    
 
@@ -401,6 +409,11 @@ def initdb(config=None, confirm=False):
         config = _configure()
     cn = _connect(config)
     curs = cn.cursor()
+
+    curs.execute('drop table if exists registration_metadata')
+    curs.execute('create table registration_metadata (key text, value text)')
+    _registerMetadata(curs, config)
+
     curs.execute('drop table if exists orig_data')
     curs.execute(
         'create table orig_data (molregno int primary key, data text, datatype text)'

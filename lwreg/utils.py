@@ -19,22 +19,32 @@ except ImportError:
 
 from collections import namedtuple
 
+defaultConfig = json.loads('''{
+    "dbname": "./testdb.sqlt",
+    "standardize": "normal",
+    "removeHs": 1,
+    "use3DIfPresent": 1
+}''')
+
 _config = {}
 
 
 def _configure(filename='./config.json'):
     global _config
     if not _config:
-        with open(filename, 'r') as inf:
-            _config = json.load(inf)
+        if filename:
+            with open(filename, 'r') as inf:
+                _config = json.load(inf)
+        else:
+            _config = defaultConfig.copy()
     return _config
 
 
-replace_placeholders = lambda x: x
+_replace_placeholders = lambda x: x
 
 
 def _connect(config):
-    global replace_placeholders
+    global _replace_placeholders
     cn = config.get('connection', None)
     if not cn:
         dbtype = config.get('dbtype', 'sqlite3').lower()
@@ -48,7 +58,7 @@ def _connect(config):
         elif dbtype in ('postgres', 'postgresql'):
             if psycopg2 is None:
                 raise ValueError("psycopg2 package not installed")
-            replace_placeholders = lambda x: x.replace('?', '%s').replace(
+            _replace_placeholders = lambda x: x.replace('?', '%s').replace(
                 '"', '')
             cn = psycopg2.connect(dbnm)
     return cn
@@ -68,22 +78,37 @@ def _getNextRegno(cn):
 MolTuple = namedtuple('MolTuple', ('mol', 'datatype', 'rawdata'))
 
 
+def _lookupWithDefault(config, key, defaults=defaultConfig):
+    return config.get(key, defaults[key])
+
+
+def _process_molblock(molblock, config):
+    mol = Chem.MolFromMolBlock(molblock,
+                               removeHs=_lookupWithDefault(config, 'removeHs'))
+    if mol.GetConformer().Is3D() and _lookupWithDefault(
+            config, 'use3DIfPresent'):
+        Chem.AssignStereochemistryFrom3D(mol)
+    return mol
+
+
 def _parse_mol(mol=None, molfile=None, molblock=None, smiles=None, config={}):
     if mol is not None:
         datatype = 'pkl'
-        raw = mol.ToBinary()
+        raw = mol.ToBinary(propertyFlags=Chem.PropertyPickleOptions.AllProps)
     elif smiles is not None:
-        mol = Chem.MolFromSmiles(smiles)
+        spp = Chem.SmilesParserParams()
+        spp.removeHs = config.get('removeHs', True)
+        mol = Chem.MolFromSmiles(smiles, spp)
         datatype = 'smiles'
         raw = smiles
     elif molblock is not None:
-        mol = Chem.MolFromMolBlock(molblock)
+        mol = _process_molblock(molblock, config)
         datatype = 'mol'
         raw = molblock
     elif molfile is not None:
         with open(molfile, 'r') as inf:
             molblock = inf.read()
-        mol = Chem.MolFromMolBlock(molblock)
+        mol = _process_molblock(molblock, config)
         datatype = 'mol'
         raw = molblock
 
@@ -110,10 +135,10 @@ def _register_mol(tpl, escape, cn, curs, config):
     mrn = _getNextRegno(cn)
     try:
         curs.execute(
-            replace_placeholders('insert into orig_data values (?, ?, ?)'),
+            _replace_placeholders('insert into orig_data values (?, ?, ?)'),
             (mrn, tpl.rawdata, tpl.datatype))
         curs.execute(
-            replace_placeholders('insert into molblocks values (?, ?)'),
+            _replace_placeholders('insert into molblocks values (?, ?)'),
             (mrn, molb))
 
         sMol = standardize_mol(tpl.mol, config=config)
@@ -122,7 +147,7 @@ def _register_mol(tpl, escape, cn, curs, config):
 
         # will fail if the fullhash is already there
         curs.execute(
-            replace_placeholders(
+            _replace_placeholders(
                 'insert into hashes values (?,?,?,?,?,?,?,?,?)'), (
                     mrn,
                     mhash,
@@ -218,7 +243,7 @@ def query(config=None,
     curs = cn.cursor()
     if layers == 'ALL':
         curs.execute(
-            replace_placeholders(
+            _replace_placeholders(
                 'select molregno from hashes where fullhash=?'), (mhash, ))
     else:
         vals = []
@@ -234,7 +259,7 @@ def query(config=None,
             vals.append(hlayers[k])
             query.append(f'"{lyr}"=?')
 
-        query = replace_placeholders(' and '.join(query))
+        query = _replace_placeholders(' and '.join(query))
         curs.execute(f'select molregno from hashes where {query}', vals)
 
     res = [x[0] for x in curs.fetchall()]
@@ -265,7 +290,7 @@ def retrieve(config=None,
         qry = 'molregno,data,datatype from orig_data'
     else:
         qry = "molregno,molblock,'mol' from molblocks"
-    qs = replace_placeholders(','.join('?' * len(ids)))
+    qs = _replace_placeholders(','.join('?' * len(ids)))
     curs.execute(f'select {qry} where molregno in ({qs})', ids)
 
     res = curs.fetchall()

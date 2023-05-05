@@ -32,7 +32,8 @@ _defaultConfig = json.loads('''{
     "dbtype": "sqlite3",
     "standardization": "fragment",
     "removeHs": 1,
-    "use3DIfPresent": 1
+    "use3DIfPresent": 1,
+    "useTautomerHashv2": 0
 }''')
 
 
@@ -58,14 +59,16 @@ def _lookupWithDefault(config, key, defaults=_defaultConfig):
     return config.get(key, defaults[key])
 
 
-_replace_placeholders = lambda x: x
+_replace_placeholders_noop = lambda x: x
+_replace_placeholders_pcts = lambda x: x.replace('?', '%s').replace('"', '')
+_replace_placeholders = _replace_placeholders_noop
 
 
 def _connect(config):
     global _replace_placeholders
     cn = config.get('connection', None)
+    dbtype = _lookupWithDefault(config, 'dbtype').lower()
     if not cn:
-        dbtype = _lookupWithDefault(config, 'dbtype').lower()
         dbnm = config['dbname']
         if dbtype == 'sqlite3':
             uri = False
@@ -75,9 +78,13 @@ def _connect(config):
         elif dbtype in ('postgres', 'postgresql'):
             if psycopg2 is None:
                 raise ValueError("psycopg2 package not installed")
-            _replace_placeholders = lambda x: x.replace('?', '%s').replace(
-                '"', '')
             cn = psycopg2.connect(dbnm)
+
+    if dbtype in ('postgres', 'postgresql'):
+        _replace_placeholders = _replace_placeholders_pcts
+    else:
+        _replace_placeholders = _replace_placeholders_noop
+
     return cn
 
 
@@ -159,7 +166,11 @@ def hash_mol(mol, escape=None, config=None):
         config = _configure()
     elif type(config) == str:
         config = _configure(filename=config)
-    layers = RegistrationHash.GetMolLayers(mol, escape=escape)
+    layers = RegistrationHash.GetMolLayers(
+        mol,
+        escape=escape,
+        enable_tautomer_hash_v2=_lookupWithDefault(config,
+                                                   'useTautomerHashv2'))
     mhash = RegistrationHash.GetMolHash(layers)
     return mhash, layers
 

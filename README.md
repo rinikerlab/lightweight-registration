@@ -32,26 +32,7 @@ pip install --editable .
 % lwreg register --smiles CCNCCC
 3
 % lwreg register --smiles CCOCCC
-Traceback (most recent call last):
-  File "/home/glandrum/miniconda3/envs/py310_rdkit/bin/lwreg", line 33, in <module>
-    sys.exit(load_entry_point('lwreg', 'console_scripts', 'lwreg')())
-  File "/home/glandrum/miniconda3/envs/py310_rdkit/lib/python3.10/site-packages/click/core.py", line 1128, in __call__
-    return self.main(*args, **kwargs)
-  File "/home/glandrum/miniconda3/envs/py310_rdkit/lib/python3.10/site-packages/click/core.py", line 1053, in main
-    rv = self.invoke(ctx)
-  File "/home/glandrum/miniconda3/envs/py310_rdkit/lib/python3.10/site-packages/click/core.py", line 1659, in invoke
-    return _process_result(sub_ctx.command.invoke(sub_ctx))
-  File "/home/glandrum/miniconda3/envs/py310_rdkit/lib/python3.10/site-packages/click/core.py", line 1395, in invoke
-    return ctx.invoke(self.callback, **ctx.params)
-  File "/home/glandrum/miniconda3/envs/py310_rdkit/lib/python3.10/site-packages/click/core.py", line 754, in invoke
-    return __callback(*args, **kwargs)
-  File "/home/glandrum/Code/lightweight-registration/lwreg/lwreg.py", line 78, in register
-    return utils.register(**kwargs)
-  File "/home/glandrum/Code/lightweight-registration/lwreg/utils.py", line 249, in register
-    mrn = _register_mol(tpl, escape, cn, curs, config, fail_on_duplicate)
-  File "/home/glandrum/Code/lightweight-registration/lwreg/utils.py", line 184, in _register_mol
-    curs.execute(
-sqlite3.IntegrityError: UNIQUE constraint failed: hashes.fullhash
+ERROR:root:Compound already registered
 % lwreg query --smiles CCOCCC
 2
 % lwreg retrieve --id 2

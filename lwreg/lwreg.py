@@ -6,6 +6,8 @@
 # The contents are covered by the terms of the MIT license
 # which is included in the file LICENSE,
 import click
+import logging
+import sys
 from . import utils
 
 
@@ -75,7 +77,11 @@ def query(**kwargs):
 )
 @click.option("--no-verbose", default=False, is_flag=True)
 def register(**kwargs):
-    return utils.register(**kwargs)
+    try:
+        return utils.register(**kwargs)
+    except utils._violations:
+        logging.error("Compound already registered")
+        sys.exit(1)
 
 
 @cli.command()

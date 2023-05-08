@@ -7,18 +7,37 @@ import unittest
 from click.testing import CliRunner
 from . import lwreg
 import tempfile
+import os
 
 
 # just some basic testing to make sure that the CLI works.
 # The real testing of the underlying library is in test_lwreg.py
 class TestLWRegCLI(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
-        cls.jsonf = tempfile.NamedTemporaryFile(suffix='json', mode='w+t')
-        cls.sqltf = tempfile.NamedTemporaryFile(suffix='sqlt')
-        cls.jsonf.write('''{"dbname": "%s"}''' % (cls.sqltf.name, ))
-        cls.jsonf.flush()
-        cls.configFile = cls.jsonf.name
+        jsonf = tempfile.NamedTemporaryFile(suffix='.json',
+                                            mode='w+t',
+                                            delete=False)
+        sqltf = tempfile.NamedTemporaryFile(suffix='.sqlt', delete=False)
+        cls.sqltf = sqltf.name.replace('\\', '/')
+
+        jsonf.write('''{"dbname": "%s"}''' % (cls.sqltf, ))
+        jsonf.flush()
+        cls.configFile = jsonf.name
+        print(cls.configFile)
+        jsonf.close()
+
+    @classmethod
+    def tearDownClass(cls):
+        try:
+            os.unlink(cls.configFile)
+        except:
+            pass
+        try:
+            os.unlink(cls.sqltf)
+        except:
+            pass
 
     def test1(self):
         runner = CliRunner()

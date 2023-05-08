@@ -15,6 +15,16 @@ try:
     import psycopg2
 except ImportError:
     psycopg2 = None
+if psycopg2:
+    # we have the connector for postgresql. Is there a server running?
+    cfg = utils.defaultConfig()
+    cfg['dbname'] = 'dbname=lwreg_tests host=localhost'
+    cfg['dbtype'] = 'postgresql'
+    try:
+        cn = utils._connect(config=cfg)
+    except psycopg2.OperationalError:
+        # server not running
+        psycopg2 = None
 
 
 class TestLWReg(unittest.TestCase):

@@ -9,13 +9,17 @@ Basic operations:
 - `query`: takes a molecule as input and checks whether or not a matching molecule is registered. returns molregnos (registry IDs) of the matching molecule(s), if any
 - `retrieve`: takes one or more IDs and returns the registered structures for them
 
+## Installation for non-experts:
+
+Please look at the INSTALL.md file.
+
 ## Dependencies:
-- rdkit
+- rdkit v2023.03.1 or later
 - click
 - psycopg2 (only if you want to use a postgresql database)
 
-## Install:
-After checking out this repo, run this command in this directory:
+## Installation for experts:
+After installing the dependencies (above) and checking out this repo, run this command in this directory:
 ```
 pip install --editable .
 ```

@@ -295,10 +295,6 @@ def bulk_register(config=None,
       - RegistrationFalureReasons.PARSE_FAILURE if there was a problem processing
         the molecule 
     
-    RegistrationFailureReasons entry for each molecule 
-    which either could not be processed or which is already registered (if 
-    failOnDuplicate is True)
-
     only one of the molecule format objects should be provided
 
     Keyword arguments:

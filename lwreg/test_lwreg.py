@@ -8,8 +8,10 @@ import sqlite3
 from rdkit import Chem
 try:
     from . import utils
+    from .utils import RegistrationFailureReasons
 except ImportError:
     import utils
+    from utils import RegistrationFailureReasons
 
 try:
     import psycopg2
@@ -63,6 +65,12 @@ class TestLWReg(unittest.TestCase):
         self.assertEqual(
             utils.register(mol=Chem.MolFromSmiles('C1CCC1'),
                            config=self._config), 4)
+        self.assertEqual(utils.register(mol=None, config=self._config),
+                         RegistrationFailureReasons.PARSE_FAILURE)
+        self.assertEqual(utils.register(smiles='CCCC1', config=self._config),
+                         RegistrationFailureReasons.PARSE_FAILURE)
+        self.assertEqual(utils.register(smiles='c1nccc1', config=self._config),
+                         RegistrationFailureReasons.PARSE_FAILURE)
 
     def testBulkRegister(self):
         utils.initdb(config=self._config, confirm=True)
@@ -71,7 +79,9 @@ class TestLWReg(unittest.TestCase):
             for x in ('CCC', 'CCCO', 'C1', 'c1cc1', 'CCC', 'C1CC1')
         ]
         self.assertEqual(utils.bulk_register(mols=mols, config=self._config),
-                         (1, 2, None, None, None, 3))
+                         (1, 2, RegistrationFailureReasons.PARSE_FAILURE,
+                          RegistrationFailureReasons.PARSE_FAILURE,
+                          RegistrationFailureReasons.DUPLICATE, 3))
 
     def testQuery(self):
         self.baseRegister()

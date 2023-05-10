@@ -1,5 +1,4 @@
 # This workflow will install Python dependencies, run tests and lint with a single version of Python(v3.10). 
-# Please uncomment the lines if you also want to run the lint with flake8.
 # The test triggers when there is a pull request to the main branch.
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 

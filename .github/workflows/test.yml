@@ -24,9 +24,10 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pytest
-        conda install -c conda-forge rdkit>=2023.03.1
+        conda env create -n py311_lwreg --file environment.yml
+        conda activate py311_lwreg
         pip install --editable .
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Test with pytest
       run: |
-        pytest -p no:warnings --basetemp="{envtmpdir}"
+        pytest -p no:warnings

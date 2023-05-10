@@ -9,6 +9,7 @@ from rdkit.Chem.MolStandardize import rdMolStandardize
 from rdkit.Chem import RegistrationHash
 import json
 import sqlite3
+import enum
 
 _violations = (sqlite3.IntegrityError, )
 try:
@@ -37,6 +38,12 @@ _defaultConfig = json.loads('''{
 }''')
 
 from rdkit.Chem.RegistrationHash import HashLayer
+
+
+class RegistrationFailureReasons(enum.Enum):
+    DUPLICATE = enum.auto()
+    PARSE_FAILURE = enum.auto()
+    FILTERED = enum.auto()
 
 
 def defaultConfig():
@@ -133,6 +140,8 @@ def _parse_mol(mol=None, molfile=None, molblock=None, smiles=None, config={}):
         mol = _process_molblock(molblock, config)
         datatype = 'mol'
         raw = molblock
+    else:
+        return MolTuple(None, None, None)
 
     return MolTuple(mol, datatype, raw)
 
@@ -259,6 +268,9 @@ def register(config=None,
 
     cn = _connect(config)
     curs = cn.cursor()
+    if tpl.mol is None:
+        return RegistrationFailureReasons.PARSE_FAILURE
+
     mrn = _register_mol(tpl, escape, cn, curs, config, fail_on_duplicate)
     if not no_verbose:
         print(mrn)
@@ -275,9 +287,14 @@ def bulk_register(config=None,
     """ registers multiple new molecules, assuming they don't already exist,
     and returns the new registry numbers (molregno)
     
-    the result includes a None for each molecule which either could not be
-    processed or which is already registered (if failOnDuplicate is True)
-
+    The result tuple includes a single entry for each molecule in the input.
+    That entry can be one of the following:
+      - the registry number (molregno) of the registered molecule
+      - RegistrationFailureReasons.DUPLICATE if failOnDuplicate is True and a
+        molecule is a duplicate
+      - RegistrationFalureReasons.PARSE_FAILURE if there was a problem processing
+        the molecule 
+    
     only one of the molecule format objects should be provided
 
     Keyword arguments:
@@ -285,7 +302,9 @@ def bulk_register(config=None,
     mols           -- an iterable of RDKit molecule objects
     sdfile         -- SDF filename
     escapeProperty -- the molecule property to use as the escape layer
-    failOnDuplicate -- if true then None will be returned for each already-registered molecule
+    failOnDuplicate -- if true then RegistraionFailureReasons.DUPLICATE will be returned 
+                       for each already-registered molecule, otherwise the already existing
+                       structure ID will be returned
     no_verbose     -- if this is False then the registry numbers will be printed
     """
 
@@ -302,7 +321,7 @@ def bulk_register(config=None,
     curs = cn.cursor()
     for mol in mols:
         if mol is None:
-            mrns.append(None)
+            mrns.append(RegistrationFailureReasons.PARSE_FAILURE)
             continue
         tpl = _parse_mol(mol=mol, config=config)
         try:
@@ -313,7 +332,7 @@ def bulk_register(config=None,
             mrn = _register_mol(tpl, escape, cn, curs, config, failOnDuplicate)
             mrns.append(mrn)
         except _violations:
-            mrns.append(None)
+            mrns.append(RegistrationFailureReasons.DUPLICATE)
     if not no_verbose:
         print(mrns)
     return tuple(mrns)

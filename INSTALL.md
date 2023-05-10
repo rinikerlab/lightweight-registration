@@ -37,7 +37,7 @@ This will take a while, but it will install everything you need to use lwreg, wo
 
 Again in the shell in the directory with the clone of the repo, activate the environment you just created:
 ```
-conda activate py311_rdkit
+conda activate py311_lwreg
 ```
 Then run this command in this directory:
 ```

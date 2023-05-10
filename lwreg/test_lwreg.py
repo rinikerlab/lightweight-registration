@@ -10,7 +10,7 @@ try:
     from . import utils
 except ImportError:
     import utils
-from rdkit.Chem import RegistrationHash
+
 try:
     import psycopg2
 except ImportError:
@@ -91,16 +91,20 @@ class TestLWReg(unittest.TestCase):
                         config=self._config), [1, 2, 3])
         self.assertEqual(
             utils.query(smiles='CCC(F)Cl',
-                        layers=[RegistrationHash.HashLayer.NO_STEREO_SMILES],
+                        layers=[utils.HashLayer.NO_STEREO_SMILES],
                         config=self._config), [1, 2, 3])
         self.assertEqual(
             utils.query(smiles='CCC(F)Cl',
-                        layers=[RegistrationHash.HashLayer.FORMULA],
+                        layers=utils.HashLayer.NO_STEREO_SMILES,
+                        config=self._config), [1, 2, 3])
+        self.assertEqual(
+            utils.query(smiles='CCC(F)Cl',
+                        layers=[utils.HashLayer.FORMULA],
                         config=self._config), [1, 2, 3, 4])
 
         self.assertEqual(
             utils.query(smiles='Cc1[nH]ncc1',
-                        layers=[RegistrationHash.HashLayer.TAUTOMER_HASH],
+                        layers=[utils.HashLayer.TAUTOMER_HASH],
                         config=self._config), [5, 6])
 
     def testRetrieve(self):
@@ -155,11 +159,11 @@ class TestLWRegTautomerv2(unittest.TestCase):
 
         self.assertEqual(
             utils.query(smiles='CC=CO',
-                        layers=[RegistrationHash.HashLayer.TAUTOMER_HASH],
+                        layers=[utils.HashLayer.TAUTOMER_HASH],
                         config=self._config), [3, 4])
         self.assertEqual(
             utils.query(smiles='CC=CO',
-                        layers=[RegistrationHash.HashLayer.CANONICAL_SMILES],
+                        layers=[utils.HashLayer.CANONICAL_SMILES],
                         config=self._config), [3])
 
 

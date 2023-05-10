@@ -36,6 +36,8 @@ _defaultConfig = json.loads('''{
     "useTautomerHashv2": 0
 }''')
 
+from rdkit.Chem.RegistrationHash import HashLayer
+
 
 def defaultConfig():
     return _defaultConfig.copy()
@@ -197,13 +199,13 @@ def _register_mol(tpl, escape, cn, curs, config, failOnDuplicate):
                 'insert into hashes values (?,?,?,?,?,?,?,?,?)'), (
                     mrn,
                     mhash,
-                    layers[RegistrationHash.HashLayer.FORMULA],
-                    layers[RegistrationHash.HashLayer.CANONICAL_SMILES],
-                    layers[RegistrationHash.HashLayer.NO_STEREO_SMILES],
-                    layers[RegistrationHash.HashLayer.TAUTOMER_HASH],
-                    layers[RegistrationHash.HashLayer.NO_STEREO_TAUTOMER_HASH],
-                    layers[RegistrationHash.HashLayer.ESCAPE],
-                    layers[RegistrationHash.HashLayer.SGROUP_DATA],
+                    layers[HashLayer.FORMULA],
+                    layers[HashLayer.CANONICAL_SMILES],
+                    layers[HashLayer.NO_STEREO_SMILES],
+                    layers[HashLayer.TAUTOMER_HASH],
+                    layers[HashLayer.NO_STEREO_TAUTOMER_HASH],
+                    layers[HashLayer.ESCAPE],
+                    layers[HashLayer.SGROUP_DATA],
                 ))
 
         cn.commit()
@@ -364,9 +366,11 @@ def query(config=None,
         query = []
         if type(layers) == str:
             layers = layers.upper().split(',')
+        if not hasattr(layers, '__len__'):
+            layers = [layers]
         for lyr in layers:
             if type(lyr) == str:
-                k = getattr(RegistrationHash.HashLayer, lyr)
+                k = getattr(HashLayer, lyr)
             else:
                 k = lyr
                 lyr = str(lyr).split('.')[-1]

@@ -24,6 +24,20 @@ After installing the dependencies (above) and checking out this repo, run this c
 pip install --editable .
 ```
 
+## Run in Docker
+```shell
+docker build -t lwreg .
+
+# Run Jupyter notebook on the docker container
+docker run -i -t -p 8888:8888 rdkit-lwreg /bin/bash -c "\
+    apt update && apt install libtiff5 -y && \
+    pip install notebook && \
+    jupyter notebook \
+    --notebook-dir=/lw-reg --ip='*' --port=8888 \
+    --no-browser --allow-root"
+```
+
+
 ## Very basic usage demo
 
 ### Command line

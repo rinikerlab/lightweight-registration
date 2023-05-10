@@ -287,7 +287,15 @@ def bulk_register(config=None,
     """ registers multiple new molecules, assuming they don't already exist,
     and returns the new registry numbers (molregno)
     
-    the result includes a RegistrationFailureReasons entry for each molecule 
+    The result tuple includes a single entry for each molecule in the input.
+    That entry can be one of the following:
+      - the registry number (molregno) of the registered molecule
+      - RegistrationFailureReasons.DUPLICATE if failOnDuplicate is True and a
+        molecule is a duplicate
+      - RegistrationFalureReasons.PARSE_FAILURE if there was a problem processing
+        the molecule 
+    
+    RegistrationFailureReasons entry for each molecule 
     which either could not be processed or which is already registered (if 
     failOnDuplicate is True)
 
@@ -299,7 +307,8 @@ def bulk_register(config=None,
     sdfile         -- SDF filename
     escapeProperty -- the molecule property to use as the escape layer
     failOnDuplicate -- if true then RegistraionFailureReasons.DUPLICATE will be returned 
-                       for each already-registered molecule
+                       for each already-registered molecule, otherwise the already existing
+                       structure ID will be returned
     no_verbose     -- if this is False then the registry numbers will be printed
     """
 

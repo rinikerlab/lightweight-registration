@@ -83,6 +83,19 @@ class TestLWReg(unittest.TestCase):
                           RegistrationFailureReasons.PARSE_FAILURE,
                           RegistrationFailureReasons.DUPLICATE, 3))
 
+    def testBulkRegisterAllowDupes(self):
+        utils.initdb(config=self._config, confirm=True)
+        mols = [
+            Chem.MolFromSmiles(x)
+            for x in ('CCC', 'CCCO', 'C1', 'c1cc1', 'CCC', 'C1CC1')
+        ]
+        self.assertEqual(
+            utils.bulk_register(mols=mols,
+                                failOnDuplicate=False,
+                                config=self._config),
+            (1, 2, RegistrationFailureReasons.PARSE_FAILURE,
+             RegistrationFailureReasons.PARSE_FAILURE, 1, 3))
+
     def testQuery(self):
         self.baseRegister()
         self.assertEqual(utils.query(smiles='CC(F)Cl', config=self._config),

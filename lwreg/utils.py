@@ -188,17 +188,17 @@ def hash_mol(mol, escape=None, config=None):
 
 def _register_mol(tpl, escape, cn, curs, config, failOnDuplicate):
     """ does the work of registering one molecule """
-    molb = Chem.MolToV3KMolBlock(tpl.mol)
     mrn = _getNextRegno(cn)
     try:
+        sMol = standardize_mol(tpl.mol, config=config)
+
+        molb = Chem.MolToV3KMolBlock(sMol)
         curs.execute(
             _replace_placeholders('insert into orig_data values (?, ?, ?)'),
             (mrn, tpl.rawdata, tpl.datatype))
         curs.execute(
             _replace_placeholders('insert into molblocks values (?, ?)'),
             (mrn, molb))
-
-        sMol = standardize_mol(tpl.mol, config=config)
 
         mhash, layers = hash_mol(sMol, escape=escape, config=config)
 

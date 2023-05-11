@@ -3,7 +3,6 @@
 # This file is part of lwreg.
 # The contents are covered by the terms of the MIT license
 # which is included in the file LICENSE,
-import gzip
 import unittest
 import sqlite3
 from rdkit import Chem

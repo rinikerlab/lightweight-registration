@@ -81,6 +81,12 @@ class TestLWReg(unittest.TestCase):
         self.assertEqual(utils._get_smiles_column('demo_data/S1P1_data.csv',
                                                   delimiter=','),
                          8)
+        self.assertEqual(utils._get_smiles_column('demo_data/test_smiles_with_header.smi',
+                                                  delimiter=';'),
+                         1)
+        self.assertEqual(utils._get_smiles_column('demo_data/test_smiles.smi',
+                                                  delimiter=' '),
+                         1)
 
     def testHasHeader(self):
         self.assertTrue(utils._has_header('demo_data/S1P1_data.csv',
@@ -98,7 +104,7 @@ class TestLWReg(unittest.TestCase):
         filenames = ['demo_data/test_smiles_no_delim.smi',
                      'demo_data/test_smiles_no_delim_with_header.smi',
                      'demo_data/test_smiles_with_header.smi',
-                     'demo_data/test_smiles.smi',]
+                     'demo_data/test_smiles.smi']
         for filename in filenames:
             mols = utils._get_mols_from_smilesfile(filename)
             self.assertEqual(len(mols),

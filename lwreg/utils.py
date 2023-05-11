@@ -220,6 +220,12 @@ def hash_mol(mol, escape=None, config=None):
 def _register_mol(tpl, escape, cn, curs, config, failOnDuplicate):
     """ does the work of registering one molecule """
     mrn = _getNextRegno(cn)
+    standardization_label = _get_standardization_label(config)
+    curs.execute(
+        "select value from registration_metadata where key='standardization'")
+    def_std_label = curs.fetchone()[0]
+    if standardization_label == def_std_label:
+        standardization_label = None
     try:
         sMol = standardize_mol(tpl.mol, config=config)
         if sMol is None:
@@ -229,8 +235,8 @@ def _register_mol(tpl, escape, cn, curs, config, failOnDuplicate):
             _replace_placeholders('insert into orig_data values (?, ?, ?)'),
             (mrn, tpl.rawdata, tpl.datatype))
         curs.execute(
-            _replace_placeholders('insert into molblocks values (?, ?)'),
-            (mrn, molb))
+            _replace_placeholders('insert into molblocks values (?, ?, ?)'),
+            (mrn, molb, standardization_label))
 
         mhash, layers = hash_mol(sMol, escape=escape, config=config)
 
@@ -524,7 +530,8 @@ def initdb(config=None, confirm=False):
     )
     curs.execute('drop table if exists molblocks')
     curs.execute(
-        'create table molblocks (molregno int primary key, molblock text)')
+        'create table molblocks (molregno int primary key, molblock text, standardization text)'
+    )
     curs.execute('drop table if exists hashes')
     curs.execute(
         '''create table hashes (molregno int primary key, fullhash text unique, 

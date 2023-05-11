@@ -139,10 +139,12 @@ class TestLWReg(unittest.TestCase):
         res = utils.retrieve(ids=[1], config=self._config)
         self.assertEqual(len(res), 1)
         tpl = res[0]
+        self.assertEqual(len(tpl), 3)
         self.assertEqual(tpl[0], 1)
         mb = Chem.MolFromMolBlock(tpl[1])
         self.assertEqual(
             utils.query(smiles=Chem.MolToSmiles(mb), config=self._config), [1])
+        self.assertEqual(tpl[2], 'mol')
         res = utils.retrieve(ids=[100], config=self._config)
         self.assertEqual(len(res), 0)
 
@@ -329,6 +331,25 @@ class TestStandardizationLabels(unittest.TestCase):
                 cfg['standardization'] = cl
                 lbl = utils._get_standardization_label(cfg)
                 self.assertEqual(lbl, f'{k}|{func.name}')
+
+    def testRecording(self):
+        cfg = utils.defaultConfig()
+        cfg['dbname'] = 'foo.sqlt'
+        utils.initdb(config=cfg, confirm=True)
+        self.assertEqual(utils.register(smiles='CCO', config=cfg), 1)
+        self.assertEqual(utils.register(smiles='CCOC', config=cfg), 2)
+        oac = standardization_lib.OverlappingAtomsCheck()
+        cfg['standardization'] = ['fragment', oac]
+        self.assertEqual(utils.register(smiles='CCN', config=cfg), 3)
+        self.assertEqual(utils.register(smiles='CCNC', config=cfg), 4)
+        cn = utils._connect(cfg)
+        curs = cn.cursor()
+        curs.execute(
+            "select count(*) from molblocks where standardization is not null")
+        self.assertEqual(curs.fetchone()[0], 2)
+        curs.execute(
+            "select count(*) from molblocks where standardization is null")
+        self.assertEqual(curs.fetchone()[0], 2)
 
 
 if __name__ == '__main__':

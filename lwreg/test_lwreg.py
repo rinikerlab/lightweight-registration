@@ -281,6 +281,19 @@ class TestLWRegTautomerv2(unittest.TestCase):
                         layers=[utils.HashLayer.CANONICAL_SMILES],
                         config=self._config), [3])
 
+    def testGithub14(self):
+        ''' salts not being stripped on registration'''
+        utils.initdb(config=self._config, confirm=True)
+        self.assertEqual(
+            utils.register(smiles='CCC(=O)[O-].[Na+]', config=self._config), 1)
+
+        res = utils.retrieve(id=1, config=self._config)
+        self.assertEqual(len(res), 1)
+        tpl = res[0]
+        self.assertEqual(tpl[0], 1)
+        mb = Chem.MolFromMolBlock(tpl[1])
+        self.assertEqual(Chem.MolToSmiles(mb), 'CCC(=O)[O-]')
+
 
 @unittest.skipIf(psycopg2 is None, "skipping postgresql tests")
 class TestLWRegPSQL(TestLWReg):

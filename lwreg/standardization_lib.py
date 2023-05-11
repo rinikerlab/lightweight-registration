@@ -14,10 +14,13 @@ class Standardization:
     '''
     __slots__ = ["name", "explanation"]
 
+    def __call__(self, mol):
+        return mol
+
 
 class OverlappingAtomsCheck(Standardization):
     name = "has_overlapping_atoms"
-    explanation = "molecule has two (or more) atoms with coordinates within a threshold distance of each other"
+    explanation = "fails if molecule has at least two atoms which are closer than a threshold distance to each other"
     threshold = 0.0001
 
     def __call__(self, mol):
@@ -30,4 +33,18 @@ class OverlappingAtomsCheck(Standardization):
                     d = pti - pts[j]
                     if d.LengthSq() < t2:
                         return None
+        return mol
+
+
+class PolymerCheck(Standardization):
+    name = "has_polymer_info"
+    explanation = "fails if molecule has an SGroup associated with polymers"
+    polymerTypes = ['SRU', 'COP', 'MON', 'CRO', 'GRA']
+
+    def __call__(self, mol):
+        for sg in Chem.GetMolSubstanceGroups(mol):
+            typ = sg.GetProp('TYPE')
+            if typ in self.polymerTypes:
+                return None
+
         return mol

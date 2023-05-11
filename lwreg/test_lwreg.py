@@ -221,6 +221,38 @@ class TestLWReg(unittest.TestCase):
         self.assertEqual(
             utils.register(smiles='CO |(0,0,;0,0,)|', config=lconfig), None)
 
+        checker = standardization_lib.PolymerCheck()
+        lconfig['standardization'] = checker
+        self.assertEqual(
+            utils.register(smiles='*-CO-* |$star_e;;;star_e$,Sg:n:1,2::ht|',
+                           config=lconfig), None)
+        self.assertEqual(
+            utils.register(molblock='''
+  Mrv2305 05112307022D          
+
+  0  0  0     0  0            999 V3000
+M  V30 BEGIN CTAB
+M  V30 COUNTS 4 3 1 0 0
+M  V30 BEGIN ATOM
+M  V30 1 C -6.6667 0.7083 0 0
+M  V30 2 C -5.333 1.4783 0 0
+M  V30 3 O -3.9993 0.7083 0 0
+M  V30 4 C -2.6656 1.4783 0 0
+M  V30 END ATOM
+M  V30 BEGIN BOND
+M  V30 1 1 1 2
+M  V30 2 1 2 3
+M  V30 3 1 3 4
+M  V30 END BOND
+M  V30 BEGIN SGROUP
+M  V30 1 SUP 0 ATOMS=(2 2 3) SAP=(3 2 1 1) SAP=(3 3 4 2) XBONDS=(2 1 3) -
+M  V30 LABEL=CO ESTATE=E
+M  V30 END SGROUP
+M  V30 END CTAB
+M  END
+''',
+                           config=lconfig), 2)
+
 
 class TestLWRegTautomerv2(unittest.TestCase):
     integrityError = sqlite3.IntegrityError

@@ -150,8 +150,13 @@ def standardize_mol(mol, config=None):
     """ standardizes the input molecule using the 'standardization' 
     option in config and returns the result 
 
-    look at standardizationOptions to see valid values for 'standardization'
-
+    The value of the 'standardization' option can be:
+      - one of the strings from standardizationOptions
+      - a callable object which should return either None (on failure) 
+        or the standardized molecule (on success)
+    A list or tuple of these is also ok, the entries in the list will 
+    be applied in order.
+    
     Keyword arguments:
     config -- configuration dict
     """
@@ -159,11 +164,16 @@ def standardize_mol(mol, config=None):
         config = _configure()
     elif type(config) == str:
         config = _configure(filename=config)
-    sopt = _lookupWithDefault(config, 'standardization')
-    if type(sopt) == str:
-        sopt = standardizationOptions[sopt]
-    sMol = sopt(mol)
-    return sMol
+    sopts = _lookupWithDefault(config, 'standardization')
+    if type(sopts) not in (list, tuple):
+        sopts = (sopts, )
+    for sopt in sopts:
+        if type(sopt) == str:
+            sopt = standardizationOptions[sopt]
+        mol = sopt(mol)
+        if mol is None:
+            return None
+    return mol
 
 
 def hash_mol(mol, escape=None, config=None):
@@ -191,7 +201,8 @@ def _register_mol(tpl, escape, cn, curs, config, failOnDuplicate):
     mrn = _getNextRegno(cn)
     try:
         sMol = standardize_mol(tpl.mol, config=config)
-
+        if sMol is None:
+            return None
         molb = Chem.MolToV3KMolBlock(sMol)
         curs.execute(
             _replace_placeholders('insert into orig_data values (?, ?, ?)'),

@@ -9,9 +9,11 @@ from rdkit import Chem
 try:
     from . import utils
     from .utils import RegistrationFailureReasons
+    from . import standardization_lib
 except ImportError:
     import utils
     from utils import RegistrationFailureReasons
+    import standardization_lib
 
 try:
     import psycopg2
@@ -160,6 +162,64 @@ class TestLWReg(unittest.TestCase):
         self.assertRaises(
             self.integrityError,
             lambda: utils.register(smiles='Cc1n[nH]cc1', config=lconfig))
+
+    def testStandardizationFunctions(self):
+        lconfig = self._config.copy()
+
+        def evenAtomCount(mol):
+            if mol.GetNumAtoms() % 2:
+                return None
+            return mol
+
+        # Silly example which only accepts even numbers of atoms
+        lconfig['standardization'] = evenAtomCount
+
+        utils.initdb(config=lconfig, confirm=True)
+        self.assertEqual(utils.register(smiles='CCCO', config=lconfig), 1)
+        self.assertIsNone(utils.register(smiles='CCC', config=lconfig))
+
+        utils.initdb(config=lconfig, confirm=True)
+        checker = standardization_lib.OverlappingAtomsCheck()
+        lconfig['standardization'] = checker
+        self.assertEqual(
+            utils.register(smiles='CC |(0,0,;0,1,)|', config=lconfig), 1)
+        self.assertEqual(
+            utils.register(smiles='CO |(0,0,;0,0,)|', config=lconfig), None)
+
+        def hasAnOxygen(mol):
+            for atom in mol.GetAtoms():
+                if atom.GetAtomicNum() == 8:
+                    return mol
+            return None
+
+        # ----------------------
+        # chaining standardization functions
+        utils.initdb(config=lconfig, confirm=True)
+        lconfig['standardization'] = [evenAtomCount, hasAnOxygen]
+        self.assertEqual(utils.register(smiles='CC', config=lconfig), None)
+        self.assertEqual(utils.register(smiles='CO', config=lconfig), 1)
+        self.assertEqual(utils.register(smiles='CCO', config=lconfig), None)
+
+        # ----------------------
+        # mixing standardization options and functions
+        utils.initdb(config=lconfig, confirm=True)
+        lconfig['standardization'] = ('fragment', evenAtomCount, hasAnOxygen)
+        self.assertEqual(utils.register(smiles='CC', config=lconfig), None)
+        self.assertEqual(utils.register(smiles='CO', config=lconfig), 1)
+        self.assertEqual(utils.register(smiles='C[O-].[Na]', config=lconfig),
+                         2)
+        self.assertEqual(utils.register(smiles='CCO', config=lconfig), None)
+
+    def testStandardizationLibCheckers(self):
+        lconfig = self._config.copy()
+
+        utils.initdb(config=lconfig, confirm=True)
+        checker = standardization_lib.OverlappingAtomsCheck()
+        lconfig['standardization'] = checker
+        self.assertEqual(
+            utils.register(smiles='CC |(0,0,;0,1,)|', config=lconfig), 1)
+        self.assertEqual(
+            utils.register(smiles='CO |(0,0,;0,0,)|', config=lconfig), None)
 
 
 class TestLWRegTautomerv2(unittest.TestCase):

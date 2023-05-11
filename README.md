@@ -24,6 +24,20 @@ After installing the dependencies (above) and checking out this repo, run this c
 pip install --editable .
 ```
 
+## Run in Docker
+```shell
+docker build -t lwreg .
+
+# Run Jupyter notebook on the docker container
+docker run -i -t -p 8888:8888 rdkit-lwreg /bin/bash -c "\
+    apt update && apt install libtiff5 -y && \
+    pip install notebook && \
+    jupyter notebook \
+    --notebook-dir=/lw-reg --ip='*' --port=8888 \
+    --no-browser --allow-root"
+```
+
+
 ## Very basic usage demo
 
 ### Command line
@@ -123,3 +137,49 @@ Out[14]:
 
 
 ```
+
+## Custom standardization/filtering functions
+
+When using the Python API you have extensive control over the standardization and validation operations which are performed on the molecule.
+
+Start with a couple of examples showing what the 'fragment' and 'charge' built-in standardizers do:
+
+```
+>>> config['standardization'] = 'fragment'
+>>> Chem.MolToSmiles(lwreg.utils.standardize_mol(Chem.MolFromSmiles('CC[O-].[Na+]'),config=config))
+'CC[O-]'
+>>> config['standardization'] = 'charge'
+>>> Chem.MolToSmiles(lwreg.utils.standardize_mol(Chem.MolFromSmiles('CC[O-].[Na+]'),config=config))
+'CCO'
+```
+
+Now define a custom filter which rejects (by returning None) molecules which have a net charge and then use that:
+```
+>>> def reject_charged_molecules(mol):
+...     if Chem.GetFormalCharge(mol):
+...         return None
+...     return mol
+...
+>>> config['standardization'] = reject_charged_molecules
+>>> Chem.MolToSmiles(lwreg.utils.standardize_mol(Chem.MolFromSmiles('CC[O-].[Na+]'),config=config))
+'CC[O-].[Na+]'
+```
+
+Here's an example which fails:
+
+```
+>>> lwreg.utils.standardize_mol(Chem.MolFromSmiles('CC[O-]'),config=config) is None
+True
+```
+
+We can chain standardization/filtering operations together by providing a list. The individual operations are run in order. Here's an example where we attempt to neutralise the molecule by finding the charge parent and then apply our reject_charged_molecules filter:
+```
+>>> config['standardization'] = ['charge',reject_charged_molecules]
+>>> lwreg.utils.standardize_mol(Chem.MolFromSmiles('CC[O-]'),config=config) is None
+False
+>>> lwreg.utils.standardize_mol(Chem.MolFromSmiles('CC[N+](C)(C)C'),config=config) is None
+True
+```
+That last one failed because the quarternary nitrogen can't be neutralized.
+
+There are a collection of other standardizers/filters available in the module lwreg.standardization_lib

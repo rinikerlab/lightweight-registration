@@ -119,52 +119,6 @@ class TestLWReg(unittest.TestCase):
             self.assertEqual(len(mols),
                              6)
 
-    def testGetDelimiter(self):
-        self.assertEqual(utils._get_delimiter('demo_data/S1P1_data.csv'),
-                         ',')
-        self.assertEqual(utils._get_delimiter('demo_data/test_smiles_no_delim.smi'),
-                         None)
-        self.assertEqual(utils._get_delimiter('demo_data/test_smiles_no_delim_with_header.smi'),
-                         None)
-        self.assertEqual(utils._get_delimiter('demo_data/test_smiles_with_header.smi'),
-                         ';')
-        self.assertEqual(utils._get_delimiter('demo_data/test_smiles.smi'),
-                         ' ')
-
-
-    def testGetSmilesColumn(self):
-        self.assertEqual(utils._get_smiles_column('demo_data/S1P1_data.csv',
-                                                  delimiter=','),
-                         8)
-        self.assertEqual(utils._get_smiles_column('demo_data/test_smiles_with_header.smi',
-                                                  delimiter=';'),
-                         1)
-        self.assertEqual(utils._get_smiles_column('demo_data/test_smiles.smi',
-                                                  delimiter=' '),
-                         1)
-
-    def testHasHeader(self):
-        self.assertTrue(utils._has_header('demo_data/S1P1_data.csv',
-                                          delimiter=','))
-        self.assertTrue(utils._has_header('demo_data/test_smiles_no_delim_with_header.smi',
-                                          delimiter=' '))
-        self.assertFalse(utils._has_header('demo_data/test_smiles_no_delim.smi',
-                                           delimiter=' '))
-        self.assertTrue(utils._has_header('demo_data/test_smiles_with_header.smi',
-                                          delimiter=','))
-        self.assertFalse(utils._has_header('demo_data/test_smiles.smi',
-                                           delimiter=' '))
-
-    def testGetMolsFromSmilesfile(self):
-        filenames = ['demo_data/test_smiles_no_delim.smi',
-                     'demo_data/test_smiles_no_delim_with_header.smi',
-                     'demo_data/test_smiles_with_header.smi',
-                     'demo_data/test_smiles.smi']
-        for filename in filenames:
-            mols = utils._get_mols_from_smilesfile(filename)
-            self.assertEqual(len(mols),
-                             6)
-
     def testBulkRegister(self):
         utils.initdb(config=self._config, confirm=True)
         mols = [

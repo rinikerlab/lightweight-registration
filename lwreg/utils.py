@@ -5,7 +5,7 @@
 # which is included in the file LICENSE,
 
 from rdkit import Chem
-from rdkit import RDLogger
+from rdkit import rdBase
 from rdkit.Chem.MolStandardize import rdMolStandardize
 from rdkit.Chem import RegistrationHash
 import csv
@@ -260,32 +260,28 @@ def _get_delimiter(smilesfile):
 
 
 def _get_smiles_column(smilesfile, delimiter):
-    RDLogger.DisableLog('rdApp.error')
     with open(smilesfile, 'r', newline='') as input_file:
         rows = csv.reader(input_file, delimiter=delimiter)
         rows = list(rows)
         for row in rows[::-1]:
-            potential_smiles = list([type(Chem.MolFromSmiles(smi)) for smi in row])
+            with rdBase.BlockLogs() as bl:
+                potential_smiles = list([type(Chem.MolFromSmiles(smi)) for smi in row])
             try:
                 smi = potential_smiles.index(Chem.rdchem.Mol)
-                RDLogger.EnableLog('rdApp.error')
                 return smi
             except ValueError:
                 pass
-        RDLogger.EnableLog('rdApp.error')
         raise ValueError('No valid SMILES found in file.')
 
 
 def _has_header(smilesfile, delimiter):
-    RDLogger.DisableLog('rdApp.error')
     with open(smilesfile, 'r') as input_file:
         header_line = input_file.readlines()[0][:-1]
         elements = header_line.split(delimiter)
-        for element in elements:
-            if Chem.MolFromSmiles(element):
-                RDLogger.EnableLog('rdApp.error')
-                return False
-        RDLogger.EnableLog('rdApp.error')
+        with rdBase.BlockLogs() as bl:
+            for element in elements:
+                if Chem.MolFromSmiles(element):
+                    return False
         return True
 
 

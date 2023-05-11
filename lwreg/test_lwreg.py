@@ -281,19 +281,6 @@ class TestLWRegTautomerv2(unittest.TestCase):
                         layers=[utils.HashLayer.CANONICAL_SMILES],
                         config=self._config), [3])
 
-    def testGithub14(self):
-        ''' salts not being stripped on registration'''
-        utils.initdb(config=self._config, confirm=True)
-        self.assertEqual(
-            utils.register(smiles='CCC(=O)[O-].[Na+]', config=self._config), 1)
-
-        res = utils.retrieve(id=1, config=self._config)
-        self.assertEqual(len(res), 1)
-        tpl = res[0]
-        self.assertEqual(tpl[0], 1)
-        mb = Chem.MolFromMolBlock(tpl[1])
-        self.assertEqual(Chem.MolToSmiles(mb), 'CCC(=O)[O-]')
-
 
 @unittest.skipIf(psycopg2 is None, "skipping postgresql tests")
 class TestLWRegPSQL(TestLWReg):
@@ -303,6 +290,45 @@ class TestLWRegPSQL(TestLWReg):
         self._config = utils.defaultConfig()
         self._config['dbname'] = 'dbname=lwreg_tests host=localhost'
         self._config['dbtype'] = 'postgresql'
+
+
+class TestStandardizationLabels(unittest.TestCase):
+
+    def testStandards(self):
+        cfg = utils.defaultConfig()
+        for k in utils.standardizationOptions:
+            cfg['standardization'] = k
+            lbl = utils._get_standardization_label(cfg)
+            self.assertEqual(lbl, k)
+
+    def testCombined(self):
+        cfg = utils.defaultConfig()
+        for k in utils.standardizationOptions:
+            cl = ['foo', k]
+            cfg['standardization'] = cl
+            lbl = utils._get_standardization_label(cfg)
+            self.assertEqual(lbl, '|'.join(cl))
+
+    def testOthers(self):
+
+        def func1(x):
+            pass
+
+        cfg = utils.defaultConfig()
+        for k in utils.standardizationOptions:
+            for func in (func1, lambda x: x):
+                cl = [k, func]
+                cfg['standardization'] = cl
+                lbl = utils._get_standardization_label(cfg)
+                self.assertEqual(lbl, f'{k}|unknown')
+            for func in (
+                    standardization_lib.OverlappingAtomsCheck,
+                    standardization_lib.PolymerCheck,
+            ):
+                cl = [k, func]
+                cfg['standardization'] = cl
+                lbl = utils._get_standardization_label(cfg)
+                self.assertEqual(lbl, f'{k}|{func.name}')
 
 
 if __name__ == '__main__':

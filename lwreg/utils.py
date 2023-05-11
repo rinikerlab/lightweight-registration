@@ -146,6 +146,33 @@ def _parse_mol(mol=None, molfile=None, molblock=None, smiles=None, config={}):
     return MolTuple(mol, datatype, raw)
 
 
+def _get_standardization_list(config):
+    if not config:
+        config = _configure()
+    elif type(config) == str:
+        config = _configure(filename=config)
+    sopts = _lookupWithDefault(config, 'standardization')
+
+    res = []
+    if type(sopts) not in (list, tuple):
+        sopts = (sopts, )
+    return tuple(sopts)
+
+
+def _get_standardization_label(config):
+    sopts = _get_standardization_list(config)
+    res = []
+    for sopt in sopts:
+        if type(sopt) == str:
+            nm = sopt
+        elif hasattr(sopt, 'name'):
+            nm = sopt.name
+        else:
+            nm = 'unknown'
+        res.append(nm)
+    return '|'.join(res)
+
+
 def standardize_mol(mol, config=None):
     """ standardizes the input molecule using the 'standardization' 
     option in config and returns the result 
@@ -160,13 +187,7 @@ def standardize_mol(mol, config=None):
     Keyword arguments:
     config -- configuration dict
     """
-    if not config:
-        config = _configure()
-    elif type(config) == str:
-        config = _configure(filename=config)
-    sopts = _lookupWithDefault(config, 'standardization')
-    if type(sopts) not in (list, tuple):
-        sopts = (sopts, )
+    sopts = _get_standardization_list(config)
     for sopt in sopts:
         if type(sopt) == str:
             sopt = standardizationOptions[sopt]

@@ -247,8 +247,9 @@ def _get_smiles_column(smilesfile, delimiter):
         for row in rows[::-1]:
             potential_smiles = list([type(Chem.MolFromSmiles(smi)) for smi in row])
             try:
+                smi = potential_smiles.index(Chem.rdchem.Mol)
                 RDLogger.EnableLog('rdApp.error')
-                return potential_smiles.index(Chem.rdchem.Mol)
+                return smi
             except ValueError:
                 pass
         RDLogger.EnableLog('rdApp.error')

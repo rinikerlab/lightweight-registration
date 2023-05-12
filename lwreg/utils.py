@@ -265,22 +265,19 @@ def _get_smiles_column(smilesfile, delimiter):
         rows = list(rows)
         for row in rows[::-1]:
             with rdBase.BlockLogs() as bl:
-                potential_smiles = list([type(Chem.MolFromSmiles(smi)) for smi in row])
-            try:
-                smi = potential_smiles.index(Chem.rdchem.Mol)
-                return smi
-            except ValueError:
-                pass
+                for i, smi in enumerate(row):
+                    if Chem.MolFromSmiles(smi, sanitize=False) is not None:
+                        return i
         raise ValueError('No valid SMILES found in file.')
 
 
 def _has_header(smilesfile, delimiter):
     with open(smilesfile, 'r') as input_file:
-        header_line = input_file.readlines()[0][:-1]
+        header_line = input_file.readline()[:-1]
         elements = header_line.split(delimiter)
         with rdBase.BlockLogs() as bl:
             for element in elements:
-                if Chem.MolFromSmiles(element):
+                if Chem.MolFromSmiles(element, sanitize=False):
                     return False
         return True
 

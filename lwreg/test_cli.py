@@ -29,7 +29,7 @@ class TestLWRegCLI(unittest.TestCase):
         jsonf.close()
 
     @classmethod
-    def tearDownClass(cls):
+    def __tearDownClass(cls):
         try:
             os.unlink(cls.configFile)
         except:

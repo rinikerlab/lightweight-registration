@@ -495,7 +495,14 @@ def retrieve(config=None,
 
 
 def _registerMetadata(curs, config):
-    for k, v in config.items():
+    # for k, v in config.items():
+    #     curs.execute(
+    #         _replace_placeholders(
+    #             'insert into registration_metadata values (?,?)'),
+    #         (str(k), str(v)))
+    dc = defaultConfig()
+    dc.update(config)
+    for k, v in dc.items():
         curs.execute(
             _replace_placeholders(
                 'insert into registration_metadata values (?,?)'),

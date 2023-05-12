@@ -5,8 +5,10 @@
 # which is included in the file LICENSE,
 
 from rdkit import Chem
+from rdkit import rdBase
 from rdkit.Chem.MolStandardize import rdMolStandardize
 from rdkit.Chem import RegistrationHash
+import csv
 import json
 import sqlite3
 import enum
@@ -244,6 +246,63 @@ def _register_mol(tpl, escape, cn, curs, config, failOnDuplicate):
     return mrn
 
 
+def _get_delimiter(smilesfile):
+    with open(smilesfile, 'r') as input_file:
+        lines = input_file.readlines()
+        sniffer = csv.Sniffer()
+        dialect = sniffer.sniff(lines[-1])
+        delimiter = dialect.delimiter
+        expected_delimiters = ['\t', ',', ';', ' ', '  ', '   ', '    ', '|']
+        if delimiter in expected_delimiters:
+            return delimiter
+        else:
+            return
+
+
+def _get_smiles_column(smilesfile, delimiter):
+    with open(smilesfile, 'r', newline='') as input_file:
+        rows = csv.reader(input_file, delimiter=delimiter)
+        rows = list(rows)
+        for row in rows[::-1]:
+            with rdBase.BlockLogs() as bl:
+                for i, smi in enumerate(row):
+                    if Chem.MolFromSmiles(smi, sanitize=False) is not None:
+                        return i
+        raise ValueError('No valid SMILES found in file.')
+
+
+def _has_header(smilesfile, delimiter):
+    with open(smilesfile, 'r') as input_file:
+        header_line = input_file.readline()[:-1]
+        elements = header_line.split(delimiter)
+        with rdBase.BlockLogs() as bl:
+            for element in elements:
+                if Chem.MolFromSmiles(element, sanitize=False):
+                    return False
+        return True
+
+
+def _get_mols_from_smilesfile(smilesfile):
+    delimiter = _get_delimiter(smilesfile)
+    if not delimiter:
+        col = 0
+        delimiter = ' '
+    else:
+        col = _get_smiles_column(smilesfile, delimiter)
+    has_header = _has_header(smilesfile=smilesfile, delimiter=delimiter)
+    if not has_header:
+        with open(smilesfile, 'r') as input_file:
+            content = 'DUMMY_HEADER\n' + input_file.read()
+        mols = Chem.SmilesMolSupplierFromText(content,
+                                              delimiter=delimiter,
+                                              smilesColumn=col)
+    else:
+        mols = Chem.SmilesMolSupplier(smilesfile,
+                                      delimiter=delimiter,
+                                      smilesColumn=col)
+    return mols
+
+
 def register(config=None,
              mol=None,
              molfile=None,
@@ -319,9 +378,14 @@ def bulk_register(config=None,
     no_verbose     -- if this is False then the registry numbers will be printed
     """
 
-    if mols is None:
-        raise NotImplementedError(
-            "currently only a list of molecules can be bulk registered")
+    if mols:
+        pass
+    elif sdfile:
+        mols = Chem.ForwardSDMolSupplier(sdfile)
+    elif smilesfile:
+        mols = _get_mols_from_smilesfile(smilesfile)
+    else:
+        raise ValueError('No input molecules provided!')
 
     if not config:
         config = _configure()

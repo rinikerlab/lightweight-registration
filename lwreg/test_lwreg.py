@@ -74,6 +74,44 @@ class TestLWReg(unittest.TestCase):
         self.assertEqual(utils.register(smiles='c1nccc1', config=self._config),
                          RegistrationFailureReasons.PARSE_FAILURE)
 
+    def testGetDelimiter(self):
+        self.assertEqual(utils._get_delimiter('test_data/test_smiles_no_delim.smi'),
+                         None)
+        self.assertEqual(utils._get_delimiter('test_data/test_smiles_no_delim_with_header.smi'),
+                         None)
+        self.assertEqual(utils._get_delimiter('test_data/test_smiles_with_header.smi'),
+                         ';')
+        self.assertEqual(utils._get_delimiter('test_data/test_smiles.smi'),
+                         ' ')
+
+    def testGetSmilesColumn(self):
+        self.assertEqual(utils._get_smiles_column('test_data/test_smiles_with_header.smi',
+                                                  delimiter=';'),
+                         1)
+        self.assertEqual(utils._get_smiles_column('test_data/test_smiles.smi',
+                                                  delimiter=' '),
+                         1)
+
+    def testHasHeader(self):
+        self.assertTrue(utils._has_header('test_data/test_smiles_no_delim_with_header.smi',
+                                          delimiter=' '))
+        self.assertFalse(utils._has_header('test_data/test_smiles_no_delim.smi',
+                                           delimiter=' '))
+        self.assertTrue(utils._has_header('test_data/test_smiles_with_header.smi',
+                                          delimiter=','))
+        self.assertFalse(utils._has_header('test_data/test_smiles.smi',
+                                           delimiter=' '))
+
+    def testGetMolsFromSmilesfile(self):
+        filenames = ['test_data/test_smiles_no_delim.smi',
+                     'test_data/test_smiles_no_delim_with_header.smi',
+                     'test_data/test_smiles_with_header.smi',
+                     'test_data/test_smiles.smi']
+        for filename in filenames:
+            mols = utils._get_mols_from_smilesfile(filename)
+            self.assertEqual(len(mols),
+                             6)
+
     def testBulkRegister(self):
         utils.initdb(config=self._config, confirm=True)
         mols = [
@@ -84,6 +122,21 @@ class TestLWReg(unittest.TestCase):
                          (1, 2, RegistrationFailureReasons.PARSE_FAILURE,
                           RegistrationFailureReasons.PARSE_FAILURE,
                           RegistrationFailureReasons.DUPLICATE, 3))
+        self.assertEqual(utils.bulk_register(sdfile='test_data/test_molecules.sdf',
+                                             config=self._config),
+                         (4, 5, 6, 7, 8, 9))
+        self.assertEqual(utils.bulk_register(smilesfile='test_data/test_smiles_no_delim_with_header.smi',
+                                             config=self._config),
+                         (10, 11, 12, 13, 14, 15))
+        self.assertEqual(utils.bulk_register(smilesfile='test_data/test_smiles_with_header.smi',
+                                             config=self._config),
+                         (16, 17, 18, 19, 20, 21))
+        self.assertEqual(utils.bulk_register(smilesfile='test_data/test_smiles_no_delim.smi',
+                                             config=self._config),
+                         (22, 23, 24, 25, 26, 27))
+        self.assertEqual(utils.bulk_register(smilesfile='test_data/test_smiles.smi',
+                                             config=self._config),
+                         (28, 29, 30, 31, 32, 33))
 
     def testBulkRegisterAllowDupes(self):
         utils.initdb(config=self._config, confirm=True)
@@ -97,6 +150,7 @@ class TestLWReg(unittest.TestCase):
                                 config=self._config),
             (1, 2, RegistrationFailureReasons.PARSE_FAILURE,
              RegistrationFailureReasons.PARSE_FAILURE, 1, 3))
+
 
     def testQuery(self):
         self.baseRegister()

@@ -148,6 +148,33 @@ def _parse_mol(mol=None, molfile=None, molblock=None, smiles=None, config={}):
     return MolTuple(mol, datatype, raw)
 
 
+def _get_standardization_list(config):
+    if not config:
+        config = _configure()
+    elif type(config) == str:
+        config = _configure(filename=config)
+    sopts = _lookupWithDefault(config, 'standardization')
+
+    res = []
+    if type(sopts) not in (list, tuple):
+        sopts = (sopts, )
+    return tuple(sopts)
+
+
+def _get_standardization_label(config):
+    sopts = _get_standardization_list(config)
+    res = []
+    for sopt in sopts:
+        if type(sopt) == str:
+            nm = sopt
+        elif hasattr(sopt, 'name'):
+            nm = sopt.name
+        else:
+            nm = 'unknown'
+        res.append(nm)
+    return '|'.join(res)
+
+
 def standardize_mol(mol, config=None):
     """ standardizes the input molecule using the 'standardization' 
     option in config and returns the result 
@@ -162,13 +189,7 @@ def standardize_mol(mol, config=None):
     Keyword arguments:
     config -- configuration dict
     """
-    if not config:
-        config = _configure()
-    elif type(config) == str:
-        config = _configure(filename=config)
-    sopts = _lookupWithDefault(config, 'standardization')
-    if type(sopts) not in (list, tuple):
-        sopts = (sopts, )
+    sopts = _get_standardization_list(config)
     for sopt in sopts:
         if type(sopt) == str:
             sopt = standardizationOptions[sopt]
@@ -201,6 +222,12 @@ def hash_mol(mol, escape=None, config=None):
 def _register_mol(tpl, escape, cn, curs, config, failOnDuplicate):
     """ does the work of registering one molecule """
     mrn = _getNextRegno(cn)
+    standardization_label = _get_standardization_label(config)
+    curs.execute(
+        "select value from registration_metadata where key='standardization'")
+    def_std_label = curs.fetchone()[0]
+    if standardization_label == def_std_label:
+        standardization_label = None
     try:
         sMol = standardize_mol(tpl.mol, config=config)
         if sMol is None:
@@ -210,8 +237,8 @@ def _register_mol(tpl, escape, cn, curs, config, failOnDuplicate):
             _replace_placeholders('insert into orig_data values (?, ?, ?)'),
             (mrn, tpl.rawdata, tpl.datatype))
         curs.execute(
-            _replace_placeholders('insert into molblocks values (?, ?)'),
-            (mrn, molb))
+            _replace_placeholders('insert into molblocks values (?, ?, ?)'),
+            (mrn, molb, standardization_label))
 
         mhash, layers = hash_mol(sMol, escape=escape, config=config)
 
@@ -532,7 +559,14 @@ def retrieve(config=None,
 
 
 def _registerMetadata(curs, config):
-    for k, v in config.items():
+    # for k, v in config.items():
+    #     curs.execute(
+    #         _replace_placeholders(
+    #             'insert into registration_metadata values (?,?)'),
+    #         (str(k), str(v)))
+    dc = defaultConfig()
+    dc.update(config)
+    for k, v in dc.items():
         curs.execute(
             _replace_placeholders(
                 'insert into registration_metadata values (?,?)'),
@@ -567,7 +601,8 @@ def initdb(config=None, confirm=False):
     )
     curs.execute('drop table if exists molblocks')
     curs.execute(
-        'create table molblocks (molregno int primary key, molblock text)')
+        'create table molblocks (molregno int primary key, molblock text, standardization text)'
+    )
     curs.execute('drop table if exists hashes')
     curs.execute(
         '''create table hashes (molregno int primary key, fullhash text unique, 

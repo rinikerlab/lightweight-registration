@@ -6,4 +6,4 @@
 # The contents are covered by the terms of the MIT license
 # which is included in the file LICENSE,
 
-from .utils import initdb, register, query, retrieve, bulk_register
+from .utils import initdb, register, query, retrieve, bulk_register, RegistrationFailureReasons

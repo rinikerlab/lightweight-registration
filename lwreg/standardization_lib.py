@@ -5,6 +5,7 @@
 # which is included in the file LICENSE,
 
 from rdkit import Chem
+from rdkit.Chem.MolStandardize import rdMolStandardize
 
 
 class Standardization:
@@ -48,3 +49,63 @@ class PolymerCheck(Standardization):
                 return None
 
         return mol
+
+
+class RDKitSanitize(Standardization):
+    name = "rdkit_sanitize"
+    explanation = "runs the standard RDKit sanitization on the molecule"
+
+    def __call__(self, mol):
+        try:
+            Chem.SanitizeMol(mol)
+        except:
+            return None
+        return mol
+
+
+class FragmentParent(Standardization):
+    name = "fragment_parent"
+    explanation = "generates the fragment parent of the molecule"
+
+    def __call__(self, mol):
+        try:
+            res = rdMolStandardize.FragmentParent(mol)
+        except:
+            return None
+        return res
+
+
+class ChargeParent(Standardization):
+    name = "charge_parent"
+    explanation = "generates the charge parent of the molecule"
+
+    def __call__(self, mol):
+        try:
+            res = rdMolStandardize.ChargeParent(mol)
+        except:
+            return None
+        return res
+
+
+class TautomerParent(Standardization):
+    name = "tautomer_parent"
+    explanation = "generates the tautomer parent of the molecule"
+
+    def __call__(self, mol):
+        try:
+            res = rdMolStandardize.TautomerParent(mol)
+        except:
+            return None
+        return res
+
+
+class SuperParent(Standardization):
+    name = "super_parent"
+    explanation = "generates the super parent of the molecule"
+
+    def __call__(self, mol):
+        try:
+            res = rdMolStandardize.SuperParent(mol)
+        except:
+            return None
+        return res

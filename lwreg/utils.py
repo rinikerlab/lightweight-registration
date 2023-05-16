@@ -6,12 +6,12 @@
 
 from rdkit import Chem
 from rdkit import rdBase
-from rdkit.Chem.MolStandardize import rdMolStandardize
 from rdkit.Chem import RegistrationHash
 import csv
 import json
 import sqlite3
 import enum
+from . import standardization_lib
 
 _violations = (sqlite3.IntegrityError, )
 try:
@@ -24,10 +24,11 @@ from collections import namedtuple
 
 standardizationOptions = {
     'none': lambda x: x,
-    'fragment': rdMolStandardize.FragmentParent,
-    'charge': rdMolStandardize.ChargeParent,
-    'tautomer': rdMolStandardize.TautomerParent,
-    'super': rdMolStandardize.SuperParent,
+    'sanitize': standardization_lib.RDKitSanitize(),
+    'fragment': standardization_lib.FragmentParent(),
+    'charge': standardization_lib.ChargeParent(),
+    'tautomer': standardization_lib.TautomerParent(),
+    'super': standardization_lib.SuperParent(),
 }
 
 _defaultConfig = json.loads('''{
@@ -115,6 +116,7 @@ MolTuple = namedtuple('MolTuple', ('mol', 'datatype', 'rawdata'))
 
 def _process_molblock(molblock, config):
     mol = Chem.MolFromMolBlock(molblock,
+                               sanitize=False,
                                removeHs=_lookupWithDefault(config, 'removeHs'))
     if mol.GetConformer().Is3D() and _lookupWithDefault(
             config, 'use3DIfPresent'):
@@ -128,6 +130,7 @@ def _parse_mol(mol=None, molfile=None, molblock=None, smiles=None, config={}):
         raw = mol.ToBinary(propertyFlags=Chem.PropertyPickleOptions.AllProps)
     elif smiles is not None:
         spp = Chem.SmilesParserParams()
+        spp.sanitize = False
         spp.removeHs = _lookupWithDefault(config, 'removeHs')
         mol = Chem.MolFromSmiles(smiles, spp)
         datatype = 'smiles'
@@ -369,6 +372,8 @@ def register(config=None,
         return RegistrationFailureReasons.PARSE_FAILURE
 
     mrn = _register_mol(tpl, escape, cn, curs, config, fail_on_duplicate)
+    if mrn is None:
+        return RegistrationFailureReasons.FILTERED
     if not no_verbose:
         print(mrn)
     return mrn
@@ -432,6 +437,8 @@ def bulk_register(config=None,
             else:
                 escape = None
             mrn = _register_mol(tpl, escape, cn, curs, config, failOnDuplicate)
+            if mrn is None:
+                mrn = RegistrationFailureReasons.FILTERED
             mrns.append(mrn)
         except _violations:
             mrns.append(RegistrationFailureReasons.DUPLICATE)

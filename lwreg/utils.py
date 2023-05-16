@@ -4,6 +4,7 @@
 # The contents are covered by the terms of the MIT license
 # which is included in the file LICENSE,
 
+import rdkit
 from rdkit import Chem
 from rdkit import rdBase
 from rdkit.Chem import RegistrationHash
@@ -222,15 +223,32 @@ def hash_mol(mol, escape=None, config=None):
     return mhash, layers
 
 
-def _register_mol(tpl, escape, cn, curs, config, failOnDuplicate):
+def _register_mol(tpl,
+                  escape,
+                  cn,
+                  curs,
+                  config,
+                  failOnDuplicate,
+                  def_rdkit_version_label=None,
+                  def_std_label=None):
     """ does the work of registering one molecule """
     mrn = _getNextRegno(cn)
     standardization_label = _get_standardization_label(config)
-    curs.execute(
-        "select value from registration_metadata where key='standardization'")
-    def_std_label = curs.fetchone()[0]
+    if def_std_label is None:
+        curs.execute(
+            "select value from registration_metadata where key='standardization'"
+        )
+        def_std_label = curs.fetchone()[0]
     if standardization_label == def_std_label:
         standardization_label = None
+
+    if def_rdkit_version_label is None:
+        curs.execute(
+            "select value from registration_metadata where key='rdkitVersion'")
+        def_rdkit_version_label = curs.fetchone()[0]
+    rdkit_version_label = rdkit.__version__
+    if rdkit_version_label == def_rdkit_version_label:
+        rdkit_version_label = None
     try:
         sMol = standardize_mol(tpl.mol, config=config)
         if sMol is None:
@@ -248,17 +266,14 @@ def _register_mol(tpl, escape, cn, curs, config, failOnDuplicate):
         # will fail if the fullhash is already there
         curs.execute(
             _replace_placeholders(
-                'insert into hashes values (?,?,?,?,?,?,?,?,?)'), (
-                    mrn,
-                    mhash,
-                    layers[HashLayer.FORMULA],
-                    layers[HashLayer.CANONICAL_SMILES],
-                    layers[HashLayer.NO_STEREO_SMILES],
-                    layers[HashLayer.TAUTOMER_HASH],
-                    layers[HashLayer.NO_STEREO_TAUTOMER_HASH],
-                    layers[HashLayer.ESCAPE],
-                    layers[HashLayer.SGROUP_DATA],
-                ))
+                'insert into hashes values (?,?,?,?,?,?,?,?,?,?)'),
+            (mrn, mhash, layers[HashLayer.FORMULA],
+             layers[HashLayer.CANONICAL_SMILES],
+             layers[HashLayer.NO_STEREO_SMILES],
+             layers[HashLayer.TAUTOMER_HASH],
+             layers[HashLayer.NO_STEREO_TAUTOMER_HASH],
+             layers[HashLayer.ESCAPE], layers[HashLayer.SGROUP_DATA],
+             rdkit_version_label))
 
         cn.commit()
     except _violations:
@@ -426,6 +441,14 @@ def bulk_register(config=None,
     mrns = []
     cn = _connect(config)
     curs = cn.cursor()
+
+    curs.execute(
+        "select value from registration_metadata where key='standardization'")
+    def_std_label = curs.fetchone()[0]
+    curs.execute(
+        "select value from registration_metadata where key='rdkitVersion'")
+    def_rdkit_version_label = curs.fetchone()[0]
+
     for mol in mols:
         if mol is None:
             mrns.append(RegistrationFailureReasons.PARSE_FAILURE)
@@ -436,7 +459,16 @@ def bulk_register(config=None,
                 escape = mol.GetProp(escapeProperty)
             else:
                 escape = None
-            mrn = _register_mol(tpl, escape, cn, curs, config, failOnDuplicate)
+            mrn = _register_mol(
+                tpl,
+                escape,
+                cn,
+                curs,
+                config,
+                failOnDuplicate,
+                def_rdkit_version_label=def_rdkit_version_label,
+                def_std_label=def_std_label)
+
             if mrn is None:
                 mrn = RegistrationFailureReasons.FILTERED
             mrns.append(mrn)
@@ -566,11 +598,6 @@ def retrieve(config=None,
 
 
 def _registerMetadata(curs, config):
-    # for k, v in config.items():
-    #     curs.execute(
-    #         _replace_placeholders(
-    #             'insert into registration_metadata values (?,?)'),
-    #         (str(k), str(v)))
     dc = defaultConfig()
     dc.update(config)
     for k, v in dc.items():
@@ -578,6 +605,11 @@ def _registerMetadata(curs, config):
             _replace_placeholders(
                 'insert into registration_metadata values (?,?)'),
             (str(k), str(v)))
+
+    curs.execute(
+        _replace_placeholders(
+            'insert into registration_metadata values (?,?)'),
+        ('rdkitVersion', rdkit.__version__))
 
 
 def initdb(config=None, confirm=False):
@@ -614,7 +646,7 @@ def initdb(config=None, confirm=False):
     curs.execute(
         '''create table hashes (molregno int primary key, fullhash text unique, 
           formula text, canonical_smiles text, no_stereo_smiles text, 
-          tautomer_hash text, no_stereo_tautomer_hash text, "escape" text, sgroup_data text)'''
+          tautomer_hash text, no_stereo_tautomer_hash text, "escape" text, sgroup_data text, rdkitVersion text)'''
     )
     cn.commit()
     return True

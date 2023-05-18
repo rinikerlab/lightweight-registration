@@ -223,7 +223,6 @@ def _register_mol(tpl,
                   def_rdkit_version_label=None,
                   def_std_label=None):
     """ does the work of registering one molecule """
-    #mrn = _getNextRegno(cn)
     standardization_label = _get_standardization_label(config)
     if def_std_label is None:
         curs.execute(

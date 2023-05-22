@@ -93,7 +93,10 @@ def _connect(config):
             dbtype = 'postgresql'
             if psycopg2 is None:
                 raise ValueError("psycopg2 package not installed")
-            cn = psycopg2.connect(dbnm)
+            cn = psycopg2.connect(database=dbnm,
+                                  host=config.get('host', None),
+                                  user=config.get('user', None),
+                                  password=config.get('password', None))
     _dbtype = dbtype
     if dbtype == 'postgresql':
         _replace_placeholders = _replace_placeholders_pcts

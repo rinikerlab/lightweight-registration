@@ -79,6 +79,7 @@ _replace_placeholders = _replace_placeholders_noop
 
 def _connect(config):
     global _replace_placeholders
+    global _dbtype
     cn = config.get('connection', None)
     dbtype = _lookupWithDefault(config, 'dbtype').lower()
     if not cn:
@@ -89,27 +90,17 @@ def _connect(config):
                 uri = True
             cn = sqlite3.connect(dbnm, uri=uri)
         elif dbtype in ('postgres', 'postgresql'):
+            dbtype = 'postgresql'
             if psycopg2 is None:
                 raise ValueError("psycopg2 package not installed")
             cn = psycopg2.connect(dbnm)
-
-    if dbtype in ('postgres', 'postgresql'):
+    _dbtype = dbtype
+    if dbtype == 'postgresql':
         _replace_placeholders = _replace_placeholders_pcts
     else:
         _replace_placeholders = _replace_placeholders_noop
 
     return cn
-
-
-def _getNextRegno(cn):
-    curs = cn.cursor()
-    curs.execute('select max(molregno) from orig_data')
-    row = curs.fetchone()
-    if row[0] is None:
-        res = 1
-    else:
-        res = row[0] + 1
-    return res
 
 
 MolTuple = namedtuple('MolTuple', ('mol', 'datatype', 'rawdata'))
@@ -232,7 +223,6 @@ def _register_mol(tpl,
                   def_rdkit_version_label=None,
                   def_std_label=None):
     """ does the work of registering one molecule """
-    mrn = _getNextRegno(cn)
     standardization_label = _get_standardization_label(config)
     if def_std_label is None:
         curs.execute(
@@ -254,26 +244,39 @@ def _register_mol(tpl,
         if sMol is None:
             return None
         molb = Chem.MolToV3KMolBlock(sMol)
+
+        mhash, layers = hash_mol(sMol, escape=escape, config=config)
+
+        regtuple = (mhash, layers[HashLayer.FORMULA],
+                    layers[HashLayer.CANONICAL_SMILES],
+                    layers[HashLayer.NO_STEREO_SMILES],
+                    layers[HashLayer.TAUTOMER_HASH],
+                    layers[HashLayer.NO_STEREO_TAUTOMER_HASH],
+                    layers[HashLayer.ESCAPE], layers[HashLayer.SGROUP_DATA],
+                    rdkit_version_label)
+        # will fail if the fullhash is already there
+        if _dbtype != 'postgresql':
+            curs.execute(
+                _replace_placeholders(
+                    'insert into hashes values (NULL,?,?,?,?,?,?,?,?,?)'),
+                regtuple)
+            curs.execute('select last_insert_rowid()')
+            mrn = curs.fetchone()[0]
+        else:
+            # Note that on postgresql the serial ids are increasing, but not sequential
+            #  i.e. failed inserts will increment the counter
+            curs.execute(
+                _replace_placeholders(
+                    'insert into hashes values (default,?,?,?,?,?,?,?,?,?) returning molregno'
+                ), regtuple)
+            mrn = curs.fetchone()[0]
+
         curs.execute(
             _replace_placeholders('insert into orig_data values (?, ?, ?)'),
             (mrn, tpl.rawdata, tpl.datatype))
         curs.execute(
             _replace_placeholders('insert into molblocks values (?, ?, ?)'),
             (mrn, molb, standardization_label))
-
-        mhash, layers = hash_mol(sMol, escape=escape, config=config)
-
-        # will fail if the fullhash is already there
-        curs.execute(
-            _replace_placeholders(
-                'insert into hashes values (?,?,?,?,?,?,?,?,?,?)'),
-            (mrn, mhash, layers[HashLayer.FORMULA],
-             layers[HashLayer.CANONICAL_SMILES],
-             layers[HashLayer.NO_STEREO_SMILES],
-             layers[HashLayer.TAUTOMER_HASH],
-             layers[HashLayer.NO_STEREO_TAUTOMER_HASH],
-             layers[HashLayer.ESCAPE], layers[HashLayer.SGROUP_DATA],
-             rdkit_version_label))
 
         cn.commit()
     except _violations:
@@ -634,19 +637,26 @@ def initdb(config=None, confirm=False):
     curs.execute('create table registration_metadata (key text, value text)')
     _registerMetadata(curs, config)
 
+    curs.execute('drop table if exists hashes')
+    if _dbtype != 'postgresql':
+        curs.execute(
+            '''create table hashes (molregno integer primary key, fullhash text unique, 
+            formula text, canonical_smiles text, no_stereo_smiles text, 
+            tautomer_hash text, no_stereo_tautomer_hash text, "escape" text, sgroup_data text, rdkitVersion text)'''
+        )
+    else:
+        curs.execute(
+            '''create table hashes (molregno serial primary key, fullhash text unique, 
+            formula text, canonical_smiles text, no_stereo_smiles text, 
+            tautomer_hash text, no_stereo_tautomer_hash text, "escape" text, sgroup_data text, rdkitVersion text)'''
+        )
     curs.execute('drop table if exists orig_data')
     curs.execute(
-        'create table orig_data (molregno int primary key, data text, datatype text)'
+        'create table orig_data (molregno integer primary key, data text, datatype text)'
     )
     curs.execute('drop table if exists molblocks')
     curs.execute(
-        'create table molblocks (molregno int primary key, molblock text, standardization text)'
-    )
-    curs.execute('drop table if exists hashes')
-    curs.execute(
-        '''create table hashes (molregno int primary key, fullhash text unique, 
-          formula text, canonical_smiles text, no_stereo_smiles text, 
-          tautomer_hash text, no_stereo_tautomer_hash text, "escape" text, sgroup_data text, rdkitVersion text)'''
+        'create table molblocks (molregno integer primary key, molblock text, standardization text)'
     )
     cn.commit()
     return True

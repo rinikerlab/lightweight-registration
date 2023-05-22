@@ -62,11 +62,11 @@ class TestLWReg(unittest.TestCase):
         self.assertRaises(
             self.integrityError,
             lambda: utils.register(smiles='CCC.O', config=self._config))
-        self.assertEqual(utils.register(smiles='CCCOC', config=self._config),
-                         3)
-        self.assertEqual(
+        self.assertGreater(utils.register(smiles='CCCOC', config=self._config),
+                           2)
+        self.assertGreater(
             utils.register(mol=Chem.MolFromSmiles('C1CCC1'),
-                           config=self._config), 4)
+                           config=self._config), 3)
         self.assertEqual(utils.register(mol=None, config=self._config),
                          RegistrationFailureReasons.PARSE_FAILURE)
         self.assertEqual(utils.register(smiles='CCCC1', config=self._config),
@@ -123,28 +123,52 @@ class TestLWReg(unittest.TestCase):
             Chem.MolFromSmiles(x)
             for x in ('CCC', 'CCCO', 'C1', 'c1cc1', 'CCC', 'C1CC1')
         ]
-        self.assertEqual(utils.bulk_register(mols=mols, config=self._config),
-                         (1, 2, RegistrationFailureReasons.PARSE_FAILURE,
-                          RegistrationFailureReasons.PARSE_FAILURE,
-                          RegistrationFailureReasons.DUPLICATE, 3))
-        self.assertEqual(
-            utils.bulk_register(sdfile='test_data/test_molecules.sdf',
-                                config=self._config), (4, 5, 6, 7, 8, 9))
-        self.assertEqual(
-            utils.bulk_register(
-                smilesfile='test_data/test_smiles_no_delim_with_header.smi',
-                config=self._config), (10, 11, 12, 13, 14, 15))
-        self.assertEqual(
-            utils.bulk_register(
-                smilesfile='test_data/test_smiles_with_header.smi',
-                config=self._config), (16, 17, 18, 19, 20, 21))
-        self.assertEqual(
-            utils.bulk_register(
-                smilesfile='test_data/test_smiles_no_delim.smi',
-                config=self._config), (22, 23, 24, 25, 26, 27))
-        self.assertEqual(
-            utils.bulk_register(smilesfile='test_data/test_smiles.smi',
-                                config=self._config), (28, 29, 30, 31, 32, 33))
+        res = utils.bulk_register(mols=mols, config=self._config)
+        self.assertEqual(len(res), 6)
+        self.assertEqual(res[2], RegistrationFailureReasons.PARSE_FAILURE)
+        self.assertEqual(res[3], RegistrationFailureReasons.PARSE_FAILURE)
+        self.assertEqual(res[4], RegistrationFailureReasons.DUPLICATE)
+        self.assertEqual(res.count(RegistrationFailureReasons.PARSE_FAILURE),
+                         2)
+        self.assertEqual(res.count(RegistrationFailureReasons.DUPLICATE), 1)
+
+        res = utils.bulk_register(sdfile='test_data/test_molecules.sdf',
+                                  config=self._config)
+        self.assertEqual(len(res), 6)
+        self.assertEqual(res.count(RegistrationFailureReasons.PARSE_FAILURE),
+                         0)
+        self.assertEqual(res.count(RegistrationFailureReasons.DUPLICATE), 0)
+
+        res = utils.bulk_register(
+            smilesfile='test_data/test_smiles_no_delim_with_header.smi',
+            config=self._config)
+        self.assertEqual(len(res), 6)
+        self.assertEqual(res.count(RegistrationFailureReasons.PARSE_FAILURE),
+                         0)
+        self.assertEqual(res.count(RegistrationFailureReasons.DUPLICATE), 0)
+
+        res = utils.bulk_register(
+            smilesfile='test_data/test_smiles_with_header.smi',
+            config=self._config)
+        self.assertEqual(len(res), 6)
+        self.assertEqual(res.count(RegistrationFailureReasons.PARSE_FAILURE),
+                         0)
+        self.assertEqual(res.count(RegistrationFailureReasons.DUPLICATE), 0)
+
+        res = utils.bulk_register(
+            smilesfile='test_data/test_smiles_no_delim.smi',
+            config=self._config)
+        self.assertEqual(len(res), 6)
+        self.assertEqual(res.count(RegistrationFailureReasons.PARSE_FAILURE),
+                         0)
+        self.assertEqual(res.count(RegistrationFailureReasons.DUPLICATE), 0)
+
+        res = utils.bulk_register(smilesfile='test_data/test_smiles.smi',
+                                  config=self._config)
+        self.assertEqual(len(res), 6)
+        self.assertEqual(res.count(RegistrationFailureReasons.PARSE_FAILURE),
+                         0)
+        self.assertEqual(res.count(RegistrationFailureReasons.DUPLICATE), 0)
 
     def testBulkRegisterAllowDupes(self):
         utils.initdb(config=self._config, confirm=True)
@@ -152,12 +176,16 @@ class TestLWReg(unittest.TestCase):
             Chem.MolFromSmiles(x)
             for x in ('CCC', 'CCCO', 'C1', 'c1cc1', 'CCC', 'C1CC1')
         ]
-        self.assertEqual(
-            utils.bulk_register(mols=mols,
-                                failOnDuplicate=False,
-                                config=self._config),
-            (1, 2, RegistrationFailureReasons.PARSE_FAILURE,
-             RegistrationFailureReasons.PARSE_FAILURE, 1, 3))
+
+        res = utils.bulk_register(mols=mols,
+                                  failOnDuplicate=False,
+                                  config=self._config)
+        self.assertEqual(len(res), 6)
+        self.assertEqual(res[2], RegistrationFailureReasons.PARSE_FAILURE)
+        self.assertEqual(res[3], RegistrationFailureReasons.PARSE_FAILURE)
+        self.assertNotIn(RegistrationFailureReasons.DUPLICATE, res)
+        self.assertEqual(res.count(RegistrationFailureReasons.PARSE_FAILURE),
+                         2)
 
     def testQuery(self):
         self.baseRegister()
@@ -364,6 +392,7 @@ class TestLWRegPSQL(TestLWReg):
 
 
 class TestStandardizationLabels(unittest.TestCase):
+
     def testStandards(self):
         cfg = utils.defaultConfig()
         for k in utils.standardizationOptions:
@@ -380,6 +409,7 @@ class TestStandardizationLabels(unittest.TestCase):
             self.assertEqual(lbl, '|'.join(cl))
 
     def testOthers(self):
+
         def func1(x):
             pass
 

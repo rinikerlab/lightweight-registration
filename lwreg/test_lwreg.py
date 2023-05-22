@@ -389,7 +389,6 @@ class TestLWRegPSQL(TestLWReg):
     def setUp(self):
         self._config = utils.defaultConfig()
         self._config['dbname'] = 'lwreg_tests'
-        self._config['host'] = 'localhost'
         self._config['dbtype'] = 'postgresql'
 
 

@@ -38,7 +38,9 @@ _defaultConfig = json.loads('''{
     "standardization": "fragment",
     "removeHs": 1,
     "use3DIfPresent": 1,
-    "useTautomerHashv2": 0
+    "useTautomerHashv2": 0,
+    "hashConformer": 0,
+    "numConformerDigits": 3                            
 }''')
 
 from rdkit.Chem.RegistrationHash import HashLayer
@@ -197,6 +199,20 @@ def standardize_mol(mol, config=None):
     return mol
 
 
+def _get_conformer_hash(mol, numDigits):
+    """ returns a hash for a molecule's conformer based on the atomic positions
+    
+    """
+    if not mol.GetNumConformers():
+        return ''
+    ps = mol.GetConformer().GetPositions()
+    hps = []
+    for p in ps:
+        coords = [str(round(x, numDigits)) for x in p]
+        hps.append(','.join(coords))
+    return ';'.join(sorted(hps))
+
+
 def hash_mol(mol, escape=None, config=None):
     """ returns the hash layers and corresponding hash for the molecule 
     
@@ -213,7 +229,17 @@ def hash_mol(mol, escape=None, config=None):
         escape=escape,
         enable_tautomer_hash_v2=_lookupWithDefault(config,
                                                    'useTautomerHashv2'))
+
+    if _lookupWithDefault(config, 'hashConformer'):
+        escape = layers.get(RegistrationHash.HashLayer.ESCAPE, '')
+        if escape:
+            escape += '|\n'
+        layers[
+            RegistrationHash.HashLayer.ESCAPE] = escape + _get_conformer_hash(
+                mol, _lookupWithDefault(config, "numConformerDigits"))
+
     mhash = RegistrationHash.GetMolHash(layers)
+
     return mhash, layers
 
 
@@ -250,19 +276,21 @@ def _register_mol(tpl,
 
         mhash, layers = hash_mol(sMol, escape=escape, config=config)
 
-        regtuple = (mhash, layers[HashLayer.FORMULA],
-                    layers[HashLayer.CANONICAL_SMILES],
-                    layers[HashLayer.NO_STEREO_SMILES],
-                    layers[HashLayer.TAUTOMER_HASH],
-                    layers[HashLayer.NO_STEREO_TAUTOMER_HASH],
-                    layers[HashLayer.ESCAPE], layers[HashLayer.SGROUP_DATA],
-                    rdkit_version_label)
+        regtuple = [mhash] + [
+            layers[HashLayer.FORMULA], layers[HashLayer.CANONICAL_SMILES],
+            layers[HashLayer.NO_STEREO_SMILES],
+            layers[HashLayer.TAUTOMER_HASH],
+            layers[HashLayer.NO_STEREO_TAUTOMER_HASH],
+            layers[HashLayer.ESCAPE], layers[HashLayer.SGROUP_DATA]
+        ]
+        regtuple.append(rdkit_version_label)
+        regtuple = tuple(regtuple)
+        qs = ','.join('?' * len(regtuple))
         # will fail if the fullhash is already there
         if _dbtype != 'postgresql':
             curs.execute(
                 _replace_placeholders(
-                    'insert into hashes values (NULL,?,?,?,?,?,?,?,?,?)'),
-                regtuple)
+                    f'insert into hashes values (NULL,{qs})'), regtuple)
             curs.execute('select last_insert_rowid()')
             mrn = curs.fetchone()[0]
         else:
@@ -270,7 +298,7 @@ def _register_mol(tpl,
             #  i.e. failed inserts will increment the counter
             curs.execute(
                 _replace_placeholders(
-                    'insert into hashes values (default,?,?,?,?,?,?,?,?,?) returning molregno'
+                    f'insert into hashes values (default,{qs}) returning molregno'
                 ), regtuple)
             mrn = curs.fetchone()[0]
 

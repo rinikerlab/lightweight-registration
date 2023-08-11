@@ -6,6 +6,8 @@
 import unittest
 import sqlite3
 from rdkit import Chem
+from rdkit.Chem import rdDistGeom
+import random
 try:
     from . import utils
     from .utils import RegistrationFailureReasons
@@ -393,7 +395,6 @@ class TestLWRegPSQL(TestLWReg):
 
 
 class TestStandardizationLabels(unittest.TestCase):
-
     def testStandards(self):
         cfg = utils.defaultConfig()
         for k in utils.standardizationOptions:
@@ -410,7 +411,6 @@ class TestStandardizationLabels(unittest.TestCase):
             self.assertEqual(lbl, '|'.join(cl))
 
     def testOthers(self):
-
         def func1(x):
             pass
 
@@ -448,6 +448,30 @@ class TestStandardizationLabels(unittest.TestCase):
         curs.execute(
             "select count(*) from molblocks where standardization is null")
         self.assertEqual(curs.fetchone()[0], 2)
+
+
+class TestConformerHashes(unittest.TestCase):
+    def setUp(self):
+        self._config = utils.defaultConfig()
+        self._config['hashConformer'] = True
+        self._mol1 = Chem.AddHs(Chem.MolFromSmiles('OC(=O)CCCC'))
+        rdDistGeom.EmbedMolecule(self._mol1, randomSeed=0xf00d)
+        self._mol2 = Chem.Mol(self._mol1)
+        rdDistGeom.EmbedMolecule(self._mol2, randomSeed=0xf00d + 1)
+
+    def testConformerDupes(self):
+        utils.initdb(config=self._config, confirm=True)
+        self.assertEqual(utils.register(mol=self._mol1, config=self._config),
+                         1)
+        self.assertEqual(utils.register(mol=self._mol2, config=self._config),
+                         2)
+        aorder = list(range(self._mol1.GetNumAtoms()))
+        random.shuffle(aorder)
+        nmol = Chem.RenumberAtoms(self._mol1, aorder)
+        self.assertEqual(
+            utils.register(mol=nmol,
+                           config=self._config,
+                           fail_on_duplicate=False), 1)
 
 
 if __name__ == '__main__':

@@ -262,6 +262,10 @@ def _register_mol(tpl,
     if standardization_label == def_std_label:
         standardization_label = None
 
+
+    registerConformers = _lookupWithDefault(config,
+                          "registerConformers")
+
     if def_rdkit_version_label is None:
         curs.execute(
             "select value from registration_metadata where key='rdkitVersion'")
@@ -274,7 +278,7 @@ def _register_mol(tpl,
     try:
         sMol = standardize_mol(tpl.mol, config=config)
         if sMol is None:
-            return None,None
+            return None, None
         molb = Chem.MolToV3KMolBlock(sMol)
 
         mhash, layers = hash_mol(sMol, escape=escape, config=config)
@@ -315,7 +319,7 @@ def _register_mol(tpl,
         cn.commit()
     except _violations:
         cn.rollback()
-        if failOnDuplicate:
+        if failOnDuplicate and not (registerConformers and sMol.GetNumConformers()):
             raise
         else:
             curs.execute(
@@ -326,15 +330,17 @@ def _register_mol(tpl,
         cn.rollback()
         raise
 
-    if _lookupWithDefault(config,"registerConformers") and sMol.GetNumConformers():
+    if registerConformers and sMol.GetNumConformers():
         try:
-            chash = _get_conformer_hash(mol,_lookupWithDefault(config,"numConformerDigits"))
-            regtuple = (mrn,chash,molb)
-            qs = ('?','?','?')
+            chash = _get_conformer_hash(
+                sMol, _lookupWithDefault(config, "numConformerDigits"))
+            regtuple = (mrn, chash, molb)
+            qs = '?,?,?'
             if _dbtype != 'postgresql':
                 curs.execute(
                     _replace_placeholders(
-                        f'insert into conformers values (NULL,{qs})'), regtuple)
+                        f'insert into conformers values (NULL,{qs})'),
+                    regtuple)
                 curs.execute('select last_insert_rowid()')
                 conf_id = curs.fetchone()[0]
             else:
@@ -346,10 +352,21 @@ def _register_mol(tpl,
                     ), regtuple)
                 conf_id = curs.fetchone()[0]
             cn.commit()
-        except: 
+        except _violations:
             cn.rollback()
- 
-    return mrn,conf_id
+            if failOnDuplicate:
+                raise
+            else:
+                curs.execute(
+                    _replace_placeholders(
+                        'select conf_id from conformers where conformer_hash=?'
+                    ), (chash, ))
+                conf_id = curs.fetchone()[0]
+        except:
+            cn.rollback()
+            raise
+
+    return mrn, conf_id
 
 
 def _get_delimiter(smilesfile):
@@ -447,12 +464,17 @@ def register(config=None,
     if tpl.mol is None:
         return RegistrationFailureReasons.PARSE_FAILURE
 
-    mrn,conf_id = _register_mol(tpl, escape, cn, curs, config, fail_on_duplicate)
+    mrn, conf_id = _register_mol(tpl, escape, cn, curs, config,
+                                 fail_on_duplicate)
     if mrn is None:
         return RegistrationFailureReasons.FILTERED
+    if not _lookupWithDefault(config, "registerConformers"):
+        res = mrn
+    else:
+        res = mrn, conf_id
     if not no_verbose:
-        print(mrn)
-    return mrn
+        print(res)
+    return res
 
 
 def bulk_register(config=None,
@@ -499,7 +521,7 @@ def bulk_register(config=None,
         config = _configure()
     elif type(config) == str:
         config = _configure(filename=config)
-    mrns = []
+    res = []
     cn = _connect(config)
     curs = cn.cursor()
 
@@ -512,7 +534,7 @@ def bulk_register(config=None,
 
     for mol in mols:
         if mol is None:
-            mrns.append(RegistrationFailureReasons.PARSE_FAILURE)
+            res.append(RegistrationFailureReasons.PARSE_FAILURE)
             continue
         tpl = _parse_mol(mol=mol, config=config)
         try:
@@ -520,7 +542,7 @@ def bulk_register(config=None,
                 escape = mol.GetProp(escapeProperty)
             else:
                 escape = None
-            mrn,conf_id = _register_mol(
+            mrn, conf_id = _register_mol(
                 tpl,
                 escape,
                 cn,
@@ -532,12 +554,16 @@ def bulk_register(config=None,
 
             if mrn is None:
                 mrn = RegistrationFailureReasons.FILTERED
-            mrns.append(mrn)
+
+            if not _lookupWithDefault(config, "registerConformers"):
+                res.append(mrn)
+            else:
+                res.append((mrn, conf_id))
         except _violations:
-            mrns.append(RegistrationFailureReasons.DUPLICATE)
+            res.append(RegistrationFailureReasons.DUPLICATE)
     if not no_verbose:
-        print(mrns)
-    return tuple(mrns)
+        print(res)
+    return tuple(res)
 
 
 def query(config=None,
@@ -718,18 +744,15 @@ def initdb(config=None, confirm=False):
     )
 
     curs.execute('drop table if exists conformers')
-    if _lookupWithDefault(config,"registerConformers"):
+    if _lookupWithDefault(config, "registerConformers"):
         if _dbtype != 'postgresql':
             curs.execute(
                 '''create table conformers (conf_id integer primary key, molregno integer not null, 
-                   conformer_hash text not null unique, molblock text)'''
-            )
+                   conformer_hash text not null unique, molblock text)''')
         else:
             curs.execute(
                 '''create table conformers (conf_id serial primary key, molregno integer not null, 
-                   conformer_hash text not null unique, molblock text))'''
-            )
-
+                   conformer_hash text not null unique, molblock text))''')
 
     cn.commit()
     return True

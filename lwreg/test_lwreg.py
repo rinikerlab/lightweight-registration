@@ -395,6 +395,7 @@ class TestLWRegPSQL(TestLWReg):
 
 
 class TestStandardizationLabels(unittest.TestCase):
+
     def testStandards(self):
         cfg = utils.defaultConfig()
         for k in utils.standardizationOptions:
@@ -411,6 +412,7 @@ class TestStandardizationLabels(unittest.TestCase):
             self.assertEqual(lbl, '|'.join(cl))
 
     def testOthers(self):
+
         def func1(x):
             pass
 
@@ -451,6 +453,7 @@ class TestStandardizationLabels(unittest.TestCase):
 
 
 class TestConformerHashes(unittest.TestCase):
+
     def setUp(self):
         self._config = utils.defaultConfig()
         self._config['hashConformer'] = True
@@ -473,7 +476,10 @@ class TestConformerHashes(unittest.TestCase):
                            config=self._config,
                            fail_on_duplicate=False), 1)
 
+
 class TestRegisterConformers(unittest.TestCase):
+    integrityError = sqlite3.IntegrityError
+
     def setUp(self):
         self._config = utils.defaultConfig()
         self._config['registerConformers'] = True
@@ -485,17 +491,39 @@ class TestRegisterConformers(unittest.TestCase):
     def testConformerDupes(self):
         utils.initdb(config=self._config, confirm=True)
         self.assertEqual(utils.register(mol=self._mol1, config=self._config),
-                         1)
+                         (1, 1))
         self.assertEqual(utils.register(mol=self._mol2, config=self._config),
-                         2)
+                         (1, 2))
+
+        # make sure we fail if the topology is a dupe and there's no conformer:
+        noconfs = Chem.Mol(self._mol1)
+        noconfs.RemoveAllConformers()
+        with self.assertRaises(self.integrityError):
+            utils.register(mol=noconfs, config=self._config)
 
         aorder = list(range(self._mol1.GetNumAtoms()))
         random.shuffle(aorder)
         nmol = Chem.RenumberAtoms(self._mol1, aorder)
+
+        # make sure we fail if it's a conformer dupe:
+        with self.assertRaises(self.integrityError):
+            utils.register(mol=nmol, config=self._config)
+
+        # conformer dupe with dupes allowed:
         self.assertEqual(
             utils.register(mol=nmol,
                            config=self._config,
-                           fail_on_duplicate=False), 1)
+                           fail_on_duplicate=False), (1, 1))
+
+    def testBulkConformers(self):
+        utils.initdb(config=self._config, confirm=True)
+        aorder = list(range(self._mol1.GetNumAtoms()))
+        random.shuffle(aorder)
+        nmol = Chem.RenumberAtoms(self._mol1, aorder)
+        self.assertEqual(
+            utils.bulk_register(mols=(self._mol1, self._mol2, nmol),
+                                failOnDuplicate=False,
+                                config=self._config), ((1, 1), (1, 2), (1, 1)))
 
 
 if __name__ == '__main__':

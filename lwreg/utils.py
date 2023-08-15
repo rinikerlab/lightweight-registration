@@ -39,6 +39,7 @@ _defaultConfig = json.loads('''{
     "removeHs": 1,
     "use3DIfPresent": 1,
     "useTautomerHashv2": 0,
+    "registerConformers": 0,
     "hashConformer": 0,
     "numConformerDigits": 3                            
 }''')
@@ -268,10 +269,12 @@ def _register_mol(tpl,
     rdkit_version_label = rdkit.__version__
     if rdkit_version_label == def_rdkit_version_label:
         rdkit_version_label = None
+    mrn = None
+    conf_id = None
     try:
         sMol = standardize_mol(tpl.mol, config=config)
         if sMol is None:
-            return None
+            return None,None
         molb = Chem.MolToV3KMolBlock(sMol)
 
         mhash, layers = hash_mol(sMol, escape=escape, config=config)
@@ -322,7 +325,31 @@ def _register_mol(tpl,
     except:
         cn.rollback()
         raise
-    return mrn
+
+    if _lookupWithDefault(config,"registerConformers") and sMol.GetNumConformers():
+        try:
+            chash = _get_conformer_hash(mol,_lookupWithDefault(config,"numConformerDigits"))
+            regtuple = (mrn,chash,molb)
+            qs = ('?','?','?')
+            if _dbtype != 'postgresql':
+                curs.execute(
+                    _replace_placeholders(
+                        f'insert into conformers values (NULL,{qs})'), regtuple)
+                curs.execute('select last_insert_rowid()')
+                conf_id = curs.fetchone()[0]
+            else:
+                # Note that on postgresql the serial ids are increasing, but not sequential
+                #  i.e. failed inserts will increment the counter
+                curs.execute(
+                    _replace_placeholders(
+                        f'insert into conformers values (default,{qs}) returning conf_id'
+                    ), regtuple)
+                conf_id = curs.fetchone()[0]
+            cn.commit()
+        except: 
+            cn.rollback()
+ 
+    return mrn,conf_id
 
 
 def _get_delimiter(smilesfile):
@@ -420,7 +447,7 @@ def register(config=None,
     if tpl.mol is None:
         return RegistrationFailureReasons.PARSE_FAILURE
 
-    mrn = _register_mol(tpl, escape, cn, curs, config, fail_on_duplicate)
+    mrn,conf_id = _register_mol(tpl, escape, cn, curs, config, fail_on_duplicate)
     if mrn is None:
         return RegistrationFailureReasons.FILTERED
     if not no_verbose:
@@ -493,7 +520,7 @@ def bulk_register(config=None,
                 escape = mol.GetProp(escapeProperty)
             else:
                 escape = None
-            mrn = _register_mol(
+            mrn,conf_id = _register_mol(
                 tpl,
                 escape,
                 cn,
@@ -689,5 +716,20 @@ def initdb(config=None, confirm=False):
     curs.execute(
         'create table molblocks (molregno integer primary key, molblock text, standardization text)'
     )
+
+    curs.execute('drop table if exists conformers')
+    if _lookupWithDefault(config,"registerConformers"):
+        if _dbtype != 'postgresql':
+            curs.execute(
+                '''create table conformers (conf_id integer primary key, molregno integer not null, 
+                   conformer_hash text not null unique, molblock text)'''
+            )
+        else:
+            curs.execute(
+                '''create table conformers (conf_id serial primary key, molregno integer not null, 
+                   conformer_hash text not null unique, molblock text))'''
+            )
+
+
     cn.commit()
     return True

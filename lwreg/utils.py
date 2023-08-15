@@ -752,7 +752,7 @@ def initdb(config=None, confirm=False):
         else:
             curs.execute(
                 '''create table conformers (conf_id serial primary key, molregno integer not null, 
-                   conformer_hash text not null unique, molblock text))''')
+                   conformer_hash text not null unique, molblock text)''')
 
     cn.commit()
     return True

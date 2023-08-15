@@ -526,5 +526,16 @@ class TestRegisterConformers(unittest.TestCase):
                                 config=self._config), ((1, 1), (1, 2), (1, 1)))
 
 
+@unittest.skipIf(psycopg2 is None, "skipping postgresql tests")
+class TestRegisterConformersPSQL(TestRegisterConformers):
+    integrityError = psycopg2.errors.UniqueViolation if psycopg2 else None
+
+    def setUp(self):
+        super(TestRegisterConformersPSQL, self).setUp()
+        self._config['dbname'] = 'lwreg_tests'
+        self._config['dbtype'] = 'postgresql'
+
+
+
 if __name__ == '__main__':
     unittest.main()

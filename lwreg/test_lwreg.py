@@ -495,12 +495,6 @@ class TestRegisterConformers(unittest.TestCase):
         self.assertEqual(utils.register(mol=self._mol2, config=self._config),
                          (1, 2))
 
-        # make sure we fail if the topology is a dupe and there's no conformer:
-        noconfs = Chem.Mol(self._mol1)
-        noconfs.RemoveAllConformers()
-        with self.assertRaises(self.integrityError):
-            utils.register(mol=noconfs, config=self._config)
-
         aorder = list(range(self._mol1.GetNumAtoms()))
         random.shuffle(aorder)
         nmol = Chem.RenumberAtoms(self._mol1, aorder)
@@ -525,6 +519,24 @@ class TestRegisterConformers(unittest.TestCase):
                                 failOnDuplicate=False,
                                 config=self._config), ((1, 1), (1, 2), (1, 1)))
 
+    def testNoConformers(self):
+        utils.initdb(config=self._config, confirm=True)
+        with self.assertRaises(ValueError):
+            utils.register(smiles='c1ccccc1', config=self._config)
+
+        # we can register "empty" conformers:
+        m = Chem.MolFromSmiles('c1ccccc1')
+        conf = Chem.Conformer(m.GetNumAtoms())
+        m.AddConformer(conf)
+        self.assertEqual(utils.register(mol=m, config=self._config), (1, 1))
+
+        # but of course the second time is a duplicate
+        m = Chem.MolFromSmiles('c1ccccc1')
+        conf = Chem.Conformer(m.GetNumAtoms())
+        m.AddConformer(conf)
+        with self.assertRaises(self.integrityError):
+            utils.register(mol=m, config=self._config)
+
 
 @unittest.skipIf(psycopg2 is None, "skipping postgresql tests")
 class TestRegisterConformersPSQL(TestRegisterConformers):
@@ -534,7 +546,6 @@ class TestRegisterConformersPSQL(TestRegisterConformers):
         super(TestRegisterConformersPSQL, self).setUp()
         self._config['dbname'] = 'lwreg_tests'
         self._config['dbtype'] = 'postgresql'
-
 
 
 if __name__ == '__main__':

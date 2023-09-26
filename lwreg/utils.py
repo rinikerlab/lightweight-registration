@@ -253,6 +253,14 @@ def _register_mol(tpl,
                   def_rdkit_version_label=None,
                   def_std_label=None):
     """ does the work of registering one molecule """
+    registerConformers = _lookupWithDefault(config, "registerConformers")
+
+    if registerConformers and tpl.mol is not None \
+        and not tpl.mol.GetNumConformers():
+        raise ValueError(
+            "attempt to register a molecule without conformers when registerConformers is set"
+        )
+
     standardization_label = _get_standardization_label(config)
     if def_std_label is None:
         curs.execute(
@@ -261,10 +269,6 @@ def _register_mol(tpl,
         def_std_label = curs.fetchone()[0]
     if standardization_label == def_std_label:
         standardization_label = None
-
-
-    registerConformers = _lookupWithDefault(config,
-                          "registerConformers")
 
     if def_rdkit_version_label is None:
         curs.execute(
@@ -319,7 +323,8 @@ def _register_mol(tpl,
         cn.commit()
     except _violations:
         cn.rollback()
-        if failOnDuplicate and not (registerConformers and sMol.GetNumConformers()):
+        if failOnDuplicate and not (registerConformers
+                                    and sMol.GetNumConformers()):
             raise
         else:
             curs.execute(

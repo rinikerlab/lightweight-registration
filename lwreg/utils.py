@@ -595,8 +595,8 @@ def query(config=None,
           escape=None,
           no_verbose=True):
     """ queries to see if a molecule has already been registered,
-    and returns the corresponding registry numbers (molregnos)
-    
+    and returns the corresponding registry numbers
+        
     only one of the molecule format objects should be provided
 
     Keyword arguments:
@@ -702,19 +702,42 @@ def retrieve(config=None,
         config = _configure()
     elif type(config) == str:
         config = _configure(filename=config)
+    registerConformers = _lookupWithDefault(config, "registerConformers")
+
     if id is not None:
-        ids = [int(id)]
-    if ids is not None:
-        if type(ids) == str:
-            ids = [int(x) for x in ids.split(',')]
+        if registerConformers:
+            try:
+                ids = [(int(id[0]), int(id[1]))]
+                getConfs = True
+            except ValueError:
+                ids = [int(id)]
+                getConfs = False
+        else:
+            ids = [int(id)]
+            getConfs = False
+    elif ids is not None:
+        if registerConformers:
+            ids = [(int(x), int(y)) for x,y in ids]
+            getConfs = True
+        else:
+            if type(ids) == str:
+                ids = [int(x) for x in ids.split(',')]
+            getConfs = False
+            
     cn = _connect(config)
     curs = cn.cursor()
-    if as_submitted:
-        qry = 'molregno,data,datatype from orig_data'
-    else:
-        qry = "molregno,molblock,'mol' from molblocks"
-    qs = _replace_placeholders(','.join('?' * len(ids)))
-    curs.execute(f'select {qry} where molregno in ({qs})', ids)
+    if not getConfs :
+        if as_submitted:
+            qry = 'molregno,data,datatype from orig_data'
+        else:
+            qry = "molregno,molblock,'mol' from molblocks"
+        qs = _replace_placeholders(','.join('?' * len(ids)))
+        curs.execute(f'select {qry} where molregno in ({qs})', ids)
+    else :
+        qry = "molregno,conf_id,molblock from conformers"
+        qs = _replace_placeholders(','.join('?' * len(ids)))  
+        curs.execute(f'select {qry} where molregno in ({qs}) and conf_id in ({qs})', 
+                     ([x for x,y in ids]+[y for x,y in ids]))
 
     res = curs.fetchall()
     if not no_verbose:

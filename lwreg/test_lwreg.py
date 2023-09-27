@@ -561,6 +561,19 @@ class TestRegisterConformers(unittest.TestCase):
         self.assertEqual(sorted(utils.query(mol=qm, config=self._config)),[regids[0][0]])
 
 
+    def testConformerRetrieve(self):
+        ''' querying using a molecule which has conformers '''
+        utils.initdb(config=self._config, confirm=True)
+        regids = utils.bulk_register(mols=(self._mol1, self._mol2, self._mol3),
+                            config=self._config)
+        
+        res = utils.retrieve(ids=(regids[0],regids[2]), config=self._config)
+        self.assertEqual(res[0][0:2],(regids[0][0],regids[0][1]))
+        self.assertTrue('M  END' in res[0][2])
+        self.assertEqual(res[1][0:2],(regids[2][0],regids[2][1]))
+        self.assertTrue('M  END' in res[1][2])
+        
+
 
     def testConformerQueryById(self):
         utils.initdb(config=self._config, confirm=True)

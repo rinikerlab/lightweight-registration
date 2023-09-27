@@ -183,3 +183,42 @@ True
 That last one failed because the quarternary nitrogen can't be neutralized.
 
 There are a collection of other standardizers/filters available in the module lwreg.standardization_lib
+
+
+## Registering conformers
+
+When the configuration option `registerConformers` is set to True, lwreg expects that the compounds to be registered will have an associated conformer. The conformers are tracked in a different table than the molecule topologies and expectation is that every molecule registered will have a conformer (it's an error if they don't). It is possible to register multiple conformers for a single molecular structure (topology).
+
+Note that once a database is created in `registerConformers` mode, it probably should always be used in that mode. 
+
+### Differences when in `registerConformers` mode
+
+- `register()` and `bulk_register()` require molecules to have associated conformers. Both return `(molregno, conf_id)` tuples instead of just `molregno`s
+- `query()`: if called with the `ids` argument, this will return all of the conformers for the supplied molregnos as `(molregno, conf_id)` tuples. If called with a molecule, the conformer of the molecule will be hashed and looked up in the `conformers`` table, returns a list of `(molregno, conf_id)` tuples.
+- `retrieve()`: if called with `(molregno, conf_id)` tuple(s), this will return `(molregno, conf_id, molblock)` tuples where the `molblock`s contain the coordinates of the registered conformers.
+
+### Hashing conformers for registration
+
+Just as molecular hashes are used to recognize when two molecules are the same, lwreg uses a hashing scheme to detect when two conformers are the same. The algorithm for this is simple:
+The atomic positions are converted into strings (rounding the floating point values to a fixed, but configurable, number of digits), sorting the positions, and then combining them into a single string, which is the final hash.
+
+# Data layout
+
+## The base tables
+Here's the SQL to create the base lwreg tables in sqlite:
+```
+create table registration_metadata (key text, value text);
+create table hashes (molregno integer primary key, fullhash text unique, 
+            formula text, canonical_smiles text, no_stereo_smiles text, 
+            tautomer_hash text, no_stereo_tautomer_hash text, "escape" text, sgroup_data text, rdkitVersion text);
+create table orig_data (molregno integer primary key, data text, datatype text);
+create table molblocks (molregno integer primary key, molblock text, standardization text);
+```
+
+
+## The conformers table
+Here's the SQL to create the conformers table in sqlite when `registerConformers` is set:
+```
+create table conformers (conf_id integer primary key, molregno integer not null, 
+                   conformer_hash text not null unique, molblock text);
+```

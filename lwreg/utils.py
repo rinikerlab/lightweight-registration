@@ -571,8 +571,23 @@ def bulk_register(config=None,
     return tuple(res)
 
 
+def _getConfIdsForMolregnos(ids, config):
+    assert _lookupWithDefault(config, "registerConformers")
+
+    cn = _connect(config)
+    curs = cn.cursor()
+
+    qs = _replace_placeholders(','.join('?' * len(ids)))
+    curs.execute(
+        f'select molregno,conf_id from conformers where molregno in ({qs})',
+        ids)
+    res = curs.fetchall()
+    return res
+
+
 def query(config=None,
           layers='ALL',
+          ids=None,
           mol=None,
           molfile=None,
           molblock=None,
@@ -587,6 +602,11 @@ def query(config=None,
     Keyword arguments:
     config     -- configuration dict
     layers     -- hash layers to be used to determine identity
+    ids        -- list or tuple of molregnos. 
+                  Only makes sense if registerConformers is set, 
+                  in which case this will return all conf_ids for 
+                  the molregnos in the ids list as a list of 
+                  (molregno, conf_id) tuples
     mol        -- RDKit molecule object
     molfile    -- MOL or SDF filename
     molblock   -- MOL or SDF block
@@ -599,40 +619,47 @@ def query(config=None,
     elif type(config) == str:
         config = _configure(filename=config)
 
-    tpl = _parse_mol(mol=mol,
-                     molfile=molfile,
-                     molblock=molblock,
-                     smiles=smiles,
-                     config=config)
-    sMol = standardize_mol(tpl.mol, config=config)
-    mhash, hlayers = hash_mol(sMol, escape=escape, config=config)
-
-    cn = _connect(config)
-    curs = cn.cursor()
-    if layers == 'ALL':
-        curs.execute(
-            _replace_placeholders(
-                'select molregno from hashes where fullhash=?'), (mhash, ))
+    if ids is not None:
+        if not _lookupWithDefault(config, "registerConformers"):
+            raise ValueError(
+                'passing ids to query() only makes sense when registerConformers is enabled'
+            )
+        res = _getConfIdsForMolregnos(ids, config=config)
     else:
-        vals = []
-        query = []
-        if type(layers) == str:
-            layers = layers.upper().split(',')
-        if not hasattr(layers, '__len__'):
-            layers = [layers]
-        for lyr in layers:
-            if type(lyr) == str:
-                k = getattr(HashLayer, lyr)
-            else:
-                k = lyr
-                lyr = str(lyr).split('.')[-1]
-            vals.append(hlayers[k])
-            query.append(f'"{lyr}"=?')
+        tpl = _parse_mol(mol=mol,
+                        molfile=molfile,
+                        molblock=molblock,
+                        smiles=smiles,
+                        config=config)
+        sMol = standardize_mol(tpl.mol, config=config)
+        mhash, hlayers = hash_mol(sMol, escape=escape, config=config)
 
-        query = _replace_placeholders(' and '.join(query))
-        curs.execute(f'select molregno from hashes where {query}', vals)
+        cn = _connect(config)
+        curs = cn.cursor()
+        if layers == 'ALL':
+            curs.execute(
+                _replace_placeholders(
+                    'select molregno from hashes where fullhash=?'), (mhash, ))
+        else:
+            vals = []
+            query = []
+            if type(layers) == str:
+                layers = layers.upper().split(',')
+            if not hasattr(layers, '__len__'):
+                layers = [layers]
+            for lyr in layers:
+                if type(lyr) == str:
+                    k = getattr(HashLayer, lyr)
+                else:
+                    k = lyr
+                    lyr = str(lyr).split('.')[-1]
+                vals.append(hlayers[k])
+                query.append(f'"{lyr}"=?')
 
-    res = [x[0] for x in curs.fetchall()]
+            query = _replace_placeholders(' and '.join(query))
+            curs.execute(f'select molregno from hashes where {query}', vals)
+
+        res = [x[0] for x in curs.fetchall()]
     if not no_verbose:
         if res:
             print(' '.join(str(x) for x in res))

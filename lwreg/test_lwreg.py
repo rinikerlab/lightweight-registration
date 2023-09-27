@@ -487,6 +487,8 @@ class TestRegisterConformers(unittest.TestCase):
         rdDistGeom.EmbedMolecule(self._mol1, randomSeed=0xf00d)
         self._mol2 = Chem.Mol(self._mol1)
         rdDistGeom.EmbedMolecule(self._mol2, randomSeed=0xf00d + 1)
+        self._mol3 = Chem.AddHs(Chem.MolFromSmiles('CCOC(=O)CCCC'))
+        rdDistGeom.EmbedMolecule(self._mol3, randomSeed=0xf00d)
 
     def testConformerDupes(self):
         utils.initdb(config=self._config, confirm=True)
@@ -514,10 +516,14 @@ class TestRegisterConformers(unittest.TestCase):
         aorder = list(range(self._mol1.GetNumAtoms()))
         random.shuffle(aorder)
         nmol = Chem.RenumberAtoms(self._mol1, aorder)
+        expected = {
+            'sqlite3':((1, 1), (1, 2), (1, 1), (2, 3)),
+            'postgresql':((1, 1), (1, 2), (1, 1), (4, 4)),
+        }
         self.assertEqual(
-            utils.bulk_register(mols=(self._mol1, self._mol2, nmol),
+            utils.bulk_register(mols=(self._mol1, self._mol2, nmol, self._mol3),
                                 failOnDuplicate=False,
-                                config=self._config), ((1, 1), (1, 2), (1, 1)))
+                                config=self._config), expected[self._config['dbtype']])
 
     def testNoConformers(self):
         utils.initdb(config=self._config, confirm=True)
@@ -536,6 +542,21 @@ class TestRegisterConformers(unittest.TestCase):
         m.AddConformer(conf)
         with self.assertRaises(self.integrityError):
             utils.register(mol=m, config=self._config)
+
+    def testConformerQuery(self):
+        utils.initdb(config=self._config, confirm=True)
+        regids = utils.bulk_register(mols=(self._mol1, self._mol2, self._mol3),
+                            config=self._config)
+        mrns,cids = zip(*regids)
+        self.assertEqual(sorted(utils.query(ids=mrns[0:1], config=self._config)), [(1, 1),
+                                                                       (1, 2)])
+        expected = {
+            'sqlite3':[(1, 1), (1, 2), (2, 3)],
+            'postgresql':[(1, 1), (1, 2), (3, 3)],
+        }
+        self.assertEqual(sorted(utils.query(ids=mrns, config=self._config)), expected[self._config['dbtype']])
+        self.assertEqual(sorted(utils.query(ids=tuple(reversed(mrns)), config=self._config)), expected[self._config['dbtype']])
+
 
 
 @unittest.skipIf(psycopg2 is None, "skipping postgresql tests")

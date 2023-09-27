@@ -8,6 +8,7 @@ import sqlite3
 from rdkit import Chem
 from rdkit.Chem import rdDistGeom
 import random
+import copy
 try:
     from . import utils
     from .utils import RegistrationFailureReasons
@@ -543,7 +544,25 @@ class TestRegisterConformers(unittest.TestCase):
         with self.assertRaises(self.integrityError):
             utils.register(mol=m, config=self._config)
 
+
     def testConformerQuery(self):
+        ''' querying using a molecule which has conformers '''
+        utils.initdb(config=self._config, confirm=True)
+        regids = utils.bulk_register(mols=(self._mol1, self._mol3),
+                            config=self._config)
+        self.assertEqual(sorted(utils.query(mol=self._mol1, config=self._config)),[regids[0]])
+        # matches topology, but not conformer
+        self.assertEqual(sorted(utils.query(mol=self._mol2, config=self._config)),[])
+        self.assertEqual(sorted(utils.query(mol=self._mol3, config=self._config)),[regids[1]])
+
+        # query with no conformer
+        qm = Chem.Mol(self._mol1)
+        qm.RemoveAllConformers()
+        self.assertEqual(sorted(utils.query(mol=qm, config=self._config)),[regids[0][0]])
+
+
+
+    def testConformerQueryById(self):
         utils.initdb(config=self._config, confirm=True)
         regids = utils.bulk_register(mols=(self._mol1, self._mol2, self._mol3),
                             config=self._config)
@@ -556,7 +575,10 @@ class TestRegisterConformers(unittest.TestCase):
         }
         self.assertEqual(sorted(utils.query(ids=mrns, config=self._config)), expected[self._config['dbtype']])
         self.assertEqual(sorted(utils.query(ids=tuple(reversed(mrns)), config=self._config)), expected[self._config['dbtype']])
-
+        with self.assertRaises(ValueError):
+            cnf = copy.deepcopy(self._config)
+            cnf['registerConformers'] = False
+            utils.query(ids=mrns, config=cnf)
 
 
 @unittest.skipIf(psycopg2 is None, "skipping postgresql tests")

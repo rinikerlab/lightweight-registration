@@ -636,30 +636,41 @@ def query(config=None,
 
         cn = _connect(config)
         curs = cn.cursor()
-        if layers == 'ALL':
-            curs.execute(
-                _replace_placeholders(
-                    'select molregno from hashes where fullhash=?'), (mhash, ))
+        if not _lookupWithDefault(config, "registerConformers") or \
+           not sMol.GetNumConformers():
+            if layers == 'ALL':
+                queryText = _replace_placeholders(
+                        'select molregno from hashes where fullhash=?')
+                queryVals = (mhash,)
+            else:
+                vals = []
+                query = []
+                if type(layers) == str:
+                    layers = layers.upper().split(',')
+                if not hasattr(layers, '__len__'):
+                    layers = [layers]
+                for lyr in layers:
+                    if type(lyr) == str:
+                        k = getattr(HashLayer, lyr)
+                    else:
+                        k = lyr
+                        lyr = str(lyr).split('.')[-1]
+                    vals.append(hlayers[k])
+                    query.append(f'"{lyr}"=?')
+
+                query = _replace_placeholders(' and '.join(query))
+                queryText = f'select molregno from hashes where {query}'
+                queryVals = vals
+            curs.execute(queryText,queryVals)
+            res = [x[0] for x in curs.fetchall()]
         else:
-            vals = []
-            query = []
-            if type(layers) == str:
-                layers = layers.upper().split(',')
-            if not hasattr(layers, '__len__'):
-                layers = [layers]
-            for lyr in layers:
-                if type(lyr) == str:
-                    k = getattr(HashLayer, lyr)
-                else:
-                    k = lyr
-                    lyr = str(lyr).split('.')[-1]
-                vals.append(hlayers[k])
-                query.append(f'"{lyr}"=?')
-
-            query = _replace_placeholders(' and '.join(query))
-            curs.execute(f'select molregno from hashes where {query}', vals)
-
-        res = [x[0] for x in curs.fetchall()]
+            # do a conformer query
+            chash = _get_conformer_hash(
+                sMol, _lookupWithDefault(config, "numConformerDigits"))
+            curs.execute(_replace_placeholders(
+                'select molregno,conf_id from conformers where conformer_hash=?'),(chash,))
+            res = [tuple(x) for x in curs.fetchall()]
+            
     if not no_verbose:
         if res:
             print(' '.join(str(x) for x in res))

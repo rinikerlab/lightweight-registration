@@ -190,6 +190,9 @@ def standardize_mol(mol, config=None):
     Keyword arguments:
     config -- configuration dict
     """
+
+    _check_config(config)
+
     sopts = _get_standardization_list(config)
     for sopt in sopts:
         if type(sopt) == str:
@@ -225,6 +228,9 @@ def hash_mol(mol, escape=None, config=None):
         config = _configure()
     elif type(config) == str:
         config = _configure(filename=config)
+    
+    _check_config(config)
+
     layers = RegistrationHash.GetMolLayers(
         mol,
         escape=escape,
@@ -458,6 +464,9 @@ def register(config=None,
         config = _configure()
     elif type(config) == str:
         config = _configure(filename=config)
+    
+    _check_config(config)
+
     tpl = _parse_mol(mol=mol,
                      molfile=molfile,
                      molblock=molblock,
@@ -526,6 +535,9 @@ def bulk_register(config=None,
         config = _configure()
     elif type(config) == str:
         config = _configure(filename=config)
+    
+    _check_config(config)
+
     res = []
     cn = _connect(config)
     curs = cn.cursor()
@@ -619,6 +631,8 @@ def query(config=None,
     elif type(config) == str:
         config = _configure(filename=config)
 
+    _check_config(config)
+
     if ids is not None:
         if not _lookupWithDefault(config, "registerConformers"):
             raise ValueError(
@@ -702,6 +716,9 @@ def retrieve(config=None,
         config = _configure()
     elif type(config) == str:
         config = _configure(filename=config)
+
+    _check_config(config)
+
     registerConformers = _lookupWithDefault(config, "registerConformers")
 
     if id is not None:
@@ -780,6 +797,9 @@ def initdb(config=None, confirm=False):
         config = _configure()
     elif type(config) == str:
         config = _configure(filename=config)
+
+    _check_config(config)
+
     cn = _connect(config)
     curs = cn.cursor()
 
@@ -822,3 +842,29 @@ def initdb(config=None, confirm=False):
 
     cn.commit()
     return True
+
+
+FORBIDDEN_COMBINATIONS = [{'registerConformers':1, 'hashConformer':1},
+                          {'dbname':None}]
+
+def _check_config(config):
+    ''' checks that the configuration is valid and no forbidden combinations are present
+        
+        Selected options in the configuration dict are checked against a list of
+        forbidden combinations. If any of the combinations are present a ValueError
+        is raised.
+
+    '''
+
+    if not config:
+        config = _configure()
+    elif isinstance(config, str):
+        config = _configure(filename=config)
+    
+    for fc in FORBIDDEN_COMBINATIONS:
+        fc_eval = []
+        for k,v in fc.items():
+            fc_eval.append(_lookupWithDefault(config,k) == v)
+        if all(fc_eval):
+            raise ValueError(f'invalid configuration for combination of {fc}')
+

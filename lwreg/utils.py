@@ -854,7 +854,6 @@ def _check_config(config):
         forbidden combinations. If any of the combinations are present a ValueError
         is raised.
 
-        Keyword arguments:
         config -- configuration dict
     '''
 

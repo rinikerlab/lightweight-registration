@@ -860,7 +860,7 @@ def _check_config(config):
 
     if not config:
         config = _configure()
-    elif type(config) == str:
+    elif isinstance(config, str):
         config = _configure(filename=config)
     
     for fc in FORBIDDEN_COMBINATIONS:

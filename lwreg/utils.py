@@ -148,7 +148,7 @@ def _parse_mol(mol=None, molfile=None, molblock=None, smiles=None, config={}):
 def _get_standardization_list(config):
     if not config:
         config = _configure()
-    elif type(config) == str:
+    elif isinstance(config,str):
         config = _configure(filename=config)
     sopts = _lookupWithDefault(config, 'standardization')
 
@@ -162,7 +162,7 @@ def _get_standardization_label(config):
     sopts = _get_standardization_list(config)
     res = []
     for sopt in sopts:
-        if type(sopt) == str:
+        if isinstance(sopt,str):
             nm = sopt
         elif hasattr(sopt, 'name'):
             nm = sopt.name
@@ -191,7 +191,7 @@ def standardize_mol(mol, config=None):
 
     sopts = _get_standardization_list(config)
     for sopt in sopts:
-        if type(sopt) == str:
+        if isinstance(sopt,str):
             sopt = standardizationOptions[sopt]
         mol = sopt(mol)
         if mol is None:
@@ -222,7 +222,7 @@ def hash_mol(mol, escape=None, config=None):
     """
     if not config:
         config = _configure()
-    elif type(config) == str:
+    elif isinstance(config,str):
         config = _configure(filename=config)
     
     _check_config(config)
@@ -458,7 +458,7 @@ def register(config=None,
     """
     if not config:
         config = _configure()
-    elif type(config) == str:
+    elif isinstance(config,str):
         config = _configure(filename=config)
     
     _check_config(config)
@@ -529,7 +529,7 @@ def bulk_register(config=None,
 
     if not config:
         config = _configure()
-    elif type(config) == str:
+    elif isinstance(config,str):
         config = _configure(filename=config)
     
     _check_config(config)
@@ -624,7 +624,7 @@ def query(config=None,
     """
     if not config:
         config = _configure()
-    elif type(config) == str:
+    elif isinstance(config,str):
         config = _configure(filename=config)
 
     _check_config(config)
@@ -655,12 +655,12 @@ def query(config=None,
             else:
                 vals = []
                 query = []
-                if type(layers) == str:
+                if isinstance(layers,str):
                     layers = layers.upper().split(',')
                 if not hasattr(layers, '__len__'):
                     layers = [layers]
                 for lyr in layers:
-                    if type(lyr) == str:
+                    if isinstance(lyr,str):
                         k = getattr(HashLayer, lyr)
                     else:
                         k = lyr
@@ -710,7 +710,7 @@ def retrieve(config=None,
     """
     if not config:
         config = _configure()
-    elif type(config) == str:
+    elif isinstance(config,str):
         config = _configure(filename=config)
 
     _check_config(config)
@@ -733,7 +733,7 @@ def retrieve(config=None,
             ids = [(int(x), int(y)) for x,y in ids]
             getConfs = True
         else:
-            if type(ids) == str:
+            if isinstance(ids,str):
                 ids = [int(x) for x in ids.split(',')]
             getConfs = False
             
@@ -791,7 +791,7 @@ def initdb(config=None, confirm=False):
         return
     if not config:
         config = _configure()
-    elif type(config) == str:
+    elif isinstance(config,str):
         config = _configure(filename=config)
 
     _check_config(config)

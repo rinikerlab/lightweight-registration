@@ -37,7 +37,6 @@ _defaultConfig = json.loads('''{
     "dbtype": "sqlite3",
     "standardization": "fragment",
     "removeHs": 1,
-    "use3DIfPresent": 1,
     "useTautomerHashv2": 0,
     "registerConformers": 0,
     "hashConformer": 0,
@@ -116,9 +115,6 @@ def _process_molblock(molblock, config):
     mol = Chem.MolFromMolBlock(molblock,
                                sanitize=False,
                                removeHs=_lookupWithDefault(config, 'removeHs'))
-    if mol.GetConformer().Is3D() and _lookupWithDefault(
-            config, 'use3DIfPresent'):
-        Chem.AssignStereochemistryFrom3D(mol)
     return mol
 
 

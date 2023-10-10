@@ -32,16 +32,16 @@ standardizationOptions = {
     'super': standardization_lib.SuperParent(),
 }
 
-_defaultConfig = json.loads('''{
+_defaultConfig = {
     "dbname": "./testdb.sqlt",
     "dbtype": "sqlite3",
     "standardization": "fragment",
     "removeHs": 1,
     "useTautomerHashv2": 0,
-    "registerConformers": 0,
-    "hashConformer": 0,
-    "numConformerDigits": 3                            
-}''')
+    "registerConformers": 0, # toggle registering conformers as well as compound structures
+    "numConformerDigits": 3, # number of digits to use when hashing conformer coordinates
+    "hashConformer": 0  # the molecule's conformer will be part of the basic identity hash
+}
 
 from rdkit.Chem.RegistrationHash import HashLayer
 

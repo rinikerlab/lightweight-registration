@@ -38,9 +38,12 @@ _defaultConfig = {
     "standardization": "fragment",
     "removeHs": 1,
     "useTautomerHashv2": 0,
-    "registerConformers": 0, # toggle registering conformers as well as compound structures
-    "numConformerDigits": 3, # number of digits to use when hashing conformer coordinates
-    "hashConformer": 0  # the molecule's conformer will be part of the basic identity hash
+    "registerConformers":
+    0,  # toggle registering conformers as well as compound structures
+    "numConformerDigits":
+    3,  # number of digits to use when hashing conformer coordinates
+    "hashConformer":
+    0  # the molecule's conformer will be part of the basic identity hash
 }
 
 from rdkit.Chem.RegistrationHash import HashLayer
@@ -148,7 +151,7 @@ def _parse_mol(mol=None, molfile=None, molblock=None, smiles=None, config={}):
 def _get_standardization_list(config):
     if not config:
         config = _configure()
-    elif isinstance(config,str):
+    elif isinstance(config, str):
         config = _configure(filename=config)
     sopts = _lookupWithDefault(config, 'standardization')
 
@@ -162,7 +165,7 @@ def _get_standardization_label(config):
     sopts = _get_standardization_list(config)
     res = []
     for sopt in sopts:
-        if isinstance(sopt,str):
+        if isinstance(sopt, str):
             nm = sopt
         elif hasattr(sopt, 'name'):
             nm = sopt.name
@@ -191,7 +194,7 @@ def standardize_mol(mol, config=None):
 
     sopts = _get_standardization_list(config)
     for sopt in sopts:
-        if isinstance(sopt,str):
+        if isinstance(sopt, str):
             sopt = standardizationOptions[sopt]
         mol = sopt(mol)
         if mol is None:
@@ -199,13 +202,13 @@ def standardize_mol(mol, config=None):
     return mol
 
 
-def _get_conformer_hash(mol, numDigits):
+def _get_conformer_hash(mol, numDigits, confId=-1):
     """ returns a hash for a molecule's conformer based on the atomic positions
     
     """
     if not mol.GetNumConformers():
         return ''
-    ps = mol.GetConformer().GetPositions()
+    ps = mol.GetConformer(id=confId).GetPositions()
     hps = []
     for p in ps:
         coords = [str(round(x, numDigits)) for x in p]
@@ -222,9 +225,9 @@ def hash_mol(mol, escape=None, config=None):
     """
     if not config:
         config = _configure()
-    elif isinstance(config,str):
+    elif isinstance(config, str):
         config = _configure(filename=config)
-    
+
     _check_config(config)
 
     layers = RegistrationHash.GetMolLayers(
@@ -246,6 +249,52 @@ def hash_mol(mol, escape=None, config=None):
     return mhash, layers
 
 
+def _register_one_conformer(mrn,
+                            sMol,
+                            molb,
+                            cn,
+                            curs,
+                            config,
+                            failOnDuplicate,
+                            confId=-1):
+    try:
+        chash = _get_conformer_hash(sMol,
+                                    _lookupWithDefault(config,
+                                                       "numConformerDigits"),
+                                    confId=confId)
+        regtuple = (mrn, chash, molb)
+        qs = '?,?,?'
+        if _dbtype != 'postgresql':
+            curs.execute(
+                _replace_placeholders(
+                    f'insert into conformers values (NULL,{qs})'), regtuple)
+            curs.execute('select last_insert_rowid()')
+            conf_id = curs.fetchone()[0]
+        else:
+            # Note that on postgresql the serial ids are increasing, but not sequential
+            #  i.e. failed inserts will increment the counter
+            curs.execute(
+                _replace_placeholders(
+                    f'insert into conformers values (default,{qs}) returning conf_id'
+                ), regtuple)
+            conf_id = curs.fetchone()[0]
+        cn.commit()
+    except _violations:
+        cn.rollback()
+        if failOnDuplicate:
+            raise
+        else:
+            curs.execute(
+                _replace_placeholders(
+                    'select conf_id from conformers where conformer_hash=?'),
+                (chash, ))
+            conf_id = curs.fetchone()[0]
+    except:
+        cn.rollback()
+        raise
+    return conf_id
+
+
 def _register_mol(tpl,
                   escape,
                   cn,
@@ -253,7 +302,8 @@ def _register_mol(tpl,
                   config,
                   failOnDuplicate,
                   def_rdkit_version_label=None,
-                  def_std_label=None):
+                  def_std_label=None,
+                  molCache=None):
     """ does the work of registering one molecule """
     registerConformers = _lookupWithDefault(config, "registerConformers")
 
@@ -337,41 +387,17 @@ def _register_mol(tpl,
         cn.rollback()
         raise
 
+    if molCache is not None:
+        molCache.append(sMol)
     if registerConformers and sMol.GetNumConformers():
-        try:
-            chash = _get_conformer_hash(
-                sMol, _lookupWithDefault(config, "numConformerDigits"))
-            regtuple = (mrn, chash, molb)
-            qs = '?,?,?'
-            if _dbtype != 'postgresql':
-                curs.execute(
-                    _replace_placeholders(
-                        f'insert into conformers values (NULL,{qs})'),
-                    regtuple)
-                curs.execute('select last_insert_rowid()')
-                conf_id = curs.fetchone()[0]
-            else:
-                # Note that on postgresql the serial ids are increasing, but not sequential
-                #  i.e. failed inserts will increment the counter
-                curs.execute(
-                    _replace_placeholders(
-                        f'insert into conformers values (default,{qs}) returning conf_id'
-                    ), regtuple)
-                conf_id = curs.fetchone()[0]
-            cn.commit()
-        except _violations:
-            cn.rollback()
-            if failOnDuplicate:
-                raise
-            else:
-                curs.execute(
-                    _replace_placeholders(
-                        'select conf_id from conformers where conformer_hash=?'
-                    ), (chash, ))
-                conf_id = curs.fetchone()[0]
-        except:
-            cn.rollback()
-            raise
+        conf_id = _register_one_conformer(mrn,
+                                          sMol,
+                                          molb,
+                                          cn,
+                                          curs,
+                                          config,
+                                          failOnDuplicate,
+                                          confId=-1)
 
     return mrn, conf_id
 
@@ -458,9 +484,9 @@ def register(config=None,
     """
     if not config:
         config = _configure()
-    elif isinstance(config,str):
+    elif isinstance(config, str):
         config = _configure(filename=config)
-    
+
     _check_config(config)
 
     tpl = _parse_mol(mol=mol,
@@ -482,6 +508,74 @@ def register(config=None,
         res = mrn
     else:
         res = mrn, conf_id
+    if not no_verbose:
+        print(res)
+    return res
+
+
+def register_multiple_conformers(config=None,
+                                 mol=None,
+                                 escape=None,
+                                 fail_on_duplicate=True,
+                                 no_verbose=True):
+    """ registers all of the conformers of a multi-conformer molecule
+    Using this function only makes sense when registerConformers is enabled.
+    
+    Keyword arguments:
+    config     -- configuration dict
+    mol        -- RDKit molecule object (must have at least one conformer)
+    escape     -- the escape layer
+    failOnDuplicate -- if true then an exception is raised when trying to register a duplicate
+    no_verbose -- if this is False then the registry number will be printed
+    """
+    if not config:
+        config = _configure()
+    elif isinstance(config, str):
+        config = _configure(filename=config)
+
+    _check_config(config)
+    if not _lookupWithDefault(config, "registerConformers"):
+        raise ValueError(
+            'register_multiple_conformers can only be used when registereConformers is enabled'
+        )
+
+    tpl = _parse_mol(mol=mol, config=config)
+    if tpl.mol is None:
+        return RegistrationFailureReasons.PARSE_FAILURE
+
+    cn = _connect(config)
+    curs = cn.cursor()
+
+    # start by registering the first conformer in order to
+    # get the molregno that we'll use later
+    rc = []
+    mrn, conf_id = _register_mol(tpl,
+                                 escape,
+                                 cn,
+                                 curs,
+                                 config,
+                                 fail_on_duplicate,
+                                 molCache=rc)
+    if mrn is None:
+        return RegistrationFailureReasons.FILTERED
+    res = [(mrn, conf_id)]
+
+    sMol = rc[0]
+    for i, conf in enumerate(sMol.GetConformers()):
+        if not i:
+            # we already registered the first conformer
+            continue
+        molb = Chem.MolToV3KMolBlock(sMol, confId=conf.GetId())
+        conf_id = _register_one_conformer(mrn,
+                                          sMol,
+                                          molb,
+                                          cn,
+                                          curs,
+                                          config,
+                                          fail_on_duplicate,
+                                          confId=conf.GetId())
+        res.append((mrn, conf_id))
+
     if not no_verbose:
         print(res)
     return res
@@ -529,9 +623,9 @@ def bulk_register(config=None,
 
     if not config:
         config = _configure()
-    elif isinstance(config,str):
+    elif isinstance(config, str):
         config = _configure(filename=config)
-    
+
     _check_config(config)
 
     res = []
@@ -624,7 +718,7 @@ def query(config=None,
     """
     if not config:
         config = _configure()
-    elif isinstance(config,str):
+    elif isinstance(config, str):
         config = _configure(filename=config)
 
     _check_config(config)
@@ -637,10 +731,10 @@ def query(config=None,
         res = _getConfIdsForMolregnos(ids, config=config)
     else:
         tpl = _parse_mol(mol=mol,
-                        molfile=molfile,
-                        molblock=molblock,
-                        smiles=smiles,
-                        config=config)
+                         molfile=molfile,
+                         molblock=molblock,
+                         smiles=smiles,
+                         config=config)
         sMol = standardize_mol(tpl.mol, config=config)
         mhash, hlayers = hash_mol(sMol, escape=escape, config=config)
 
@@ -650,17 +744,17 @@ def query(config=None,
            not sMol.GetNumConformers():
             if layers == 'ALL':
                 queryText = _replace_placeholders(
-                        'select molregno from hashes where fullhash=?')
-                queryVals = (mhash,)
+                    'select molregno from hashes where fullhash=?')
+                queryVals = (mhash, )
             else:
                 vals = []
                 query = []
-                if isinstance(layers,str):
+                if isinstance(layers, str):
                     layers = layers.upper().split(',')
                 if not hasattr(layers, '__len__'):
                     layers = [layers]
                 for lyr in layers:
-                    if isinstance(lyr,str):
+                    if isinstance(lyr, str):
                         k = getattr(HashLayer, lyr)
                     else:
                         k = lyr
@@ -671,16 +765,18 @@ def query(config=None,
                 query = _replace_placeholders(' and '.join(query))
                 queryText = f'select molregno from hashes where {query}'
                 queryVals = vals
-            curs.execute(queryText,queryVals)
+            curs.execute(queryText, queryVals)
             res = [x[0] for x in curs.fetchall()]
         else:
             # do a conformer query
             chash = _get_conformer_hash(
                 sMol, _lookupWithDefault(config, "numConformerDigits"))
-            curs.execute(_replace_placeholders(
-                'select molregno,conf_id from conformers where conformer_hash=?'),(chash,))
+            curs.execute(
+                _replace_placeholders(
+                    'select molregno,conf_id from conformers where conformer_hash=?'
+                ), (chash, ))
             res = [tuple(x) for x in curs.fetchall()]
-            
+
     if not no_verbose:
         if res:
             print(' '.join(str(x) for x in res))
@@ -710,7 +806,7 @@ def retrieve(config=None,
     """
     if not config:
         config = _configure()
-    elif isinstance(config,str):
+    elif isinstance(config, str):
         config = _configure(filename=config)
 
     _check_config(config)
@@ -730,27 +826,28 @@ def retrieve(config=None,
             getConfs = False
     elif ids is not None:
         if registerConformers:
-            ids = [(int(x), int(y)) for x,y in ids]
+            ids = [(int(x), int(y)) for x, y in ids]
             getConfs = True
         else:
-            if isinstance(ids,str):
+            if isinstance(ids, str):
                 ids = [int(x) for x in ids.split(',')]
             getConfs = False
-            
+
     cn = _connect(config)
     curs = cn.cursor()
-    if not getConfs :
+    if not getConfs:
         if as_submitted:
             qry = 'molregno,data,datatype from orig_data'
         else:
             qry = "molregno,molblock,'mol' from molblocks"
         qs = _replace_placeholders(','.join('?' * len(ids)))
         curs.execute(f'select {qry} where molregno in ({qs})', ids)
-    else :
+    else:
         qry = "molregno,conf_id,molblock from conformers"
-        qs = _replace_placeholders(','.join('?' * len(ids)))  
-        curs.execute(f'select {qry} where molregno in ({qs}) and conf_id in ({qs})', 
-                     ([x for x,y in ids]+[y for x,y in ids]))
+        qs = _replace_placeholders(','.join('?' * len(ids)))
+        curs.execute(
+            f'select {qry} where molregno in ({qs}) and conf_id in ({qs})',
+            ([x for x, y in ids] + [y for x, y in ids]))
 
     res = curs.fetchall()
     if not no_verbose:
@@ -791,7 +888,7 @@ def initdb(config=None, confirm=False):
         return
     if not config:
         config = _configure()
-    elif isinstance(config,str):
+    elif isinstance(config, str):
         config = _configure(filename=config)
 
     _check_config(config)
@@ -840,8 +937,13 @@ def initdb(config=None, confirm=False):
     return True
 
 
-FORBIDDEN_COMBINATIONS = [{'registerConformers':1, 'hashConformer':1},
-                          {'dbname':None}]
+FORBIDDEN_COMBINATIONS = [{
+    'registerConformers': 1,
+    'hashConformer': 1
+}, {
+    'dbname': None
+}]
+
 
 def _check_config(config):
     ''' checks that the configuration is valid and no forbidden combinations are present
@@ -856,11 +958,10 @@ def _check_config(config):
         config = _configure()
     elif isinstance(config, str):
         config = _configure(filename=config)
-    
+
     for fc in FORBIDDEN_COMBINATIONS:
         fc_eval = []
-        for k,v in fc.items():
-            fc_eval.append(_lookupWithDefault(config,k) == v)
+        for k, v in fc.items():
+            fc_eval.append(_lookupWithDefault(config, k) == v)
         if all(fc_eval):
             raise ValueError(f'invalid configuration for combination of {fc}')
-

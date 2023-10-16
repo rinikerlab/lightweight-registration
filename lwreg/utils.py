@@ -13,6 +13,7 @@ import json
 import sqlite3
 import enum
 from . import standardization_lib
+import logging
 
 _violations = (sqlite3.IntegrityError, )
 try:
@@ -273,6 +274,10 @@ def _register_mol(tpl,
         raise ValueError(
             "attempt to register a molecule without conformers when registerConformers is set"
         )
+
+    if hasattr(cn,'autocommit') and cn.autocommit is True:
+        logging.warn("setting autocommit on the database connection to False")
+        cn.autocommit = False
 
     standardization_label = _get_standardization_label(config)
     if def_std_label is None:

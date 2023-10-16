@@ -78,11 +78,16 @@ _replace_placeholders_noop = lambda x: x
 _replace_placeholders_pcts = lambda x: x.replace('?', '%s').replace('"', '')
 _replace_placeholders = _replace_placeholders_noop
 
-
+_dbConnection = None
+_dbConfig = None
 def _connect(config):
     global _replace_placeholders
     global _dbtype
+    global _dbConnection   
+    global _dbConfig
     cn = config.get('connection', None)
+    if not cn and _dbConnection is not None and _dbConfig == config:
+        cn = _dbConnection
     dbtype = _lookupWithDefault(config, 'dbtype').lower()
     if not cn:
         dbnm = config['dbname']
@@ -104,9 +109,15 @@ def _connect(config):
         _replace_placeholders = _replace_placeholders_pcts
     else:
         _replace_placeholders = _replace_placeholders_noop
-
+    _dbConnection = cn
+    _dbConfig = config
     return cn
 
+def _clear_cached_connection():
+    global _dbConnection   
+    global _dbConfig
+    _dbConnection = None
+    _dbConfig = None
 
 MolTuple = namedtuple('MolTuple', ('mol', 'datatype', 'rawdata'))
 

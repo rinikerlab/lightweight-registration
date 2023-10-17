@@ -13,6 +13,7 @@ import json
 import sqlite3
 import enum
 from . import standardization_lib
+import logging
 
 _violations = (sqlite3.IntegrityError, )
 try:
@@ -78,11 +79,16 @@ _replace_placeholders_noop = lambda x: x
 _replace_placeholders_pcts = lambda x: x.replace('?', '%s').replace('"', '')
 _replace_placeholders = _replace_placeholders_noop
 
-
+_dbConnection = None
+_dbConfig = None
 def _connect(config):
     global _replace_placeholders
     global _dbtype
+    global _dbConnection   
+    global _dbConfig
     cn = config.get('connection', None)
+    if not cn and _dbConnection is not None and _dbConfig == config:
+        cn = _dbConnection
     dbtype = _lookupWithDefault(config, 'dbtype').lower()
     if not cn:
         dbnm = config['dbname']
@@ -104,9 +110,15 @@ def _connect(config):
         _replace_placeholders = _replace_placeholders_pcts
     else:
         _replace_placeholders = _replace_placeholders_noop
-
+    _dbConnection = cn
+    _dbConfig = config
     return cn
 
+def _clear_cached_connection():
+    global _dbConnection   
+    global _dbConfig
+    _dbConnection = None
+    _dbConfig = None
 
 MolTuple = namedtuple('MolTuple', ('mol', 'datatype', 'rawdata'))
 
@@ -262,6 +274,10 @@ def _register_mol(tpl,
         raise ValueError(
             "attempt to register a molecule without conformers when registerConformers is set"
         )
+
+    if hasattr(cn,'autocommit') and cn.autocommit is True:
+        logging.warn("setting autocommit on the database connection to False")
+        cn.autocommit = False
 
     standardization_label = _get_standardization_label(config)
     if def_std_label is None:

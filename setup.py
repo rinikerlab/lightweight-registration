@@ -5,6 +5,7 @@ setup(
     description='lightweight compound registration system',
     version='0.0.1',
     py_modules=['lwreg'],
+    packages=['lwreg'],
     install_requires=[
         'Click',
     ],

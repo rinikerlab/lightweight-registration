@@ -202,6 +202,8 @@ Note that once a database is created in `registerConformers` mode, it probably s
 Just as molecular hashes are used to recognize when two molecules are the same, lwreg uses a hashing scheme to detect when two conformers are the same. The algorithm for this is simple:
 The atomic positions are converted into strings (rounding the floating point values to a fixed, but configurable, number of digits), sorting the positions, and then combining them into a single string, which is the final hash.
 
+If registering a multi-conformer molecule, it is most efficient to call `register_multiple_conformers()`. That only does the work of standardizing the molecule and calculating the molecule hash once.
+
 # Data layout
 
 ## The base tables

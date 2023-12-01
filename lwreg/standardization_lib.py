@@ -19,6 +19,23 @@ class Standardization:
         return mol
 
 
+class NoStandardization(Standardization):
+    name = "no_standardization"
+    explanation = "does not modify the molecule"
+
+    def __call__(self, mol):
+        return mol
+
+
+class RemoveHs(Standardization):
+    name = "remove_hs"
+    explanation = "removes hydrogens from the molecule"
+
+    def __call__(self, mol):
+        return Chem.RemoveHs(mol)
+
+
+
 class OverlappingAtomsCheck(Standardization):
     name = "has_overlapping_atoms"
     explanation = "fails if molecule has at least two atoms which are closer than a threshold distance to each other"

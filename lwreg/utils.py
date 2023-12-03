@@ -931,7 +931,7 @@ def initdb(config=None, confirm=False):
         )
     curs.execute('drop table if exists orig_data')
     curs.execute(
-        'create table orig_data (molregno integer primary key, data text, datatype text, timestamp TIMESTAMP default now()'
+        'create table orig_data (molregno integer primary key, data text, datatype text, timestamp TIMESTAMP default now())'
     )
     curs.execute('drop table if exists molblocks')
     curs.execute(

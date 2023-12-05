@@ -367,7 +367,7 @@ M  END
         time.sleep(2)
         utils.register(smiles='CCCC', config=self._config)
         curs = cn.cursor()
-        d = curs.execute("select molregno, timestamp from orig_data")
+       d = curs.execute("select molregno, timestamp from orig_data order by molregno asc")
         timestamps = []
         for row in d:
             timestamps.append(datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S"))

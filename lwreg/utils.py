@@ -891,7 +891,7 @@ def _registerMetadata(curs, config):
         ('rdkitVersion', rdkit.__version__))
 
 
-def initdb(config=None, confirm=False):
+def _initdb(config=None, confirm=False):
     """ initializes the registration database    
 
     NOTE that this call destroys any existing information in the registration database
@@ -951,6 +951,11 @@ def initdb(config=None, confirm=False):
 
     cn.commit()
     return True
+
+def initdb(config=None):
+    
+
+
 
 
 FORBIDDEN_COMBINATIONS = [{

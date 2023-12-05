@@ -953,9 +953,17 @@ def _initdb(config=None, confirm=False):
     return True
 
 def initdb(config=None):
+    """ initializes the registration database    
+
+    NOTE you will be prompted to confirm this action since this call can destroy any 
+    existing information in the registration database
+
+    Keyword arguments:
+    config  -- configuration dict
+    """
     print("This will destroy any existing information in the registration database.")
     response = input("  are you sure? [yes/no]: ")
-    if response=='yes':
+    if response == 'yes':
         return _initdb(config=config, confirm=True)
     else:
         print("cancelled")

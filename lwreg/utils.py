@@ -207,7 +207,10 @@ def standardize_mol(mol, config=None):
     sopts = _get_standardization_list(config)
     for sopt in sopts:
         if isinstance(sopt, str):
-            sopt = standardizationOptions[sopt]
+            if sopt in standardizationOptions:
+                sopt = standardizationOptions[sopt]
+            else:
+                sopt = getattr(standardization_lib, sopt)()
         mol = sopt(mol)
         if mol is None:
             return None
@@ -879,6 +882,7 @@ def retrieve(config=None,
 def _registerMetadata(curs, config):
     dc = defaultConfig()
     dc.update(config)
+    dc['standardization'] = _get_standardization_label(dc)
     for k, v in dc.items():
         curs.execute(
             _replace_placeholders(

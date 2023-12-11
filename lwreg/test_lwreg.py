@@ -247,7 +247,7 @@ class TestLWReg(unittest.TestCase):
         lconfig = self._config.copy()
         lconfig['standardization'] = 'charge'
         utils._initdb(config=lconfig, confirm=True)
-        self.assertEqual(utils.register(smiles='CCCO', config=lconfig), 1)
+        self.assertEqual(utils.register(smiles='CCCO.[Na]', config=lconfig), 1)
         self.assertRaises(
             self.integrityError,
             lambda: utils.register(smiles='CCC[O-]', config=lconfig))
@@ -259,6 +259,14 @@ class TestLWReg(unittest.TestCase):
         self.assertRaises(
             self.integrityError,
             lambda: utils.register(smiles='Cc1n[nH]cc1', config=lconfig))
+
+        lconfig['standardization'] = 'ChargeParent'
+        utils._initdb(config=lconfig, confirm=True)
+        self.assertEqual(utils.register(smiles='CCCO.[Na]', config=lconfig), 1)
+        self.assertRaises(
+            self.integrityError,
+            lambda: utils.register(smiles='CCC[O-]', config=lconfig))
+
 
     def testStandardizationFunctions(self):
         lconfig = self._config.copy()

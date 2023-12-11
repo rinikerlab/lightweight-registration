@@ -368,7 +368,7 @@ M  END
         curs.execute("select molregno,timestamp from orig_data order by molregno asc")
         d = curs.fetchall()
         curs = None
-        #raise ValueError(d)
+
         timestamps = []
         for row in d:
            timestamps.append(datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S"))

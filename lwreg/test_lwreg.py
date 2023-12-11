@@ -28,7 +28,7 @@ if psycopg2:
     # we have the connector for postgresql. Is there a server running?
     cfg = utils.defaultConfig()
     cfg['dbname'] = 'lwreg_tests'
-    cfg['host'] = 'localhost'
+    #cfg['host'] = 'localhost'
     cfg['dbtype'] = 'postgresql'
     try:
         cn = utils._connect(config=cfg)
@@ -47,7 +47,7 @@ class TestLWReg(unittest.TestCase):
 
     def baseRegister(self):
         smis = ('CC[C@H](F)Cl', 'CC[C@@H](F)Cl', 'CCC(F)Cl', 'CC(F)(Cl)C')
-        utils.initdb(config=self._config, confirm=True)
+        utils._initdb(config=self._config, confirm=True)
         for smi in smis:
             utils.register(smiles=smi, config=self._config)
         mols = [Chem.MolFromSmiles(x) for x in ('Cc1[nH]ncc1', 'Cc1n[nH]cc1')]
@@ -55,7 +55,7 @@ class TestLWReg(unittest.TestCase):
             utils.register(mol=mol, config=self._config)
 
     def testRegister(self):
-        utils.initdb(config=self._config, confirm=True)
+        utils._initdb(config=self._config, confirm=True)
         self.assertEqual(utils.register(smiles='CCC', config=self._config), 1)
         self.assertEqual(utils.register(smiles='CCCO', config=self._config), 2)
         self.assertRaises(
@@ -124,7 +124,7 @@ class TestLWReg(unittest.TestCase):
             self.assertEqual(len(mols), 6)
 
     def testBulkRegister(self):
-        utils.initdb(config=self._config, confirm=True)
+        utils._initdb(config=self._config, confirm=True)
         mols = [
             Chem.MolFromSmiles(x)
             for x in ('CCC', 'CCCO', 'C1', 'c1cc1', 'CCC', 'C1CC1')
@@ -177,7 +177,7 @@ class TestLWReg(unittest.TestCase):
         self.assertEqual(res.count(RegistrationFailureReasons.DUPLICATE), 0)
 
     def testBulkRegisterAllowDupes(self):
-        utils.initdb(config=self._config, confirm=True)
+        utils._initdb(config=self._config, confirm=True)
         mols = [
             Chem.MolFromSmiles(x)
             for x in ('CCC', 'CCCO', 'C1', 'c1cc1', 'CCC', 'C1CC1')
@@ -246,14 +246,14 @@ class TestLWReg(unittest.TestCase):
     def testStandardizationOptions(self):
         lconfig = self._config.copy()
         lconfig['standardization'] = 'charge'
-        utils.initdb(config=lconfig, confirm=True)
+        utils._initdb(config=lconfig, confirm=True)
         self.assertEqual(utils.register(smiles='CCCO', config=lconfig), 1)
         self.assertRaises(
             self.integrityError,
             lambda: utils.register(smiles='CCC[O-]', config=lconfig))
 
         lconfig['standardization'] = 'tautomer'
-        utils.initdb(config=lconfig, confirm=True)
+        utils._initdb(config=lconfig, confirm=True)
         self.assertEqual(utils.register(smiles='Cc1[nH]ncc1', config=lconfig),
                          1)
         self.assertRaises(
@@ -271,12 +271,12 @@ class TestLWReg(unittest.TestCase):
         # Silly example which only accepts even numbers of atoms
         lconfig['standardization'] = evenAtomCount
 
-        utils.initdb(config=lconfig, confirm=True)
+        utils._initdb(config=lconfig, confirm=True)
         self.assertEqual(utils.register(smiles='CCCO', config=lconfig), 1)
         self.assertEqual(utils.register(smiles='CCC', config=lconfig),
                          RegistrationFailureReasons.FILTERED)
 
-        utils.initdb(config=lconfig, confirm=True)
+        utils._initdb(config=lconfig, confirm=True)
         checker = standardization_lib.OverlappingAtomsCheck()
         lconfig['standardization'] = checker
         self.assertEqual(
@@ -293,7 +293,7 @@ class TestLWReg(unittest.TestCase):
 
         # ----------------------
         # chaining standardization functions
-        utils.initdb(config=lconfig, confirm=True)
+        utils._initdb(config=lconfig, confirm=True)
         lconfig['standardization'] = [evenAtomCount, hasAnOxygen]
         self.assertEqual(utils.register(smiles='CC', config=lconfig),
                          RegistrationFailureReasons.FILTERED)
@@ -303,7 +303,7 @@ class TestLWReg(unittest.TestCase):
 
         # ----------------------
         # mixing standardization options and functions
-        utils.initdb(config=lconfig, confirm=True)
+        utils._initdb(config=lconfig, confirm=True)
         lconfig['standardization'] = ('fragment', evenAtomCount, hasAnOxygen)
         self.assertEqual(utils.register(smiles='CC', config=lconfig),
                          RegistrationFailureReasons.FILTERED)
@@ -316,7 +316,7 @@ class TestLWReg(unittest.TestCase):
     def testStandardizationLibCheckers(self):
         lconfig = self._config.copy()
 
-        utils.initdb(config=lconfig, confirm=True)
+        utils._initdb(config=lconfig, confirm=True)
         checker = standardization_lib.OverlappingAtomsCheck()
         lconfig['standardization'] = checker
         self.assertEqual(
@@ -383,7 +383,7 @@ class TestLWRegTautomerv2(unittest.TestCase):
         self._config['useTautomerHashv2'] = 1
 
     def testRegister(self):
-        utils.initdb(config=self._config, confirm=True)
+        utils._initdb(config=self._config, confirm=True)
         self.assertEqual(utils.register(smiles='CCC', config=self._config), 1)
         self.assertEqual(utils.register(smiles='CCCO', config=self._config), 2)
         self.assertEqual(utils.register(smiles='CC=CO', config=self._config),
@@ -452,7 +452,7 @@ class TestStandardizationLabels(unittest.TestCase):
     def testRecording(self):
         cfg = utils.defaultConfig()
         cfg['dbname'] = 'foo.sqlt'
-        utils.initdb(config=cfg, confirm=True)
+        utils._initdb(config=cfg, confirm=True)
         self.assertEqual(utils.register(smiles='CCO', config=cfg), 1)
         self.assertEqual(utils.register(smiles='CCOC', config=cfg), 2)
         oac = standardization_lib.OverlappingAtomsCheck()
@@ -480,7 +480,7 @@ class TestConformerHashes(unittest.TestCase):
         rdDistGeom.EmbedMolecule(self._mol2, randomSeed=0xf00d + 1)
 
     def testConformerDupes(self):
-        utils.initdb(config=self._config, confirm=True)
+        utils._initdb(config=self._config, confirm=True)
         self.assertEqual(utils.register(mol=self._mol1, config=self._config),
                          1)
         self.assertEqual(utils.register(mol=self._mol2, config=self._config),
@@ -508,7 +508,7 @@ class TestRegisterConformers(unittest.TestCase):
         rdDistGeom.EmbedMolecule(self._mol3, randomSeed=0xf00d)
 
     def testConformerDupes(self):
-        utils.initdb(config=self._config, confirm=True)
+        utils._initdb(config=self._config, confirm=True)
         self.assertEqual(utils.register(mol=self._mol1, config=self._config),
                          (1, 1))
         self.assertEqual(utils.register(mol=self._mol2, config=self._config),
@@ -529,7 +529,7 @@ class TestRegisterConformers(unittest.TestCase):
                            fail_on_duplicate=False), (1, 1))
 
     def testBulkConformers(self):
-        utils.initdb(config=self._config, confirm=True)
+        utils._initdb(config=self._config, confirm=True)
         aorder = list(range(self._mol1.GetNumAtoms()))
         random.shuffle(aorder)
         nmol = Chem.RenumberAtoms(self._mol1, aorder)
@@ -545,7 +545,7 @@ class TestRegisterConformers(unittest.TestCase):
             expected[self._config['dbtype']])
 
     def testNoConformers(self):
-        utils.initdb(config=self._config, confirm=True)
+        utils._initdb(config=self._config, confirm=True)
         with self.assertRaises(ValueError):
             utils.register(smiles='c1ccccc1', config=self._config)
 
@@ -563,7 +563,7 @@ class TestRegisterConformers(unittest.TestCase):
             utils.register(mol=m, config=self._config)
 
     def testMultiConfMolecule(self):
-        utils.initdb(config=self._config, confirm=True)
+        utils._initdb(config=self._config, confirm=True)
 
         mol = Chem.Mol(self._mol1)
         cids = rdDistGeom.EmbedMultipleConfs(mol, 10, randomSeed=0xf00d)
@@ -590,7 +590,7 @@ class TestRegisterConformers(unittest.TestCase):
         self.assertEqual(len(set([mrn for mrn, cid in rres])), 1)
 
         # make sure we can still fail on duplicate conformers:
-        utils.initdb(config=self._config, confirm=True)
+        utils._initdb(config=self._config, confirm=True)
         with self.assertRaises(self.integrityError):
             utils.register_multiple_conformers(mol=mol,
                                                fail_on_duplicate=True,
@@ -598,7 +598,7 @@ class TestRegisterConformers(unittest.TestCase):
 
     def testConformerQuery(self):
         ''' querying using a molecule which has conformers '''
-        utils.initdb(config=self._config, confirm=True)
+        utils._initdb(config=self._config, confirm=True)
         regids = utils.bulk_register(mols=(self._mol1, self._mol3),
                                      config=self._config)
         self.assertEqual(
@@ -619,7 +619,7 @@ class TestRegisterConformers(unittest.TestCase):
 
     def testConformerRetrieve(self):
         ''' querying using a molecule which has conformers '''
-        utils.initdb(config=self._config, confirm=True)
+        utils._initdb(config=self._config, confirm=True)
         regids = utils.bulk_register(mols=(self._mol1, self._mol2, self._mol3),
                                      config=self._config)
 
@@ -630,7 +630,7 @@ class TestRegisterConformers(unittest.TestCase):
         self.assertTrue('M  END' in res[1][2])
 
     def testConformerQueryById(self):
-        utils.initdb(config=self._config, confirm=True)
+        utils._initdb(config=self._config, confirm=True)
         regids = utils.bulk_register(mols=(self._mol1, self._mol2, self._mol3),
                                      config=self._config)
         mrns, cids = zip(*regids)

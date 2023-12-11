@@ -61,7 +61,9 @@ ERROR:root:Compound already registered
 ```
 In [1]: import lwreg
 
-In [3]: lwreg.initdb(confirm=True)
+In [3]: lwreg.initdb()
+This will destroy any existing information in the registration database.
+  are you sure? [yes/no]: yes
 Out[3]: True
 
 In [4]: lwreg.register(smiles='CCO')

@@ -359,20 +359,20 @@ M  END
                            config=lconfig), 2)
 
     def testTimestamp(self):
-        cn = sqlite3.connect(':memory:')
-        self._config = utils.defaultConfig()
-        self._config['connection'] = cn
         utils._initdb(config=self._config, confirm=True)
         utils.register(smiles='CCC', config=self._config)
         time.sleep(2)
         utils.register(smiles='CCCC', config=self._config)
+        cn = utils._connect(config=self._config)
         curs = cn.cursor()
-        d = curs.execute("select molregno, timestamp from orig_data order by molregno asc")
+        curs.execute("select molregno,timestamp from orig_data order by molregno asc")
+        d = curs.fetchall()
+        curs = None
+        #raise ValueError(d)
         timestamps = []
         for row in d:
-            timestamps.append(datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S"))
+           timestamps.append(datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S"))
         self.assertEqual(timestamps[1]-timestamps[0] > timedelta(0),True)
-
 class TestLWRegTautomerv2(unittest.TestCase):
     integrityError = sqlite3.IntegrityError
 
@@ -410,6 +410,20 @@ class TestLWRegPSQL(TestLWReg):
         self._config['dbname'] = 'lwreg_tests'
         self._config['dbtype'] = 'postgresql'
 
+    def testTimestamp(self):
+        utils._initdb(config=self._config, confirm=True)
+        utils.register(smiles='CCC', config=self._config)
+        time.sleep(2)
+        utils.register(smiles='CCCC', config=self._config)
+        cn = utils._connect(config=self._config)
+        curs = cn.cursor()
+        curs.execute("select molregno,timestamp from orig_data order by molregno asc")
+        d = curs.fetchall()
+        curs = None
+        timestamps = []
+        for row in d:
+           timestamps.append(row[1])
+        self.assertEqual(timestamps[1]-timestamps[0] > timedelta(0),True)
 
 class TestStandardizationLabels(unittest.TestCase):
 

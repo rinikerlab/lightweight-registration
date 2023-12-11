@@ -705,6 +705,27 @@ def _getConfIdsForMolregnos(ids, config):
     res = curs.fetchall()
     return res
 
+def registration_counts(config=None):
+    """ returns the number of entries in the registration database
+
+    the result is the number of molecules if registerConformers is not set,
+    and a tupe of (number of molecules, number of conformers) if it is
+
+    Keyword arguments:
+    config     -- configuration dict
+    """
+    cn = connect(config)
+    curs = cn.cursor()
+    curs.execute('select count(*) from hashes')
+    nHashes = curs.fetchone()[0]
+
+    if _lookupWithDefault(config, "registerConformers"):
+        curs.execute('select count(*) from conformers')
+        nConfs = curs.fetchone()[0]
+        return nHashes, nConfs
+    else:
+        return nHashes
+
 
 def query(config=None,
           layers='ALL',

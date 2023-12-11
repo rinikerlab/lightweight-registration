@@ -80,6 +80,8 @@ class TestLWReg(unittest.TestCase):
         self.assertEqual(utils.register(smiles='c1nccc1', config=self._config),
                          RegistrationFailureReasons.FILTERED)
 
+        self.assertEqual(utils.registration_counts(config=self._config),4)
+
     def testGetDelimiter(self):
         self.assertEqual(
             utils._get_delimiter('test_data/test_smiles_no_delim.smi'), None)
@@ -380,6 +382,7 @@ M  END
         for row in d:
            timestamps.append(datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S"))
         self.assertEqual(timestamps[1]-timestamps[0] > timedelta(0),True)
+
 class TestLWRegTautomerv2(unittest.TestCase):
     integrityError = sqlite3.IntegrityError
 
@@ -564,6 +567,7 @@ class TestRegisterConformers(unittest.TestCase):
                                 failOnDuplicate=False,
                                 config=self._config),
             expected[self._config['dbtype']])
+        self.assertEqual(utils.registration_counts(config=self._config),(2,3))
 
     def testNoConformers(self):
         utils._initdb(config=self._config, confirm=True)

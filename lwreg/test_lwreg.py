@@ -57,8 +57,9 @@ class TestLWReg(unittest.TestCase):
     def testRegister(self):
         utils._initdb(config=self._config, confirm=True)
 
-        self.assertEqual(utils.registration_counts(config=self._config),0)
-        self.assertEqual(utils.get_all_registry_numbers(config=self._config),())
+        self.assertEqual(utils.registration_counts(config=self._config), 0)
+        self.assertEqual(utils.get_all_registry_numbers(config=self._config),
+                         ())
 
         self.assertEqual(utils.register(smiles='CCC', config=self._config), 1)
         self.assertEqual(utils.register(smiles='CCCO', config=self._config), 2)
@@ -84,8 +85,13 @@ class TestLWReg(unittest.TestCase):
         self.assertEqual(utils.register(smiles='c1nccc1', config=self._config),
                          RegistrationFailureReasons.FILTERED)
 
-        self.assertEqual(utils.registration_counts(config=self._config),4)
-        self.assertEqual(utils.get_all_registry_numbers(config=self._config),(1,2,3,4))
+        self.assertEqual(utils.registration_counts(config=self._config), 4)
+        expected = {
+            'sqlite3': (1, 2, 3, 4),
+            'postgresql': (1, 2, 6, 7),
+        }
+        self.assertEqual(utils.get_all_registry_numbers(config=self._config),
+                         expected[self._config['dbtype']])
 
     def testGetDelimiter(self):
         self.assertEqual(
@@ -274,7 +280,6 @@ class TestLWReg(unittest.TestCase):
             self.integrityError,
             lambda: utils.register(smiles='CCC[O-]', config=lconfig))
 
-
     def testStandardizationFunctions(self):
         lconfig = self._config.copy()
 
@@ -380,13 +385,16 @@ M  END
         utils.register(smiles='CCCC', config=self._config)
         cn = utils.connect(config=self._config)
         curs = cn.cursor()
-        curs.execute(f"select molregno, timestamp from {utils.origDataTableName} order by molregno asc")
+        curs.execute(
+            f"select molregno, timestamp from {utils.origDataTableName} order by molregno asc"
+        )
         d = curs.fetchall()
         curs = None
         timestamps = []
         for row in d:
-           timestamps.append(datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S"))
-        self.assertEqual(timestamps[1]-timestamps[0] > timedelta(0),True)
+            timestamps.append(datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S"))
+        self.assertEqual(timestamps[1] - timestamps[0] > timedelta(0), True)
+
 
 class TestLWRegTautomerv2(unittest.TestCase):
     integrityError = sqlite3.IntegrityError
@@ -432,13 +440,31 @@ class TestLWRegPSQL(TestLWReg):
         utils.register(smiles='CCCC', config=self._config)
         cn = utils.connect(config=self._config)
         curs = cn.cursor()
-        curs.execute(f"select molregno,timestamp from {utils.origDataTableName} order by molregno asc")
+        curs.execute(
+            f"select molregno,timestamp from {utils.origDataTableName} order by molregno asc"
+        )
         d = curs.fetchall()
         curs = None
         timestamps = []
         for row in d:
-           timestamps.append(row[1])
-        self.assertEqual(timestamps[1]-timestamps[0] > timedelta(0),True)
+            timestamps.append(row[1])
+        self.assertEqual(timestamps[1] - timestamps[0] > timedelta(0), True)
+
+
+@unittest.skipIf(psycopg2 is None, "skipping postgresql tests")
+class TestLWRegPSQLWithSchema(TestLWRegPSQL):
+
+    def setUp(self):
+        self._config = utils.defaultConfig()
+        self._config['dbname'] = 'lwreg_tests'
+        self._config['dbtype'] = 'postgresql'
+        self._config['lwregSchema'] = 'lwreg'
+
+    def testSchema(self):
+        utils._initdb(config=self._config, confirm=True)
+        self.assertEqual(utils.registrationMetadataTableName,
+                         'lwreg.registration_metadata')
+
 
 class TestStandardizationLabels(unittest.TestCase):
 
@@ -491,10 +517,12 @@ class TestStandardizationLabels(unittest.TestCase):
         cn = utils.connect(cfg)
         curs = cn.cursor()
         curs.execute(
-            f"select count(*) from {utils.molblocksTableName} where standardization is not null")
+            f"select count(*) from {utils.molblocksTableName} where standardization is not null"
+        )
         self.assertEqual(curs.fetchone()[0], 2)
         curs.execute(
-            f"select count(*) from {utils.molblocksTableName} where standardization is null")
+            f"select count(*) from {utils.molblocksTableName} where standardization is null"
+        )
         self.assertEqual(curs.fetchone()[0], 2)
 
 
@@ -572,12 +600,14 @@ class TestRegisterConformers(unittest.TestCase):
                                 failOnDuplicate=False,
                                 config=self._config),
             expected[self._config['dbtype']])
-        self.assertEqual(utils.registration_counts(config=self._config),(2,3))
+        self.assertEqual(utils.registration_counts(config=self._config),
+                         (2, 3))
         expected = {
             'sqlite3': (1, 2),
             'postgresql': (1, 4),
         }
-        self.assertEqual(utils.get_all_registry_numbers(config=self._config),expected[self._config['dbtype']])
+        self.assertEqual(utils.get_all_registry_numbers(config=self._config),
+                         expected[self._config['dbtype']])
 
     def testNoConformers(self):
         utils._initdb(config=self._config, confirm=True)

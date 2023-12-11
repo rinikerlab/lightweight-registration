@@ -45,10 +45,12 @@ _defaultConfig = {
     3,  # number of digits to use when hashing conformer coordinates
     "hashConformer":
     0,  # the molecule's conformer will be part of the basic identity hash
-    "lwregSchema":"", # the schema name to use for the lwreg tables (no effect with sqlite3)
+    "lwregSchema":
+    "",  # the schema name to use for the lwreg tables (no effect with sqlite3)
 }
 
 from rdkit.Chem.RegistrationHash import HashLayer
+
 
 class RegistrationFailureReasons(enum.Enum):
     DUPLICATE = enum.auto()
@@ -82,21 +84,20 @@ _replace_placeholders_noop = lambda x: x
 _replace_placeholders_pcts = lambda x: x.replace('?', '%s').replace('"', '')
 _replace_placeholders = _replace_placeholders_noop
 
-
-_baseregistrationMetadataTableName='registration_metadata'
-_baseorigDataTableName='orig_data'
-_basehashTableName='hashes'
-_basemolblocksTableName='molblocks'
-_baseconformersTableName='conformers'
-
-
+_baseregistrationMetadataTableName = 'registration_metadata'
+_baseorigDataTableName = 'orig_data'
+_basehashTableName = 'hashes'
+_basemolblocksTableName = 'molblocks'
+_baseconformersTableName = 'conformers'
 
 _dbConnection = None
 _dbConfig = None
+
+
 def connect(config):
     global _replace_placeholders
     global _dbtype
-    global _dbConnection   
+    global _dbConnection
     global _dbConfig
     global registrationMetadataTableName
     global origDataTableName
@@ -111,12 +112,12 @@ def connect(config):
     dbtype = _lookupWithDefault(config, 'dbtype').lower()
     if not cn:
         dbnm = config['dbname']
+        schemaBase = ''
         if dbtype == 'sqlite3':
             uri = False
             if dbnm.startswith('file::'):
                 uri = True
             cn = sqlite3.connect(dbnm, uri=uri)
-            schemaBase = ''
             lwregSchema = ''
         elif dbtype in ('postgres', 'postgresql'):
             dbtype = 'postgresql'
@@ -126,7 +127,7 @@ def connect(config):
                                   host=config.get('host', None),
                                   user=config.get('user', None),
                                   password=config.get('password', None))
-            lwregSchema = config.get('lwregSchema','')
+            lwregSchema = config.get('lwregSchema', '')
             if lwregSchema:
                 schemaBase = config['lwregSchema'] + '.'
         registrationMetadataTableName = schemaBase + _baseregistrationMetadataTableName
@@ -142,12 +143,14 @@ def connect(config):
     _dbConnection = cn
     _dbConfig = config
     return cn
-    
+
+
 def _clear_cached_connection():
-    global _dbConnection   
+    global _dbConnection
     global _dbConfig
     _dbConnection = None
     _dbConfig = None
+
 
 MolTuple = namedtuple('MolTuple', ('mol', 'datatype', 'rawdata'))
 
@@ -308,7 +311,8 @@ def _register_one_conformer(mrn,
         if _dbtype != 'postgresql':
             curs.execute(
                 _replace_placeholders(
-                    f'insert into {conformersTableName} values (NULL,{qs})'), regtuple)
+                    f'insert into {conformersTableName} values (NULL,{qs})'),
+                regtuple)
             curs.execute('select last_insert_rowid()')
             conf_id = curs.fetchone()[0]
         else:
@@ -327,8 +331,8 @@ def _register_one_conformer(mrn,
         else:
             curs.execute(
                 _replace_placeholders(
-                    f'select conf_id from {conformersTableName} where conformer_hash=?'),
-                (chash, ))
+                    f'select conf_id from {conformersTableName} where conformer_hash=?'
+                ), (chash, ))
             conf_id = curs.fetchone()[0]
     except:
         cn.rollback()
@@ -354,7 +358,7 @@ def _register_mol(tpl,
             "attempt to register a molecule without conformers when registerConformers is set"
         )
 
-    if hasattr(cn,'autocommit') and cn.autocommit is True:
+    if hasattr(cn, 'autocommit') and cn.autocommit is True:
         logging.warn("setting autocommit on the database connection to False")
         cn.autocommit = False
 
@@ -369,7 +373,8 @@ def _register_mol(tpl,
 
     if def_rdkit_version_label is None:
         curs.execute(
-            f"select value from {registrationMetadataTableName} where key='rdkitVersion'")
+            f"select value from {registrationMetadataTableName} where key='rdkitVersion'"
+        )
         def_rdkit_version_label = curs.fetchone()[0]
     rdkit_version_label = rdkit.__version__
     if rdkit_version_label == def_rdkit_version_label:
@@ -398,7 +403,8 @@ def _register_mol(tpl,
         if _dbtype != 'postgresql':
             curs.execute(
                 _replace_placeholders(
-                    f'insert into {hashTableName} values (NULL,{qs})'), regtuple)
+                    f'insert into {hashTableName} values (NULL,{qs})'),
+                regtuple)
             curs.execute('select last_insert_rowid()')
             mrn = curs.fetchone()[0]
         else:
@@ -411,10 +417,12 @@ def _register_mol(tpl,
             mrn = curs.fetchone()[0]
 
         curs.execute(
-            _replace_placeholders(f'insert into {origDataTableName} (molregno, data, datatype) values (?, ?, ?)'),
-            (mrn, tpl.rawdata, tpl.datatype))
+            _replace_placeholders(
+                f'insert into {origDataTableName} (molregno, data, datatype) values (?, ?, ?)'
+            ), (mrn, tpl.rawdata, tpl.datatype))
         curs.execute(
-            _replace_placeholders(f'insert into {molblocksTableName} values (?, ?, ?)'),
+            _replace_placeholders(
+                f'insert into {molblocksTableName} values (?, ?, ?)'),
             (mrn, molb, standardization_label))
 
         cn.commit()
@@ -426,7 +434,8 @@ def _register_mol(tpl,
         else:
             curs.execute(
                 _replace_placeholders(
-                    f'select molregno from {hashTableName} where fullhash=?'), (mhash, ))
+                    f'select molregno from {hashTableName} where fullhash=?'),
+                (mhash, ))
             mrn = curs.fetchone()[0]
     except:
         cn.rollback()
@@ -678,10 +687,12 @@ def bulk_register(config=None,
     curs = cn.cursor()
 
     curs.execute(
-        f"select value from {registrationMetadataTableName} where key='standardization'")
+        f"select value from {registrationMetadataTableName} where key='standardization'"
+    )
     def_std_label = curs.fetchone()[0]
     curs.execute(
-        f"select value from {registrationMetadataTableName} where key='rdkitVersion'")
+        f"select value from {registrationMetadataTableName} where key='rdkitVersion'"
+    )
     def_rdkit_version_label = curs.fetchone()[0]
 
     for mol in mols:
@@ -731,6 +742,7 @@ def _getConfIdsForMolregnos(ids, config):
     res = curs.fetchall()
     return res
 
+
 def registration_counts(config=None):
     """ returns the number of entries in the registration database
 
@@ -752,6 +764,7 @@ def registration_counts(config=None):
     else:
         return nHashes
 
+
 def get_all_registry_numbers(config=None):
     """ returns a tuple with all of the registry numbers in the database
         
@@ -763,7 +776,6 @@ def get_all_registry_numbers(config=None):
     curs.execute(f'select molregno from {hashTableName}')
     res = curs.fetchall()
     return tuple(sorted(x[0] for x in res))
-
 
 
 def query(config=None,
@@ -976,10 +988,11 @@ def _initdb(config=None, confirm=False):
     cn = connect(config)
     curs = cn.cursor()
 
-    if lwregSchema and _dbtype=='postgresql':
+    if lwregSchema and _dbtype == 'postgresql':
         curs.execute(f'create schema if not exists {lwregSchema}')
     curs.execute(f'drop table if exists {registrationMetadataTableName}')
-    curs.execute(f'create table {registrationMetadataTableName} (key text, value text)')
+    curs.execute(
+        f'create table {registrationMetadataTableName} (key text, value text)')
     _registerMetadata(curs, config)
 
     curs.execute(f'drop table if exists {hashTableName}')
@@ -1023,6 +1036,7 @@ def _initdb(config=None, confirm=False):
     cn.commit()
     return True
 
+
 def initdb(config=None):
     """ initializes the registration database    
 
@@ -1032,14 +1046,15 @@ def initdb(config=None):
     Keyword arguments:
     config  -- configuration dict
     """
-    print("This will destroy any existing information in the registration database.")
+    print(
+        "This will destroy any existing information in the registration database."
+    )
     response = input("  are you sure? [yes/no]: ")
     if response == 'yes':
         return _initdb(config=config, confirm=True)
     else:
         print("cancelled")
         return False
-
 
 
 FORBIDDEN_COMBINATIONS = [{

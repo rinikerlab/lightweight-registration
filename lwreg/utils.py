@@ -382,7 +382,7 @@ def _register_mol(tpl,
             mrn = curs.fetchone()[0]
 
         curs.execute(
-            _replace_placeholders('insert into orig_data values (?, ?, ?)'),
+            _replace_placeholders('insert into orig_data (molregno, data, datatype) values (?, ?, ?)'),
             (mrn, tpl.rawdata, tpl.datatype))
         curs.execute(
             _replace_placeholders('insert into molblocks values (?, ?, ?)'),
@@ -930,9 +930,14 @@ def _initdb(config=None, confirm=False):
             tautomer_hash text, no_stereo_tautomer_hash text, "escape" text, sgroup_data text, rdkitVersion text)'''
         )
     curs.execute('drop table if exists orig_data')
-    curs.execute(
-        'create table orig_data (molregno integer primary key, data text, datatype text)'
-    )
+    if _dbtype != 'postgresql':
+        curs.execute(
+            'create table orig_data (molregno integer primary key, data text, datatype text, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)'
+        )
+    else:
+        curs.execute(
+            'create table orig_data (molregno integer primary key, data text, datatype text, timestamp TIMESTAMP default now())'
+        )
     curs.execute('drop table if exists molblocks')
     curs.execute(
         'create table molblocks (molregno integer primary key, molblock text, standardization text)'

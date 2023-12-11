@@ -3,6 +3,8 @@
 # This file is part of lwreg.
 # The contents are covered by the terms of the MIT license
 # which is included in the file LICENSE,
+import time
+from datetime import datetime, timedelta
 import unittest
 import sqlite3
 from rdkit import Chem
@@ -356,6 +358,20 @@ M  END
 ''',
                            config=lconfig), 2)
 
+    def testTimestamp(self):
+        cn = sqlite3.connect(':memory:')
+        self._config = utils.defaultConfig()
+        self._config['connection'] = cn
+        utils.initdb(config=self._config, confirm=True)
+        utils.register(smiles='CCC', config=self._config)
+        time.sleep(2)
+        utils.register(smiles='CCCC', config=self._config)
+        curs = cn.cursor()
+        d = curs.execute("select molregno, timestamp from orig_data order by molregno asc")
+        timestamps = []
+        for row in d:
+            timestamps.append(datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S"))
+        self.assertEqual(timestamps[1]-timestamps[0] > timedelta(0),True)
 
 class TestLWRegTautomerv2(unittest.TestCase):
     integrityError = sqlite3.IntegrityError

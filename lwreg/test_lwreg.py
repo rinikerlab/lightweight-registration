@@ -362,7 +362,7 @@ M  END
         cn = sqlite3.connect(':memory:')
         self._config = utils.defaultConfig()
         self._config['connection'] = cn
-        utils.initdb(config=self._config, confirm=True)
+        utils._initdb(config=self._config, confirm=True)
         utils.register(smiles='CCC', config=self._config)
         time.sleep(2)
         utils.register(smiles='CCCC', config=self._config)

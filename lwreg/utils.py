@@ -44,11 +44,11 @@ _defaultConfig = {
     "numConformerDigits":
     3,  # number of digits to use when hashing conformer coordinates
     "hashConformer":
-    0  # the molecule's conformer will be part of the basic identity hash
+    0,  # the molecule's conformer will be part of the basic identity hash
+    "lwregSchema":"", # the schema name to use for the lwreg tables (no effect with sqlite3)
 }
 
 from rdkit.Chem.RegistrationHash import HashLayer
-
 
 class RegistrationFailureReasons(enum.Enum):
     DUPLICATE = enum.auto()
@@ -82,6 +82,15 @@ _replace_placeholders_noop = lambda x: x
 _replace_placeholders_pcts = lambda x: x.replace('?', '%s').replace('"', '')
 _replace_placeholders = _replace_placeholders_noop
 
+
+_baseregistrationMetadataTableName='registration_metadata'
+_baseorigDataTableName='orig_data'
+_basehashTableName='hashes'
+_basemolblocksTableName='molblocks'
+_baseconformersTableName='conformers'
+
+
+
 _dbConnection = None
 _dbConfig = None
 def connect(config):
@@ -89,6 +98,13 @@ def connect(config):
     global _dbtype
     global _dbConnection   
     global _dbConfig
+    global registrationMetadataTableName
+    global origDataTableName
+    global hashTableName
+    global molblocksTableName
+    global conformersTableName
+    global lwregSchema
+
     cn = config.get('connection', None)
     if not cn and _dbConnection is not None and _dbConfig == config:
         cn = _dbConnection
@@ -100,6 +116,8 @@ def connect(config):
             if dbnm.startswith('file::'):
                 uri = True
             cn = sqlite3.connect(dbnm, uri=uri)
+            schemaBase = ''
+            lwregSchema = ''
         elif dbtype in ('postgres', 'postgresql'):
             dbtype = 'postgresql'
             if psycopg2 is None:
@@ -108,6 +126,14 @@ def connect(config):
                                   host=config.get('host', None),
                                   user=config.get('user', None),
                                   password=config.get('password', None))
+            lwregSchema = config.get('lwregSchema','')
+            if lwregSchema:
+                schemaBase = config['lwregSchema'] + '.'
+        registrationMetadataTableName = schemaBase + _baseregistrationMetadataTableName
+        origDataTableName = schemaBase + _baseorigDataTableName
+        hashTableName = schemaBase + _basehashTableName
+        molblocksTableName = schemaBase + _basemolblocksTableName
+        conformersTableName = schemaBase + _baseconformersTableName
     _dbtype = dbtype
     if dbtype == 'postgresql':
         _replace_placeholders = _replace_placeholders_pcts
@@ -282,7 +308,7 @@ def _register_one_conformer(mrn,
         if _dbtype != 'postgresql':
             curs.execute(
                 _replace_placeholders(
-                    f'insert into conformers values (NULL,{qs})'), regtuple)
+                    f'insert into {conformersTableName} values (NULL,{qs})'), regtuple)
             curs.execute('select last_insert_rowid()')
             conf_id = curs.fetchone()[0]
         else:
@@ -290,7 +316,7 @@ def _register_one_conformer(mrn,
             #  i.e. failed inserts will increment the counter
             curs.execute(
                 _replace_placeholders(
-                    f'insert into conformers values (default,{qs}) returning conf_id'
+                    f'insert into {conformersTableName} values (default,{qs}) returning conf_id'
                 ), regtuple)
             conf_id = curs.fetchone()[0]
         cn.commit()
@@ -301,7 +327,7 @@ def _register_one_conformer(mrn,
         else:
             curs.execute(
                 _replace_placeholders(
-                    'select conf_id from conformers where conformer_hash=?'),
+                    f'select conf_id from {conformersTableName} where conformer_hash=?'),
                 (chash, ))
             conf_id = curs.fetchone()[0]
     except:
@@ -335,7 +361,7 @@ def _register_mol(tpl,
     standardization_label = _get_standardization_label(config)
     if def_std_label is None:
         curs.execute(
-            "select value from registration_metadata where key='standardization'"
+            f"select value from {registrationMetadataTableName} where key='standardization'"
         )
         def_std_label = curs.fetchone()[0]
     if standardization_label == def_std_label:
@@ -343,7 +369,7 @@ def _register_mol(tpl,
 
     if def_rdkit_version_label is None:
         curs.execute(
-            "select value from registration_metadata where key='rdkitVersion'")
+            f"select value from {registrationMetadataTableName} where key='rdkitVersion'")
         def_rdkit_version_label = curs.fetchone()[0]
     rdkit_version_label = rdkit.__version__
     if rdkit_version_label == def_rdkit_version_label:
@@ -372,7 +398,7 @@ def _register_mol(tpl,
         if _dbtype != 'postgresql':
             curs.execute(
                 _replace_placeholders(
-                    f'insert into hashes values (NULL,{qs})'), regtuple)
+                    f'insert into {hashTableName} values (NULL,{qs})'), regtuple)
             curs.execute('select last_insert_rowid()')
             mrn = curs.fetchone()[0]
         else:
@@ -380,15 +406,15 @@ def _register_mol(tpl,
             #  i.e. failed inserts will increment the counter
             curs.execute(
                 _replace_placeholders(
-                    f'insert into hashes values (default,{qs}) returning molregno'
+                    f'insert into {hashTableName} values (default,{qs}) returning molregno'
                 ), regtuple)
             mrn = curs.fetchone()[0]
 
         curs.execute(
-            _replace_placeholders('insert into orig_data (molregno, data, datatype) values (?, ?, ?)'),
+            _replace_placeholders(f'insert into {origDataTableName} (molregno, data, datatype) values (?, ?, ?)'),
             (mrn, tpl.rawdata, tpl.datatype))
         curs.execute(
-            _replace_placeholders('insert into molblocks values (?, ?, ?)'),
+            _replace_placeholders(f'insert into {molblocksTableName} values (?, ?, ?)'),
             (mrn, molb, standardization_label))
 
         cn.commit()
@@ -400,7 +426,7 @@ def _register_mol(tpl,
         else:
             curs.execute(
                 _replace_placeholders(
-                    'select molregno from hashes where fullhash=?'), (mhash, ))
+                    f'select molregno from {hashTableName} where fullhash=?'), (mhash, ))
             mrn = curs.fetchone()[0]
     except:
         cn.rollback()
@@ -652,10 +678,10 @@ def bulk_register(config=None,
     curs = cn.cursor()
 
     curs.execute(
-        "select value from registration_metadata where key='standardization'")
+        f"select value from {registrationMetadataTableName} where key='standardization'")
     def_std_label = curs.fetchone()[0]
     curs.execute(
-        "select value from registration_metadata where key='rdkitVersion'")
+        f"select value from {registrationMetadataTableName} where key='rdkitVersion'")
     def_rdkit_version_label = curs.fetchone()[0]
 
     for mol in mols:
@@ -700,7 +726,7 @@ def _getConfIdsForMolregnos(ids, config):
 
     qs = _replace_placeholders(','.join('?' * len(ids)))
     curs.execute(
-        f'select molregno,conf_id from conformers where molregno in ({qs})',
+        f'select molregno,conf_id from {conformersTableName} where molregno in ({qs})',
         ids)
     res = curs.fetchall()
     return res
@@ -716,11 +742,11 @@ def registration_counts(config=None):
     """
     cn = connect(config)
     curs = cn.cursor()
-    curs.execute('select count(*) from hashes')
+    curs.execute(f'select count(*) from {hashTableName}')
     nHashes = curs.fetchone()[0]
 
     if _lookupWithDefault(config, "registerConformers"):
-        curs.execute('select count(*) from conformers')
+        curs.execute(f'select count(*) from {conformersTableName}')
         nConfs = curs.fetchone()[0]
         return nHashes, nConfs
     else:
@@ -734,7 +760,7 @@ def get_all_registry_numbers(config=None):
     """
     cn = connect(config)
     curs = cn.cursor()
-    curs.execute('select molregno from hashes')
+    curs.execute(f'select molregno from {hashTableName}')
     res = curs.fetchall()
     return tuple(sorted(x[0] for x in res))
 
@@ -797,7 +823,7 @@ def query(config=None,
            not sMol.GetNumConformers():
             if layers == 'ALL':
                 queryText = _replace_placeholders(
-                    'select molregno from hashes where fullhash=?')
+                    f'select molregno from {hashTableName} where fullhash=?')
                 queryVals = (mhash, )
             else:
                 vals = []
@@ -816,7 +842,7 @@ def query(config=None,
                     query.append(f'"{lyr}"=?')
 
                 query = _replace_placeholders(' and '.join(query))
-                queryText = f'select molregno from hashes where {query}'
+                queryText = f'select molregno from {hashTableName} where {query}'
                 queryVals = vals
             curs.execute(queryText, queryVals)
             res = [x[0] for x in curs.fetchall()]
@@ -826,7 +852,7 @@ def query(config=None,
                 sMol, _lookupWithDefault(config, "numConformerDigits"))
             curs.execute(
                 _replace_placeholders(
-                    'select molregno,conf_id from conformers where conformer_hash=?'
+                    f'select molregno,conf_id from {conformersTableName} where conformer_hash=?'
                 ), (chash, ))
             res = [tuple(x) for x in curs.fetchall()]
 
@@ -890,13 +916,13 @@ def retrieve(config=None,
     curs = cn.cursor()
     if not getConfs:
         if as_submitted:
-            qry = 'molregno,data,datatype from orig_data'
+            qry = 'molregno,data,datatype from {origDataTableName}'
         else:
-            qry = "molregno,molblock,'mol' from molblocks"
+            qry = f"molregno,molblock,'mol' from {molblocksTableName}"
         qs = _replace_placeholders(','.join('?' * len(ids)))
         curs.execute(f'select {qry} where molregno in ({qs})', ids)
     else:
-        qry = "molregno,conf_id,molblock from conformers"
+        qry = f"molregno,conf_id,molblock from {conformersTableName}"
         qs = _replace_placeholders(','.join('?' * len(ids)))
         curs.execute(
             f'select {qry} where molregno in ({qs}) and conf_id in ({qs})',
@@ -920,12 +946,12 @@ def _registerMetadata(curs, config):
     for k, v in dc.items():
         curs.execute(
             _replace_placeholders(
-                'insert into registration_metadata values (?,?)'),
+                f'insert into {registrationMetadataTableName} values (?,?)'),
             (str(k), str(v)))
 
     curs.execute(
         _replace_placeholders(
-            'insert into registration_metadata values (?,?)'),
+            f'insert into {registrationMetadataTableName} values (?,?)'),
         ('rdkitVersion', rdkit.__version__))
 
 
@@ -950,46 +976,48 @@ def _initdb(config=None, confirm=False):
     cn = connect(config)
     curs = cn.cursor()
 
-    curs.execute('drop table if exists registration_metadata')
-    curs.execute('create table registration_metadata (key text, value text)')
+    if lwregSchema and _dbtype=='postgresql':
+        curs.execute(f'create schema if not exists {lwregSchema}')
+    curs.execute(f'drop table if exists {registrationMetadataTableName}')
+    curs.execute(f'create table {registrationMetadataTableName} (key text, value text)')
     _registerMetadata(curs, config)
 
-    curs.execute('drop table if exists hashes')
+    curs.execute(f'drop table if exists {hashTableName}')
     if _dbtype != 'postgresql':
         curs.execute(
-            '''create table hashes (molregno integer primary key, fullhash text unique, 
+            f'''create table {hashTableName} (molregno integer primary key, fullhash text unique, 
             formula text, canonical_smiles text, no_stereo_smiles text, 
             tautomer_hash text, no_stereo_tautomer_hash text, "escape" text, sgroup_data text, rdkitVersion text)'''
         )
     else:
         curs.execute(
-            '''create table hashes (molregno serial primary key, fullhash text unique, 
+            f'''create table {hashTableName} (molregno serial primary key, fullhash text unique, 
             formula text, canonical_smiles text, no_stereo_smiles text, 
             tautomer_hash text, no_stereo_tautomer_hash text, "escape" text, sgroup_data text, rdkitVersion text)'''
         )
-    curs.execute('drop table if exists orig_data')
+    curs.execute(f'drop table if exists {origDataTableName}')
     if _dbtype != 'postgresql':
         curs.execute(
-            'create table orig_data (molregno integer primary key, data text, datatype text, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)'
+            f'create table {origDataTableName} (molregno integer primary key, data text, datatype text, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)'
         )
     else:
         curs.execute(
-            'create table orig_data (molregno integer primary key, data text, datatype text, timestamp TIMESTAMP default now())'
+            f'create table {origDataTableName} (molregno integer primary key, data text, datatype text, timestamp TIMESTAMP default now())'
         )
-    curs.execute('drop table if exists molblocks')
+    curs.execute(f'drop table if exists {molblocksTableName}')
     curs.execute(
-        'create table molblocks (molregno integer primary key, molblock text, standardization text)'
+        f'create table {molblocksTableName} (molregno integer primary key, molblock text, standardization text)'
     )
 
-    curs.execute('drop table if exists conformers')
+    curs.execute(f'drop table if exists {conformersTableName}')
     if _lookupWithDefault(config, "registerConformers"):
         if _dbtype != 'postgresql':
             curs.execute(
-                '''create table conformers (conf_id integer primary key, molregno integer not null, 
+                f'''create table {conformersTableName} (conf_id integer primary key, molregno integer not null, 
                    conformer_hash text not null unique, molblock text)''')
         else:
             curs.execute(
-                '''create table conformers (conf_id serial primary key, molregno integer not null, 
+                f'''create table {conformersTableName} (conf_id serial primary key, molregno integer not null, 
                    conformer_hash text not null unique, molblock text)''')
 
     cn.commit()

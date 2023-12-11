@@ -380,7 +380,7 @@ M  END
         utils.register(smiles='CCCC', config=self._config)
         cn = utils.connect(config=self._config)
         curs = cn.cursor()
-        curs.execute("select molregno, timestamp from orig_data order by molregno asc")
+        curs.execute(f"select molregno, timestamp from {utils.origDataTableName} order by molregno asc")
         d = curs.fetchall()
         curs = None
         timestamps = []
@@ -432,7 +432,7 @@ class TestLWRegPSQL(TestLWReg):
         utils.register(smiles='CCCC', config=self._config)
         cn = utils.connect(config=self._config)
         curs = cn.cursor()
-        curs.execute("select molregno,timestamp from orig_data order by molregno asc")
+        curs.execute(f"select molregno,timestamp from {utils.origDataTableName} order by molregno asc")
         d = curs.fetchall()
         curs = None
         timestamps = []
@@ -491,10 +491,10 @@ class TestStandardizationLabels(unittest.TestCase):
         cn = utils.connect(cfg)
         curs = cn.cursor()
         curs.execute(
-            "select count(*) from molblocks where standardization is not null")
+            f"select count(*) from {utils.molblocksTableName} where standardization is not null")
         self.assertEqual(curs.fetchone()[0], 2)
         curs.execute(
-            "select count(*) from molblocks where standardization is null")
+            f"select count(*) from {utils.molblocksTableName} where standardization is null")
         self.assertEqual(curs.fetchone()[0], 2)
 
 

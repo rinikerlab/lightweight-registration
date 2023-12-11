@@ -736,7 +736,7 @@ def get_all_registry_numbers(config=None):
     curs = cn.cursor()
     curs.execute('select molregno from hashes')
     res = curs.fetchall()
-    return tuple(x[0] for x in res)
+    return tuple(sorted(x[0] for x in res))
 
 
 

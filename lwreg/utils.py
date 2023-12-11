@@ -726,6 +726,19 @@ def registration_counts(config=None):
     else:
         return nHashes
 
+def get_all_registry_numbers(config=None):
+    """ returns a tuple with all of the registry numbers in the database
+        
+    Keyword arguments:
+    config     -- configuration dict
+    """
+    cn = connect(config)
+    curs = cn.cursor()
+    curs.execute('select molregno from hashes')
+    res = curs.fetchall()
+    return tuple(x[0] for x in res)
+
+
 
 def query(config=None,
           layers='ALL',

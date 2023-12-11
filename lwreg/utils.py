@@ -84,7 +84,7 @@ _replace_placeholders = _replace_placeholders_noop
 
 _dbConnection = None
 _dbConfig = None
-def _connect(config):
+def connect(config):
     global _replace_placeholders
     global _dbtype
     global _dbConnection   
@@ -116,7 +116,7 @@ def _connect(config):
     _dbConnection = cn
     _dbConfig = config
     return cn
-
+    
 def _clear_cached_connection():
     global _dbConnection   
     global _dbConfig
@@ -511,7 +511,7 @@ def register(config=None,
                      smiles=smiles,
                      config=config)
 
-    cn = _connect(config)
+    cn = connect(config)
     curs = cn.cursor()
     if tpl.mol is None:
         return RegistrationFailureReasons.PARSE_FAILURE
@@ -552,14 +552,14 @@ def register_multiple_conformers(config=None,
     _check_config(config)
     if not _lookupWithDefault(config, "registerConformers"):
         raise ValueError(
-            'register_multiple_conformers can only be used when registereConformers is enabled'
+            'register_multiple_conformers can only be used when registerConformers is enabled'
         )
 
     tpl = _parse_mol(mol=mol, config=config)
     if tpl.mol is None:
         return RegistrationFailureReasons.PARSE_FAILURE
 
-    cn = _connect(config)
+    cn = connect(config)
     curs = cn.cursor()
 
     # start by registering the first conformer in order to
@@ -645,7 +645,7 @@ def bulk_register(config=None,
     _check_config(config)
 
     res = []
-    cn = _connect(config)
+    cn = connect(config)
     curs = cn.cursor()
 
     curs.execute(
@@ -692,7 +692,7 @@ def bulk_register(config=None,
 def _getConfIdsForMolregnos(ids, config):
     assert _lookupWithDefault(config, "registerConformers")
 
-    cn = _connect(config)
+    cn = connect(config)
     curs = cn.cursor()
 
     qs = _replace_placeholders(','.join('?' * len(ids)))
@@ -754,7 +754,7 @@ def query(config=None,
         sMol = standardize_mol(tpl.mol, config=config)
         mhash, hlayers = hash_mol(sMol, escape=escape, config=config)
 
-        cn = _connect(config)
+        cn = connect(config)
         curs = cn.cursor()
         if not _lookupWithDefault(config, "registerConformers") or \
            not sMol.GetNumConformers():
@@ -849,7 +849,7 @@ def retrieve(config=None,
                 ids = [int(x) for x in ids.split(',')]
             getConfs = False
 
-    cn = _connect(config)
+    cn = connect(config)
     curs = cn.cursor()
     if not getConfs:
         if as_submitted:
@@ -909,7 +909,7 @@ def _initdb(config=None, confirm=False):
 
     _check_config(config)
 
-    cn = _connect(config)
+    cn = connect(config)
     curs = cn.cursor()
 
     curs.execute('drop table if exists registration_metadata')

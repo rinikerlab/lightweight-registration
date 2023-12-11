@@ -29,7 +29,7 @@ if psycopg2:
     #cfg['host'] = 'localhost'
     cfg['dbtype'] = 'postgresql'
     try:
-        cn = utils._connect(config=cfg)
+        cn = utils.connect(config=cfg)
     except psycopg2.OperationalError:
         # server not running
         psycopg2 = None
@@ -443,7 +443,7 @@ class TestStandardizationLabels(unittest.TestCase):
         cfg['standardization'] = ['fragment', oac]
         self.assertEqual(utils.register(smiles='CCN', config=cfg), 3)
         self.assertEqual(utils.register(smiles='CCNC', config=cfg), 4)
-        cn = utils._connect(cfg)
+        cn = utils.connect(cfg)
         curs = cn.cursor()
         curs.execute(
             "select count(*) from molblocks where standardization is not null")

@@ -378,9 +378,8 @@ M  END
         curs = None
         timestamps = []
         for row in d:
-            timestamps.append(datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S"))
+           timestamps.append(datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S"))
         self.assertEqual(timestamps[1]-timestamps[0] > timedelta(0),True)
-
 class TestLWRegTautomerv2(unittest.TestCase):
     integrityError = sqlite3.IntegrityError
 

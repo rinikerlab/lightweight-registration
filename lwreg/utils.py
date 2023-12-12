@@ -64,6 +64,7 @@ def defaultConfig():
 
 _config = {}
 
+
 def configure_from_database(config):
     global _config
     if 'connection' in config:
@@ -72,7 +73,8 @@ def configure_from_database(config):
         cn = connect(config)
     curs = cn.cursor()
     curs.execute(f'select * from {registrationMetadataTableName}')
-    for k,v in curs.fetchall():
+    rows = curs.fetchall()
+    for k, v in rows:
         if k == 'rdkitVersion':
             continue
         try:
@@ -84,6 +86,7 @@ def configure_from_database(config):
                 pass
         config[k] = v
     _config = config
+
 
 def set_default_config(config):
     global _config
@@ -143,13 +146,11 @@ def connect(config):
     dbtype = _lookupWithDefault(config, 'dbtype').lower()
     if not cn:
         dbnm = config['dbname']
-        schemaBase = ''
         if dbtype == 'sqlite3':
             uri = False
             if dbnm.startswith('file::'):
                 uri = True
             cn = sqlite3.connect(dbnm, uri=uri)
-            lwregSchema = ''
         elif dbtype in ('postgres', 'postgresql'):
             dbtype = 'postgresql'
             if psycopg2 is None:
@@ -158,14 +159,19 @@ def connect(config):
                                   host=config.get('host', None),
                                   user=config.get('user', None),
                                   password=config.get('password', None))
-            lwregSchema = config.get('lwregSchema', '')
-            if lwregSchema:
-                schemaBase = config['lwregSchema'] + '.'
-        registrationMetadataTableName = schemaBase + _baseregistrationMetadataTableName
-        origDataTableName = schemaBase + _baseorigDataTableName
-        hashTableName = schemaBase + _basehashTableName
-        molblocksTableName = schemaBase + _basemolblocksTableName
-        conformersTableName = schemaBase + _baseconformersTableName
+
+    schemaBase = ''
+    lwregSchema = ''
+    if dbtype in ('postgres', 'postgresql'):
+        lwregSchema = config.get('lwregSchema', '')
+        if lwregSchema:
+            schemaBase = config['lwregSchema'] + '.'
+    registrationMetadataTableName = schemaBase + _baseregistrationMetadataTableName
+    origDataTableName = schemaBase + _baseorigDataTableName
+    hashTableName = schemaBase + _basehashTableName
+    molblocksTableName = schemaBase + _basemolblocksTableName
+    conformersTableName = schemaBase + _baseconformersTableName
+
     _dbtype = dbtype
     if dbtype == 'postgresql':
         _replace_placeholders = _replace_placeholders_pcts
@@ -261,6 +267,10 @@ def standardize_mol(mol, config=None):
     Keyword arguments:
     config -- configuration dict
     """
+    if not config:
+        config = _configure()
+    elif isinstance(config, str):
+        config = _configure(filename=config)
 
     _check_config(config)
 

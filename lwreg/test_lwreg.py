@@ -399,11 +399,16 @@ M  END
         lconfig = self._config.copy()
         lconfig['standardization'] = 'charge'
         utils._initdb(config=lconfig, confirm=True)
-        self.assertEqual(utils.register(smiles='CCC[O-].[Na+]', config=lconfig), 1)
-        self.assertEqual(utils.register(smiles='CCC(=O)[O-].[Na+]', config=lconfig), 2)
+        self.assertEqual(
+            utils.register(smiles='CCC[O-].[Na+]', config=lconfig), 1)
+        self.assertEqual(
+            utils.register(smiles='CCC(=O)[O-].[Na+]', config=lconfig), 2)
         self.assertEqual(utils.registration_counts(config=lconfig), 2)
-        nconfig = {'dbname': lconfig['dbname'], 
-                    'dbtype': lconfig['dbtype']}
+        nconfig = {
+            'dbname': lconfig['dbname'],
+            'dbtype': lconfig['dbtype'],
+            'lwregSchema': lconfig['lwregSchema']
+        }
         if 'connection' in lconfig:
             nconfig['connection'] = lconfig['connection']
         utils.configure_from_database(nconfig)
@@ -413,11 +418,12 @@ M  END
             del configCopy['connection']
             del nconfigCopy['connection']
         self.assertEqual(nconfigCopy, configCopy)
-        
+
         self.assertRaises(
             self.integrityError,
             lambda: utils.register(smiles='CCC[O-]', config=nconfig))
-        self.assertGreater(utils.register(smiles='CCCC(=O)[O-].[Na+]', config=nconfig), 2)
+        self.assertGreater(
+            utils.register(smiles='CCCC(=O)[O-].[Na+]', config=nconfig), 2)
         self.assertRaises(
             self.integrityError,
             lambda: utils.register(smiles='CCCC(=O)O', config=nconfig))
@@ -430,9 +436,8 @@ M  END
         self.assertEqual(utils.register(smiles='CCC[O-].[Na+]'), 1)
         self.assertEqual(utils.register(smiles='CCC(=O)[O-].[Na+]'), 2)
         self.assertEqual(utils.registration_counts(), 2)
-        self.assertRaises(
-            self.integrityError,
-            lambda: utils.register(smiles='CCC(=O)O'))
+        self.assertRaises(self.integrityError,
+                          lambda: utils.register(smiles='CCC(=O)O'))
 
 
 class TestLWRegTautomerv2(unittest.TestCase):
@@ -507,15 +512,20 @@ class TestLWRegPSQLWithSchema(TestLWRegPSQL):
 
 class TestStandardizationLabels(unittest.TestCase):
 
+    def setUp(self):
+        cn = sqlite3.connect(':memory:')
+        self._config = utils.defaultConfig()
+        self._config['connection'] = cn
+
     def testStandards(self):
-        cfg = utils.defaultConfig()
+        cfg = self._config
         for k in utils.standardizationOptions:
             cfg['standardization'] = k
             lbl = utils._get_standardization_label(cfg)
             self.assertEqual(lbl, k)
 
     def testCombined(self):
-        cfg = utils.defaultConfig()
+        cfg = self._config
         for k in utils.standardizationOptions:
             cl = ['foo', k]
             cfg['standardization'] = cl
@@ -527,7 +537,7 @@ class TestStandardizationLabels(unittest.TestCase):
         def func1(x):
             pass
 
-        cfg = utils.defaultConfig()
+        cfg = self._config
         for k in utils.standardizationOptions:
             for func in (func1, lambda x: x):
                 cl = [k, func]
@@ -544,8 +554,7 @@ class TestStandardizationLabels(unittest.TestCase):
                 self.assertEqual(lbl, f'{k}|{func.name}')
 
     def testRecording(self):
-        cfg = utils.defaultConfig()
-        cfg['dbname'] = 'foo.sqlt'
+        cfg = self._config
         utils._initdb(config=cfg, confirm=True)
         self.assertEqual(utils.register(smiles='CCO', config=cfg), 1)
         self.assertEqual(utils.register(smiles='CCOC', config=cfg), 2)
@@ -563,6 +572,14 @@ class TestStandardizationLabels(unittest.TestCase):
             f"select count(*) from {utils.molblocksTableName} where standardization is null"
         )
         self.assertEqual(curs.fetchone()[0], 2)
+
+    def testStandardizeMolFunction(self):
+        cfg = self._config
+        cfg['standardization'] = 'charge'
+        utils._initdb(config=cfg, confirm=True)
+        m = Chem.MolFromSmiles('CC[O-].[Na+]')
+        nm = utils.standardize_mol(m, config=cfg)
+        self.assertEqual(Chem.MolToSmiles(nm), 'CCO')
 
 
 class TestConformerHashes(unittest.TestCase):

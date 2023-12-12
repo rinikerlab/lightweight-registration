@@ -66,6 +66,22 @@ _config = {}
 
 
 def configure_from_database(config):
+    ''' populates the config dict with values from the registration 
+    metadata table in the database.
+
+    This will overwrite some of the values already in the config dict.
+
+    Note that in order for this to work the config dict must be populated
+    with whatever information is needed to connect to the database.
+    This can be 'connect' with a direct connection object or 'dbname' and 'dbtype' 
+    (potentially with 'host', 'user', and 'password' if those are required).
+    If you used a nondefault schema when initializing the database, you'll also need 
+    to provide 'lwregSchema' here.
+
+    Keyword arguments:
+    config -- configuration dict
+    
+    '''
     global _config
     if 'connection' in config:
         cn = config['connection']
@@ -89,6 +105,13 @@ def configure_from_database(config):
 
 
 def set_default_config(config):
+    ''' sets the default configuration to be used by the other functions in 
+    this module to the configuration object which is passed in
+    
+    Arguments:
+    config -- configuration dict
+
+    '''
     global _config
     assert isinstance(config, dict)
     _config = config
@@ -124,6 +147,12 @@ _dbConfig = None
 
 
 def connect(config):
+    ''' creates a connection to the database and returns it
+    
+    Arguments:
+    config -- configuration dict
+
+    '''
     global _replace_placeholders
     global _dbtype
     global _dbConnection
@@ -812,7 +841,7 @@ def registration_counts(config=None):
 
 
 def get_all_registry_numbers(config=None):
-    """ returns a tuple with all of the registry numbers in the database
+    """ returns a tuple with all of the registry numbers (molregnos) in the database
         
     Keyword arguments:
     config     -- configuration dict

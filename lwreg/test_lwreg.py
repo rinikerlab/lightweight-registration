@@ -256,6 +256,19 @@ class TestLWReg(unittest.TestCase):
         res = utils.retrieve(ids=[100], config=self._config)
         self.assertEqual(len(res), 0)
 
+        res = utils.retrieve(ids=[1, 2], config=self._config, as_hashes=True)
+        for row in res:
+            self.assertTrue('molregno' in row)
+            self.assertTrue('fullhash' in row)
+            self.assertTrue('canonical_smiles' in row)
+
+        res = utils.retrieve(ids=[1, 5],
+                             config=self._config,
+                             as_submitted=True)
+        self.assertEqual(len(res), 2)
+        self.assertEqual(res[0][2], 'smiles')
+        self.assertEqual(res[1][2], 'pkl')
+
     def testStandardizationOptions(self):
         lconfig = self._config.copy()
         lconfig['standardization'] = 'charge'

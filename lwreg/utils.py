@@ -961,6 +961,7 @@ def retrieve(config=None,
              ids=None,
              id=None,
              as_submitted=False,
+             as_hashes=False,
              no_verbose=True):
     """ returns the molecule data for one or more registry ids (molregnos)
     The return value is a tuple of (molregno, data, format) 3-tuples    
@@ -973,6 +974,7 @@ def retrieve(config=None,
     ids          -- an iterable of registry ids (molregnos)
     id           -- a registry id (molregno)
     as_submitted -- if True, then the structure will be returned as registered
+    as_hashes    -- if True, then the hashes will be returned (as a dict) instead of the structures
     no_verbose   -- if this is False then the registry number will be printed
     """
     if not config:
@@ -1007,8 +1009,10 @@ def retrieve(config=None,
     cn = connect(config)
     curs = cn.cursor()
     if not getConfs:
-        if as_submitted:
-            qry = 'molregno,data,datatype from {origDataTableName}'
+        if as_hashes:
+            qry = f'* from {hashTableName}'
+        elif as_submitted:
+            qry = f'molregno,data,datatype from {origDataTableName}'
         else:
             qry = f"molregno,molblock,'mol' from {molblocksTableName}"
         qs = _replace_placeholders(','.join('?' * len(ids)))
@@ -1027,7 +1031,19 @@ def retrieve(config=None,
                 print(entry)
         else:
             print('not found')
-
+    if as_hashes:
+        tres = []
+        colns = [x[0] for x in curs.description]
+        for row in res:
+            rowd = {}
+            for i, coln in enumerate(colns):
+                if coln == 'rdkitversion':
+                    continue
+                if row[i] is None:
+                    continue
+                rowd[coln] = row[i]
+            tres.append(rowd)
+        res = tres
     return tuple(res)
 
 

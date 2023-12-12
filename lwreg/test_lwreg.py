@@ -395,6 +395,34 @@ M  END
             timestamps.append(datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S"))
         self.assertEqual(timestamps[1] - timestamps[0] > timedelta(0), True)
 
+    def testConfigFromDatabase(self):
+        lconfig = self._config.copy()
+        lconfig['standardization'] = 'charge'
+        utils._initdb(config=lconfig, confirm=True)
+        self.assertEqual(utils.register(smiles='CCC[O-].[Na+]', config=lconfig), 1)
+        self.assertEqual(utils.register(smiles='CCC(=O)[O-].[Na+]', config=lconfig), 2)
+        self.assertEqual(utils.registration_counts(config=lconfig), 2)
+        nconfig = {'dbname': lconfig['dbname'], 
+                    'dbtype': lconfig['dbtype']}
+        if 'connection' in lconfig:
+            nconfig['connection'] = lconfig['connection']
+        utils.configure_from_database(nconfig)
+        configCopy = lconfig.copy()
+        nconfigCopy = nconfig.copy()
+        if 'connection' in configCopy:
+            del configCopy['connection']
+            del nconfigCopy['connection']
+        self.assertEqual(nconfigCopy, configCopy)
+        
+        self.assertRaises(
+            self.integrityError,
+            lambda: utils.register(smiles='CCC[O-]', config=nconfig))
+        self.assertGreater(utils.register(smiles='CCCC(=O)[O-].[Na+]', config=nconfig), 2)
+        self.assertRaises(
+            self.integrityError,
+            lambda: utils.register(smiles='CCCC(=O)O', config=nconfig))
+
+
 
 class TestLWRegTautomerv2(unittest.TestCase):
     integrityError = sqlite3.IntegrityError

@@ -64,6 +64,27 @@ def defaultConfig():
 
 _config = {}
 
+def configure_from_database(config):
+    global _config
+    if 'connection' in config:
+        cn = config['connection']
+    else:
+        cn = connect(config)
+    curs = cn.cursor()
+    curs.execute(f'select * from {registrationMetadataTableName}')
+    for k,v in curs.fetchall():
+        if k == 'rdkitVersion':
+            continue
+        try:
+            v = int(v)
+        except ValueError:
+            try:
+                v = float(v)
+            except ValueError:
+                pass
+        config[k] = v
+    _config = config
+
 
 def _configure(filename='./config.json'):
     global _config
@@ -956,6 +977,8 @@ def _registerMetadata(curs, config):
     dc.update(config)
     dc['standardization'] = _get_standardization_label(dc)
     for k, v in dc.items():
+        if k == 'connection':
+            continue
         curs.execute(
             _replace_placeholders(
                 f'insert into {registrationMetadataTableName} values (?,?)'),

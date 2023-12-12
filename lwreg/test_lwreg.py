@@ -422,6 +422,17 @@ M  END
             self.integrityError,
             lambda: utils.register(smiles='CCCC(=O)O', config=nconfig))
 
+    def testSetDefaultConfig(self):
+        lconfig = self._config.copy()
+        lconfig['standardization'] = 'charge'
+        utils.set_default_config(lconfig)
+        utils._initdb(confirm=True)
+        self.assertEqual(utils.register(smiles='CCC[O-].[Na+]'), 1)
+        self.assertEqual(utils.register(smiles='CCC(=O)[O-].[Na+]'), 2)
+        self.assertEqual(utils.registration_counts(), 2)
+        self.assertRaises(
+            self.integrityError,
+            lambda: utils.register(smiles='CCC(=O)O'))
 
 
 class TestLWRegTautomerv2(unittest.TestCase):

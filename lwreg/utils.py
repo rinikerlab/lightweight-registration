@@ -85,6 +85,11 @@ def configure_from_database(config):
         config[k] = v
     _config = config
 
+def set_default_config(config):
+    global _config
+    assert isinstance(config, dict)
+    _config = config
+
 
 def _configure(filename='./config.json'):
     global _config
@@ -126,6 +131,11 @@ def connect(config):
     global molblocksTableName
     global conformersTableName
     global lwregSchema
+
+    if not config:
+        config = _configure()
+    elif isinstance(config, str):
+        config = _configure(filename=config)
 
     cn = config.get('connection', None)
     if not cn and _dbConnection is not None and _dbConfig == config:
@@ -773,6 +783,11 @@ def registration_counts(config=None):
     Keyword arguments:
     config     -- configuration dict
     """
+    if not config:
+        config = _configure()
+    elif isinstance(config, str):
+        config = _configure(filename=config)
+
     cn = connect(config)
     curs = cn.cursor()
     curs.execute(f'select count(*) from {hashTableName}')
@@ -792,6 +807,11 @@ def get_all_registry_numbers(config=None):
     Keyword arguments:
     config     -- configuration dict
     """
+    if not config:
+        config = _configure()
+    elif isinstance(config, str):
+        config = _configure(filename=config)
+
     cn = connect(config)
     curs = cn.cursor()
     curs.execute(f'select molregno from {hashTableName}')

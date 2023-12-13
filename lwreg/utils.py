@@ -997,10 +997,13 @@ def retrieve(config=None,
              as_hashes=False,
              no_verbose=True):
     """ returns the molecule data for one or more registry ids (molregnos)
-    The return value is a tuple of (molregno, data, format) 3-tuples    
-
+    The return value is a dictionary of (data, format) 2-tuples with molregnos as keys
 
     only one of id or ids should be provided
+
+    If registerConformers is set then the ids should be tuples of (molregno, conf_id) and
+    the return value will be a dictionary of (data, 'mol') 2-tuples with (molregno, conf_id) 
+    tuples as keys
 
     Keyword arguments:
     config       -- configuration dict
@@ -1064,20 +1067,30 @@ def retrieve(config=None,
                 print(entry)
         else:
             print('not found')
+    resDict = {}
     if as_hashes:
-        tres = []
         colns = [x[0] for x in curs.description]
         for row in res:
             rowd = {}
             for i, coln in enumerate(colns):
                 if coln == 'rdkitversion':
                     continue
+                if coln == 'molregno':
+                    mrn = row[i]
+                    continue
                 if row[i] is None:
                     continue
                 rowd[coln] = row[i]
-            tres.append(rowd)
-        res = tres
-    return tuple(res)
+            resDict[mrn] = rowd
+    else:
+        if not getConfs:
+            for mrn, data, fmt in res:
+                resDict[mrn] = (data, fmt)
+        else:
+            for mrn, confId, molb in res:
+                resDict[(mrn, confId)] = (molb, 'mol')
+
+    return resDict
 
 
 def _registerMetadata(curs, config):

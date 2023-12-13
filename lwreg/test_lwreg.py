@@ -246,28 +246,27 @@ class TestLWReg(unittest.TestCase):
         self.assertEqual(len(res), 0)
         res = utils.retrieve(ids=[1], config=self._config)
         self.assertEqual(len(res), 1)
-        tpl = res[0]
-        self.assertEqual(len(tpl), 3)
-        self.assertEqual(tpl[0], 1)
-        mb = Chem.MolFromMolBlock(tpl[1])
+        tpl = res[1]
+        self.assertEqual(len(tpl), 2)
+        mb = Chem.MolFromMolBlock(tpl[0])
         self.assertEqual(
             utils.query(smiles=Chem.MolToSmiles(mb), config=self._config), [1])
-        self.assertEqual(tpl[2], 'mol')
+        self.assertEqual(tpl[1], 'mol')
         res = utils.retrieve(ids=[100], config=self._config)
         self.assertEqual(len(res), 0)
 
         res = utils.retrieve(ids=[1, 2], config=self._config, as_hashes=True)
-        for row in res:
-            self.assertTrue('molregno' in row)
-            self.assertTrue('fullhash' in row)
-            self.assertTrue('canonical_smiles' in row)
+        for k, v in res.items():
+            self.assertFalse('molregno' in v)
+            self.assertTrue('fullhash' in v)
+            self.assertTrue('canonical_smiles' in v)
 
         res = utils.retrieve(ids=[1, 5],
                              config=self._config,
                              as_submitted=True)
         self.assertEqual(len(res), 2)
-        self.assertEqual(res[0][2], 'smiles')
-        self.assertEqual(res[1][2], 'pkl')
+        self.assertEqual(res[1][1], 'smiles')
+        self.assertEqual(res[5][1], 'pkl')
 
     def testStandardizationOptions(self):
         lconfig = self._config.copy()
@@ -758,10 +757,13 @@ class TestRegisterConformers(unittest.TestCase):
                                      config=self._config)
 
         res = utils.retrieve(ids=(regids[0], regids[2]), config=self._config)
-        self.assertEqual(res[0][0:2], (regids[0][0], regids[0][1]))
-        self.assertTrue('M  END' in res[0][2])
-        self.assertEqual(res[1][0:2], (regids[2][0], regids[2][1]))
-        self.assertTrue('M  END' in res[1][2])
+        self.assertEqual(len(res), 2)
+        self.assertTrue(regids[0] in res)
+        self.assertTrue(regids[2] in res)
+        self.assertIn('M  END', res[regids[0]][0])
+        self.assertEqual(res[regids[0]][1], 'mol')
+        self.assertIn('M  END', res[regids[2]][0])
+        self.assertEqual(res[regids[2]][1], 'mol')
 
     def testConformerQueryById(self):
         utils._initdb(config=self._config, confirm=True)

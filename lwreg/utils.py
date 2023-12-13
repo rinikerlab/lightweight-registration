@@ -1001,9 +1001,9 @@ def retrieve(config=None,
 
     only one of id or ids should be provided
 
-    If registerConformers is set then the ids should be tuples of (molregno, conf_id) and
-    the return value will be a dictionary of (data, 'mol') 2-tuples with (molregno, conf_id) 
-    tuples as keys
+    If registerConformers is set the conformers can be retrieved by providing
+    the tuples of (molregno, conf_id) and the return value will be a dictionary
+    of (data, 'mol') 2-tuples with (molregno, conf_id) tuples as keys
 
     Keyword arguments:
     config       -- configuration dict
@@ -1027,7 +1027,7 @@ def retrieve(config=None,
             try:
                 ids = [(int(id[0]), int(id[1]))]
                 getConfs = True
-            except ValueError:
+            except TypeError:
                 ids = [int(id)]
                 getConfs = False
         else:
@@ -1035,8 +1035,12 @@ def retrieve(config=None,
             getConfs = False
     elif ids is not None:
         if registerConformers:
-            ids = [(int(x), int(y)) for x, y in ids]
-            getConfs = True
+            try:
+                ids = [(int(x), int(y)) for x, y in ids]
+                getConfs = True
+            except TypeError:
+                ids = [int(x) for x in ids]
+                getConfs = False
         else:
             if isinstance(ids, str):
                 ids = [int(x) for x in ids.split(',')]

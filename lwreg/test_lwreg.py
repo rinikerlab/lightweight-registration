@@ -765,6 +765,31 @@ class TestRegisterConformers(unittest.TestCase):
         self.assertIn('M  END', res[regids[2]][0])
         self.assertEqual(res[regids[2]][1], 'mol')
 
+        # query with just molregnos... then we get back the same thing as if we
+        # were not in conformer mode.
+        mrn0 = regids[0][0]
+        mrn2 = regids[2][0]
+
+        res = utils.retrieve(id=mrn0, config=self._config)
+        self.assertIn(mrn0, res)
+        self.assertIn('M  END', res[mrn0][0])
+
+        res = utils.retrieve(ids=(mrn0, mrn2), config=self._config)
+        self.assertEqual(len(res), 2)
+        self.assertTrue(mrn0 in res)
+        self.assertTrue(mrn2 in res)
+        self.assertIn('M  END', res[mrn0][0])
+        self.assertEqual(res[mrn0][1], 'mol')
+        self.assertIn('M  END', res[mrn2][0])
+        self.assertEqual(res[mrn2][1], 'mol')
+
+        res = utils.retrieve(ids=(mrn0, mrn2),
+                             config=self._config,
+                             as_hashes=True)
+        self.assertIn(mrn0, res)
+        self.assertIn(mrn2, res)
+        self.assertIn('fullhash', res[mrn0])
+
     def testConformerQueryById(self):
         utils._initdb(config=self._config, confirm=True)
         regids = utils.bulk_register(mols=(self._mol1, self._mol2, self._mol3),

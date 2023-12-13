@@ -417,14 +417,14 @@ M  END
         self.assertEqual(
             utils.register(smiles='CCC(=O)[O-].[Na+]', config=lconfig), 2)
         self.assertEqual(utils.registration_counts(config=lconfig), 2)
-        nconfig = {
-            'dbname': lconfig['dbname'],
-            'dbtype': lconfig['dbtype'],
-            'lwregSchema': lconfig['lwregSchema']
-        }
+        conn = None
         if 'connection' in lconfig:
-            nconfig['connection'] = lconfig['connection']
-        utils.configure_from_database(nconfig)
+            conn = lconfig['connection']
+        nconfig = utils.configure_from_database(
+            connection=conn,
+            dbname=lconfig['dbname'],
+            dbtype=lconfig['dbtype'],
+            lwregSchema=lconfig['lwregSchema'])
         configCopy = lconfig.copy()
         nconfigCopy = nconfig.copy()
         if 'connection' in configCopy:

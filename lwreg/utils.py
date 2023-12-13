@@ -65,24 +65,56 @@ def defaultConfig():
 _config = {}
 
 
-def configure_from_database(config):
-    ''' populates the config dict with values from the registration 
+def configure_from_database(dbname=None,
+                            connection=None,
+                            dbtype=None,
+                            host=None,
+                            user=None,
+                            password=None,
+                            lwregSchema=None):
+    ''' returns a config dict with values from the registration 
     metadata table in the database.
 
     This will overwrite some of the values already in the config dict.
 
-    Note that in order for this to work the config dict must be populated
-    with whatever information is needed to connect to the database.
-    This can be 'connect' with a direct connection object or 'dbname' and 'dbtype' 
-    (potentially with 'host', 'user', and 'password' if those are required).
-    If you used a nondefault schema when initializing the database, you'll also need 
-    to provide 'lwregSchema' here.
+    Note that in order for this to work the arguments must provide whatever
+    information is needed to connect to the database. This can be 'connection'
+    with a direct connection object or 'dbname' and 'dbtype' (potentially with
+    'host', 'user', and 'password' if those are required). If you used a
+    nondefault schema when initializing the database, you'll also need to
+    provide 'lwregSchema' here.
 
-    Keyword arguments:
-    config -- configuration dict
-    
+    Keyword arguments: 
+    dbname -- the name of the database (one of dbname or connection must be provided)
+    connection -- a connection object (one of dbname or connection must be provided)
+    dbtype -- the type of database (sqlite3 or postgresql)
+    host -- the host to connect to (for postgresql)
+    user -- the user to connect as (for postgresql)
+    password -- the password to use (for postgresql)
+    lwregSchema -- the schema name to use for the lwreg tables (for postgresql)
+        
     '''
     global _config
+    config = {}
+    if connection is not None:
+        config['connection'] = connection
+    elif dbname is not None:
+        config['dbname'] = dbname
+    else:
+        raise ValueError(
+            'at least one of dbname or connection must be provided')
+
+    if dbtype is not None:
+        config['dbtype'] = dbtype
+    if host is not None:
+        config['host'] = host
+    if user is not None:
+        config['user'] = user
+    if password is not None:
+        config['password'] = password
+    if lwregSchema is not None:
+        config['lwregSchema'] = lwregSchema
+
     if 'connection' in config:
         cn = config['connection']
     else:
@@ -102,6 +134,7 @@ def configure_from_database(config):
                 pass
         config[k] = v
     _config = config
+    return config
 
 
 def set_default_config(config):

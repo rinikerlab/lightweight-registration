@@ -59,83 +59,58 @@ ERROR:root:Compound already registered
 
 ### Python
 ```
-In [1]: import lwreg
+>>> import lwreg
 
-In [3]: lwreg.initdb()
+>>> from lwreg import utils
+
+>>> lwreg.set_default_config(utils.defaultConfig())   # you generally will want to provide more information about the database
+
+>>> lwreg.initdb()
 This will destroy any existing information in the registration database.
   are you sure? [yes/no]: yes
-Out[3]: True
+True
 
-In [4]: lwreg.register(smiles='CCO')
-Out[4]: 1
+>>> lwreg.register(smiles='CCO')
+1
 
-In [5]: lwreg.register(smiles='CCOC')
-Out[5]: 2
+>>> lwreg.register(smiles='CCOC')
+2
 
-In [6]: from rdkit import Chem
+>>> from rdkit import Chem
 
-In [7]: m = Chem.MolFromSmiles('CCOCC')
+>>> m = Chem.MolFromSmiles('CCOCC')
 
-In [8]: lwreg.register(mol=m)
-Out[8]: 3
+>>> lwreg.register(mol=m)
+3
 
-In [9]: lwreg.register(mol=m)
+>>> lwreg.register(mol=m)
 ---------------------------------------------------------------------------
 IntegrityError                            Traceback (most recent call last)
-Input In [9], in <cell line: 1>()
+Input In [10], in <cell line: 1>()
 ----> 1 lwreg.register(mol=m)
-
-File ~/Code/lightweight-registration/lwreg/utils.py:249, in register(config, mol, molfile, molblock, smiles, escape, fail_on_duplicate, no_verbose)
-    247 cn = _connect(config)
-    248 curs = cn.cursor()
---> 249 mrn = _register_mol(tpl, escape, cn, curs, config, fail_on_duplicate)
-    250 if not no_verbose:
-    251     print(mrn)
-
-File ~/Code/lightweight-registration/lwreg/utils.py:184, in _register_mol(tpl, escape, cn, curs, config, failOnDuplicate)
-    181     mhash, layers = hash_mol(sMol, escape=escape, config=config)
-    183     # will fail if the fullhash is already there
---> 184     curs.execute(
-    185         _replace_placeholders(
-    186             'insert into hashes values (?,?,?,?,?,?,?,?,?)'), (
-    187                 mrn,
-    188                 mhash,
-    189                 layers[RegistrationHash.HashLayer.FORMULA],
-    190                 layers[RegistrationHash.HashLayer.CANONICAL_SMILES],
-    191                 layers[RegistrationHash.HashLayer.NO_STEREO_SMILES],
-    192                 layers[RegistrationHash.HashLayer.TAUTOMER_HASH],
-    193                 layers[RegistrationHash.HashLayer.NO_STEREO_TAUTOMER_HASH],
-    194                 layers[RegistrationHash.HashLayer.ESCAPE],
-    195                 layers[RegistrationHash.HashLayer.SGROUP_DATA],
-    196             ))
-    198     cn.commit()
-    199 except _violations:
+  
+  ... DETAILS REMOVED ...
 
 IntegrityError: UNIQUE constraint failed: hashes.fullhash
 
-In [10]: lwreg.query(smiles='CCOC')
-Out[10]: [2]
+>>> lwreg.query(smiles='CCOC')
+[2]
 
-In [11]: lwreg.query(smiles='CCOCC')
-Out[11]: [3]
+>>> lwreg.query(smiles='CCOCC')
+[3]
 
-In [12]: lwreg.query(smiles='CCOCO')
-Out[12]: []
+>>> lwreg.query(smiles='CCOCO')
+[]
 
-In [13]: lwreg.retrieve(id=2)
-Out[13]: 
-((2,
-  '\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 4 3 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.000000 0.000000 0.000000 0\nM  V30 2 C 1.299038 0.750000 0.000000 0\nM  V30 3 O 2.598076 -0.000000 0.000000 0\nM  V30 4 C 3.897114 0.750000 0.000000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 2 1 2 3\nM  V30 3 1 3 4\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n',
-  'mol'),)
+>>> lwreg.retrieve(id=2)
+{2: ('\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 4 3 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.000000 0.000000 0.000000 0\nM  V30 2 C 1.299038 0.750000 0.000000 0\nM  V30 3 O 2.598076 -0.000000 0.000000 0\nM  V30 4 C 3.897114 0.750000 0.000000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 2 1 2 3\nM  V30 3 1 3 4\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n',
+  'mol')}
 
-In [14]: lwreg.retrieve(ids=[2,3])
-Out[14]: 
-((2,
-  '\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 4 3 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.000000 0.000000 0.000000 0\nM  V30 2 C 1.299038 0.750000 0.000000 0\nM  V30 3 O 2.598076 -0.000000 0.000000 0\nM  V30 4 C 3.897114 0.750000 0.000000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 2 1 2 3\nM  V30 3 1 3 4\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n',
+>>> lwreg.retrieve(ids=[2,3])
+{2: ('\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 4 3 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.000000 0.000000 0.000000 0\nM  V30 2 C 1.299038 0.750000 0.000000 0\nM  V30 3 O 2.598076 -0.000000 0.000000 0\nM  V30 4 C 3.897114 0.750000 0.000000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 2 1 2 3\nM  V30 3 1 3 4\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n',
   'mol'),
- (3,
-  '\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 5 4 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.000000 0.000000 0.000000 0\nM  V30 2 C 1.299038 0.750000 0.000000 0\nM  V30 3 O 2.598076 -0.000000 0.000000 0\nM  V30 4 C 3.897114 0.750000 0.000000 0\nM  V30 5 C 5.196152 -0.000000 0.000000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 2 1 2 3\nM  V30 3 1 3 4\nM  V30 4 1 4 5\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n',
-  'mol'))
+ 3: ('\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 5 4 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.000000 0.000000 0.000000 0\nM  V30 2 C 1.299038 0.750000 0.000000 0\nM  V30 3 O 2.598076 -0.000000 0.000000 0\nM  V30 4 C 3.897114 0.750000 0.000000 0\nM  V30 5 C 5.196152 -0.000000 0.000000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 2 1 2 3\nM  V30 3 1 3 4\nM  V30 4 1 4 5\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n',
+  'mol')}
 
 
 ```
@@ -148,10 +123,10 @@ Start with a couple of examples showing what the 'fragment' and 'charge' built-i
 
 ```
 >>> config['standardization'] = 'fragment'
->>> Chem.MolToSmiles(lwreg.utils.standardize_mol(Chem.MolFromSmiles('CC[O-].[Na+]'),config=config))
+>>> Chem.MolToSmiles(lwreg.standardize_mol(Chem.MolFromSmiles('CC[O-].[Na+]'),config=config))
 'CC[O-]'
 >>> config['standardization'] = 'charge'
->>> Chem.MolToSmiles(lwreg.utils.standardize_mol(Chem.MolFromSmiles('CC[O-].[Na+]'),config=config))
+>>> Chem.MolToSmiles(lwreg.standardize_mol(Chem.MolFromSmiles('CC[O-].[Na+]'),config=config))
 'CCO'
 ```
 
@@ -163,23 +138,23 @@ Now define a custom filter which rejects (by returning None) molecules which hav
 ...     return mol
 ...
 >>> config['standardization'] = reject_charged_molecules
->>> Chem.MolToSmiles(lwreg.utils.standardize_mol(Chem.MolFromSmiles('CC[O-].[Na+]'),config=config))
+>>> Chem.MolToSmiles(lwreg.standardize_mol(Chem.MolFromSmiles('CC[O-].[Na+]'),config=config))
 'CC[O-].[Na+]'
 ```
 
 Here's an example which fails:
 
 ```
->>> lwreg.utils.standardize_mol(Chem.MolFromSmiles('CC[O-]'),config=config) is None
+>>> lwreg.standardize_mol(Chem.MolFromSmiles('CC[O-]'),config=config) is None
 True
 ```
 
 We can chain standardization/filtering operations together by providing a list. The individual operations are run in order. Here's an example where we attempt to neutralise the molecule by finding the charge parent and then apply our reject_charged_molecules filter:
 ```
 >>> config['standardization'] = ['charge',reject_charged_molecules]
->>> lwreg.utils.standardize_mol(Chem.MolFromSmiles('CC[O-]'),config=config) is None
+>>> lwreg.standardize_mol(Chem.MolFromSmiles('CC[O-]'),config=config) is None
 False
->>> lwreg.utils.standardize_mol(Chem.MolFromSmiles('CC[N+](C)(C)C'),config=config) is None
+>>> lwreg.standardize_mol(Chem.MolFromSmiles('CC[N+](C)(C)C'),config=config) is None
 True
 ```
 That last one failed because the quarternary nitrogen can't be neutralized.
@@ -197,7 +172,7 @@ Note that once a database is created in `registerConformers` mode, it probably s
 
 - `register()` and `bulk_register()` require molecules to have associated conformers. Both return `(molregno, conf_id)` tuples instead of just `molregno`s
 - `query()`: if called with the `ids` argument, this will return all of the conformers for the supplied molregnos as `(molregno, conf_id)` tuples. If called with a molecule, the conformer of the molecule will be hashed and looked up in the `conformers`` table, returns a list of `(molregno, conf_id)` tuples.
-- `retrieve()`: if called with `(molregno, conf_id)` tuple(s), this will return `(molregno, conf_id, molblock)` tuples where the `molblock`s contain the coordinates of the registered conformers.
+- `retrieve()`: if called with `(molregno, conf_id)` tuple(s), this will return a dictionary of `(molblock, 'mol')` tuples with `(molregno, conf_id)` tuples as keys where the `molblock`s contain the coordinates of the registered conformers.
 
 ### Hashing conformers for registration
 
@@ -215,7 +190,7 @@ create table registration_metadata (key text, value text);
 create table hashes (molregno integer primary key, fullhash text unique, 
             formula text, canonical_smiles text, no_stereo_smiles text, 
             tautomer_hash text, no_stereo_tautomer_hash text, "escape" text, sgroup_data text, rdkitVersion text);
-create table orig_data (molregno integer primary key, data text, datatype text);
+create table orig_data (molregno integer primary key, data text, datatype text, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
 create table molblocks (molregno integer primary key, molblock text, standardization text);
 ```
 

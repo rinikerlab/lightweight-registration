@@ -1227,6 +1227,9 @@ def _check_config(config):
     elif isinstance(config, str):
         config = _configure(filename=config)
 
+    if config["dbtype"] in ('postgres', 'postgresql'):
+        config["dbtype"] = 'postgresql'
+
     for fc in FORBIDDEN_COMBINATIONS:
         fc_eval = []
         for k, v in fc.items():

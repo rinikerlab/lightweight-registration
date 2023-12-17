@@ -6,68 +6,55 @@ import json
 
 def interactive_config():
     config = {}
-    print("Enter the name of your database: ")
-    config['dbname'] = input()
-    print("Choose your database type: \n options: \n 1: sqlite \n 2: postgresql")
-    dbtype_option = int(input())
+    config['dbname'] = input("Enter the name of your database: \n")
+    dbtype_option = int(input("Choose your database type: \n options: \n 1: sqlite \n 2: postgresql \n"))
     if dbtype_option == 1:
         config["dbtype"] = "sqlite3"
     elif dbtype_option == 2:
         config["dbtype"] = "postgresql"
     else:
         raise ValueError('Choosen option is invalid')
-    print("Choose your standardization: \n options: 1: none, 2: sanitize, 3: fragment, 4: charge, 5: tautomer, 6: super")
-    std_option = int(input())
-    if std_option == 1:
-        config["standardization"] = 'none' # standardization_lib.NoStandardization()
-    elif std_option == 2:
-        config["standardization"] = 'sanitize' # standardization_lib.RDKitSanitize()
-    elif std_option == 3:
-        config["standardization"] = 'fragment' # standardization_lib.FragmentParent()
-    elif std_option == 4:
-        config["standardization"] = 'charge' # standardization_lib.ChargeParent()
-    elif std_option == 5:
-        config["standardization"] = 'tautomer' # standardization_lib.TautomerParent()
-    elif std_option == 6:
-        config["standardization"] = 'super' # standardization_lib.SuperParent()
+    std_option = int(input("Choose your standardization: \n options: 1: none, 2: sanitize, 3: fragment, 4: charge, 5: tautomer, 6: super \n"))
+    std_option_mapping = {1: "none",
+                          2: "sanitize",
+                          3: "fragment",
+                          4: "charge",
+                          5: "tautomer",
+                          6: "super"}
+    if std_option >= 1 and std_option <= 6:
+        config["standardization"] = std_option_mapping[std_option]
     else:
         raise ValueError('Choosen option is invalid')
-    print("Choose if you want to remove Hs: \n options: \n 1: no, 2: yes")
-    Hs_option = int(input())
+    Hs_option = int(input("Choose if you want to remove Hs: \n options: \n 1: no, 2: yes \n"))
     if Hs_option == 1:
         config["removeHs"] = 0
     elif Hs_option == 2:
         config["removeHs"] = 1
     else:
         raise ValueError('Choosen option is invalid')
-    print("Do you want to use the TautomerHashv2? \n options \n 1: no, 2: yes")
-    tautomerhash_option = int(input())
+    tautomerhash_option = int(input("Do you want to use the TautomerHashv2? \n options \n 1: no, 2: yes \n"))
     if tautomerhash_option == 1:
         config["useTautomerHashv2"] = 0
     elif tautomerhash_option == 2:
         config["useTautomerHashv2"] = 1
     else:
         raise ValueError('Choosen option is invalid')
-    print("Do you want to register conformers? \n options: 1: no, 2: yes")
-    conf_option = int(input())
+    conf_option = int(input("Do you want to register conformers? \n options: 1: no, 2: yes \n"))
     if conf_option == 1:
         config["registerConformers"] = 0
     elif conf_option == 2:
         config["registerConformers"] = 1
     else: 
         raise ValueError('Choosen option is invalid')
-    print("Do you want to set the number of conformer digits? \n options: \n 1: no (keep default 3), 2: yes ")
-    numConfDigits_opt = int(input())
+    numConfDigits_opt = int(input("Do you want to set the number of conformer digits? \n options: \n 1: no (keep default 3), 2: yes \n"))
     if numConfDigits_opt == 1:
         config["numConformerDigits"] = 3
     elif numConfDigits_opt == 2:
-        print("Please enter the number of digits you want to keep")
-        config["numConformerDigits"] = int(input())
+        config["numConformerDigits"] = int(input("Please enter the number of digits you want to keep \n"))
     else:
         raise ValueError('Choosen option is invalid')
     if config["registerConformers"] != 1:
-        print("Do you want the conformer to be part of the basic identity hash? \n options: \n 1: no, 2: yes")
-        hashConf_opt = int(input())
+        hashConf_opt = int(input("Do you want the conformer to be part of the basic identity hash? \n options: \n 1: no, 2: yes \n"))
         if hashConf_opt == 1:
             config["hashConformer"] = 0
         elif hashConf_opt == 2:
@@ -76,20 +63,13 @@ def interactive_config():
     else:
         config["hashConformer"] = 0
     if config["dbtype"] == "postgresql":
-        print("Do you want to place lwreg in its own schema? \n options: \n 1: no (default: public), 2: yes")
-        schema_opt = int(input())
-        if schema_opt == 1:
-            config["lwregSchema"] = "public"
-        elif schema_opt == 2:
-            print("Please enter your chosen schema name")
-            config["lwregSchema"] = input()
-        else:
-            raise ValueError('Choosen option is invalid')
-    print("Please enter the name of your database host machine")
-    config["host"] = input()
-    print("Please enter your username")
-    config["user"] = input()
-    print("Please enter your password")
+        config["lwregSchema"] = "public"
+        newName = input("If you would like lwreg to use its own schema (default: public), enter it here: \n")
+        if newName:
+            config["lwregSchema"] = newName
+    config["host"] = input("Please enter the name of your database host machine \n")
+    config["user"] = input("Please enter your username \n")
+    print("Please enter your password \n")
     config["password"] = getpass.getpass()
     utils._check_config(config)
     return config

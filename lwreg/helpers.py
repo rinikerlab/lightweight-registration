@@ -7,22 +7,14 @@ import json
 def interactive_config():
     config = utils._defaultConfig
     config['dbname'] = input("Enter the name of your database: ")
-    dbtype_option = int(input("Choose your database type: ([1:sqlite], 2:postgresql) "))
-    if dbtype_option == 1:
-        config["dbtype"] = "sqlite3"
-    elif dbtype_option == 2:
-        config["dbtype"] = "postgresql"
+    dbtype_option = input("Choose your database type: ([sqlite], postgresql) ")
+    if dbtype_option in ["sqlite","postgresql"]:
+        config["dbtype"] = dbtype_option
     else:
         raise ValueError('Choosen option is invalid')
-    std_option = int(input("Choose your standardization: (1:none, 2:sanitize, [3:fragment], 4:charge, 5:tautomer, 6:super) "))
-    std_option_mapping = {1: "none",
-                          2: "sanitize",
-                          3: "fragment",
-                          4: "charge",
-                          5: "tautomer",
-                          6: "super"}
-    if std_option >= 1 and std_option <= 6:
-        config["standardization"] = std_option_mapping[std_option]
+    std_option = input("Choose your standardization: (none, sanitize, [fragment], charge, tautomer, super) ")
+    if std_option in ["none", "sanitize", "fragment", "charge", "tautomer", "super"]:
+        config["standardization"] = std_option
     else:
         raise ValueError('Choosen option is invalid')
     Hs_option = input("Do you want to remove Hs? ([Yes]/no) ")
@@ -58,10 +50,10 @@ def interactive_config():
         newName = input("If you would like lwreg to use its own schema, enter it here: ")
         if newName:
             config["lwregSchema"] = newName
-    config["host"] = input("Please enter the name of your database host machine ")
-    config["user"] = input("Please enter your username ")
-    print("Please enter your password")
-    config["password"] = getpass.getpass()
+    # config["host"] = input("Please enter the name of your database host machine ")
+    # config["user"] = input("Please enter your username ")
+    # print("Please enter your password")
+    # config["password"] = getpass.getpass()
     utils._check_config(config)
     return config
 

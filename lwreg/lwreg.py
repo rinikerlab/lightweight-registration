@@ -9,6 +9,7 @@ import click
 import logging
 import sys
 from . import utils
+from . import helpers
 
 
 @click.group()
@@ -83,6 +84,11 @@ def register(**kwargs):
         logging.error("Compound already registered")
         sys.exit(1)
 
+## need to think about how to best pass it back
+@cli.command()
+def interactive_config():
+    config = helpers.interactive_config()
+    click.echo(config)
 
 @cli.command()
 @click.option('--who', default='world')

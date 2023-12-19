@@ -7,8 +7,8 @@ import json
 def interactive_config():
     config = utils._defaultConfig
     config['dbname'] = input("Enter the name of your database: ")
-    dbtype_option = input("Choose your database type: ([sqlite], postgresql) ")
-    if dbtype_option in ["sqlite","postgresql"]:
+    dbtype_option = input("Choose your database type: ([sqlite3], postgresql) ")
+    if dbtype_option in ["sqlite3","postgresql"]:
         config["dbtype"] = dbtype_option
     else:
         raise ValueError('Choosen option is invalid')
@@ -57,19 +57,19 @@ def interactive_config():
     utils._check_config(config)
     return config
 
-def write_configfile(config,config_filename="lwreg_config.yml"):
+def write_configfile(config,config_filename="config.json"):
     config_stripped = {}
     config_stripped["dbname"] = config["dbname"]
     config_stripped["dbtype"] = config["dbtype"]
     config_stripped["host"] = config["host"]
-    config_stripped["user"] = config["user"]
+    # config_stripped["user"] = config["user"]
     config_stripped["lwregSchema"] = config["lwregSchema"]
 
     with open(config_filename,"w") as f:
-        yaml.dump(config_stripped,f,default_flow_style=False)
+        json.dump(config,f)
     return
 
 def load_configfile(config_filename):
-    with open(config_filename,"r") as file:
-        config =  yaml.safe_load(file)
+    with open(config_filename,"r") as f:
+        config =  json.load(f)
     return config

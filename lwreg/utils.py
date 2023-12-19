@@ -1204,12 +1204,12 @@ def initdb(config=None):
         return False
 
 
-FORBIDDEN_COMBINATIONS = [{
-    'registerConformers': 1,
-    'hashConformer': 1
-}, {
-    'dbname': None
-}]
+# FORBIDDEN_COMBINATIONS = [{
+    # 'registerConformers': 1,
+    # 'hashConformer': 1
+# }, {
+    # 'dbname': None
+# }]
 
 
 def _check_config(config):

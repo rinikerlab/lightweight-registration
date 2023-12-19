@@ -213,8 +213,7 @@ def connect(config):
             if dbnm.startswith('file::'):
                 uri = True
             cn = sqlite3.connect(dbnm, uri=uri)
-        elif dbtype in ('postgres', 'postgresql'):
-            dbtype = 'postgresql'
+        elif dbtype == "postgresql":
             if psycopg2 is None:
                 raise ValueError("psycopg2 package not installed")
             cn = psycopg2.connect(database=dbnm,
@@ -224,7 +223,7 @@ def connect(config):
 
     schemaBase = ''
     lwregSchema = ''
-    if dbtype in ('postgres', 'postgresql'):
+    if dbtype == 'postgresql':
         lwregSchema = config.get('lwregSchema', '')
         if lwregSchema:
             schemaBase = config['lwregSchema'] + '.'
@@ -1227,8 +1226,8 @@ def _check_config(config):
     elif isinstance(config, str):
         config = _configure(filename=config)
 
-    if config["dbtype"] in ('postgres', 'postgresql'):
-        config["dbtype"] = 'postgresql'
+    if config.get("dbtype","sqlite3") not in ('sqlite3', 'postgresql'):
+        raise ValueError("Possible values for dbtype are sqlite3 and postgresql")
 
     for fc in FORBIDDEN_COMBINATIONS:
         fc_eval = []

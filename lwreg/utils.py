@@ -43,8 +43,8 @@ _defaultConfig = {
     0,  # toggle registering conformers as well as compound structures
     "numConformerDigits":
     3,  # number of digits to use when hashing conformer coordinates
-    "hashConformer":
-    0,  # the molecule's conformer will be part of the basic identity hash
+    # "hashConformer":
+    # 0,  # the molecule's conformer will be part of the basic identity hash
     "lwregSchema":
     "",  # the schema name to use for the lwreg tables (no effect with sqlite3)
 }
@@ -382,13 +382,13 @@ def hash_mol(mol, escape=None, config=None):
         enable_tautomer_hash_v2=_lookupWithDefault(config,
                                                    'useTautomerHashv2'))
 
-    if _lookupWithDefault(config, 'hashConformer'):
-        escape = layers.get(RegistrationHash.HashLayer.ESCAPE, '')
-        if escape:
-            escape += '|\n'
-        layers[
-            RegistrationHash.HashLayer.ESCAPE] = escape + _get_conformer_hash(
-                mol, _lookupWithDefault(config, "numConformerDigits"))
+    # if _lookupWithDefault(config, 'hashConformer'):
+        # escape = layers.get(RegistrationHash.HashLayer.ESCAPE, '')
+        # if escape:
+            # escape += '|\n'
+        # layers[
+            # RegistrationHash.HashLayer.ESCAPE] = escape + _get_conformer_hash(
+                # mol, _lookupWithDefault(config, "numConformerDigits"))
 
     mhash = RegistrationHash.GetMolHash(layers)
 
@@ -1229,9 +1229,11 @@ def _check_config(config):
     if config.get("dbtype","sqlite3") not in ('sqlite3', 'postgresql'):
         raise ValueError("Possible values for dbtype are sqlite3 and postgresql")
 
+    """
     for fc in FORBIDDEN_COMBINATIONS:
         fc_eval = []
         for k, v in fc.items():
             fc_eval.append(_lookupWithDefault(config, k) == v)
         if all(fc_eval):
             raise ValueError(f'invalid configuration for combination of {fc}')
+    """

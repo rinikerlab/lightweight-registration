@@ -638,7 +638,7 @@ class TestRegisterConformers(unittest.TestCase):
         m2 = Chem.MolFromSmiles(
             'F[C](Cl)(Br)I |(-0.265874,-0.363334,1.43723;-0.050665,-0.040347,0.110315;-0.530745,-1.4506,-0.855487;-1.15413,1.45519,-0.417978;2.00142,0.399096,-0.274081)|'
         )
-        self.failIfEqual(Chem.MolToSmiles(m1), Chem.MolToSmiles(m2))
+        self.assertNotEqual(Chem.MolToSmiles(m1), Chem.MolToSmiles(m2))
         m1.AddConformer(m2.GetConformer(), assignId=True)
         self._chiralMol = m1
 

@@ -632,6 +632,16 @@ class TestRegisterConformers(unittest.TestCase):
         self._mol3 = Chem.AddHs(Chem.MolFromSmiles('CCOC(=O)CCCC'))
         rdDistGeom.EmbedMolecule(self._mol3, randomSeed=0xf00d)
 
+        m1 = Chem.MolFromSmiles(
+            'F[C](Cl)(Br)I |(-0.212215,0.280139,1.44255;-0.0440094,0.0353471,0.1035;-0.457136,1.51641,-0.774943;-1.25605,-1.35502,-0.457339;1.96941,-0.476872,-0.313764)|'
+        )
+        m2 = Chem.MolFromSmiles(
+            'F[C](Cl)(Br)I |(-0.265874,-0.363334,1.43723;-0.050665,-0.040347,0.110315;-0.530745,-1.4506,-0.855487;-1.15413,1.45519,-0.417978;2.00142,0.399096,-0.274081)|'
+        )
+        self.failIfEqual(Chem.MolToSmiles(m1), Chem.MolToSmiles(m2))
+        m1.AddConformer(m2.GetConformer(), assignId=True)
+        self._chiralMol = m1
+
     def testConformerDupes(self):
         utils._initdb(config=self._config, confirm=True)
         self.assertEqual(utils.register(mol=self._mol1, config=self._config),
@@ -812,6 +822,92 @@ class TestRegisterConformers(unittest.TestCase):
             cnf = copy.deepcopy(self._config)
             cnf['registerConformers'] = False
             utils.query(ids=mrns, config=cnf)
+
+    def testBulkConformersAndChirality(self):
+        utils._initdb(config=self._config, confirm=True)
+
+        expected = {
+            'sqlite3': (
+                (1, 1),
+                (2, 2),
+            ),
+            'postgresql': (
+                (1, 1),
+                (2, 2),
+            ),
+        }
+        self.assertEqual(
+            utils.register_multiple_conformers(mol=self._chiralMol,
+                                               fail_on_duplicate=False,
+                                               config=self._config),
+            expected[self._config['dbtype']])
+        self.assertEqual(utils.registration_counts(config=self._config),
+                         (2, 2))
+
+    def testRegisterMolWithConfId(self):
+        utils._initdb(config=self._config, confirm=True)
+        self.assertEqual(
+            utils.register(mol=self._chiralMol,
+                           fail_on_duplicate=False,
+                           config=self._config), (1, 1))
+        self.assertEqual(
+            utils.register(mol=self._chiralMol,
+                           fail_on_duplicate=False,
+                           confId=1,
+                           config=self._config), (2, 2))
+
+        self.assertEqual(
+            utils.register(mol=self._chiralMol,
+                           fail_on_duplicate=False,
+                           confId=0,
+                           config=self._config), (1, 1))
+
+    def testRegisterThenBulkRegister(self):
+        utils._initdb(config=self._config, confirm=True)
+        self.assertEqual(
+            utils.register(mol=self._chiralMol,
+                           fail_on_duplicate=False,
+                           confId=1,
+                           config=self._config), (1, 1))
+
+        expected = {
+            'sqlite3': (
+                (2, 2),
+                (1, 1),
+            ),
+            'postgresql': (
+                (2, 2),
+                (1, 1),
+            ),
+        }
+        self.assertEqual(
+            utils.register_multiple_conformers(mol=self._chiralMol,
+                                               fail_on_duplicate=False,
+                                               config=self._config),
+            expected[self._config['dbtype']])
+
+    def testRegisterThenBulkRegister2(self):
+        utils._initdb(config=self._config, confirm=True)
+        self.assertEqual(
+            utils.register(mol=self._chiralMol,
+                           fail_on_duplicate=False,
+                           config=self._config), (1, 1))
+
+        expected = {
+            'sqlite3': (
+                (1, 1),
+                (2, 2),
+            ),
+            'postgresql': (
+                (1, 1),
+                (3, 3),
+            ),
+        }
+        self.assertEqual(
+            utils.register_multiple_conformers(mol=self._chiralMol,
+                                               fail_on_duplicate=False,
+                                               config=self._config),
+            expected[self._config['dbtype']])
 
 
 @unittest.skipIf(psycopg2 is None, "skipping postgresql tests")

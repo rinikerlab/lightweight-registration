@@ -2,6 +2,7 @@ from . import utils
 import json
 
 def interactive_config():
+    print("This is an interactive configuration assisstant for lwreg. \n Please manually add host, user and password to your configuration.")
     config = utils._defaultConfig
     config['dbname'] = input("Enter the name of your database: ")
     dbtype_option = input("Choose your database type: ([sqlite3], postgresql) ")
@@ -47,11 +48,8 @@ def interactive_config():
         newName = input("If you would like lwreg to use its own schema, enter it here: ")
         if newName:
             config["lwregSchema"] = newName
-    # config["host"] = input("Please enter the name of your database host machine ")
-    # config["user"] = input("Please enter your username ")
-    # print("Please enter your password")
-    # config["password"] = getpass.getpass()
     utils._check_config(config)
+    
     return config
 
 def write_configfile(config,config_filename="config.json"):
@@ -59,7 +57,6 @@ def write_configfile(config,config_filename="config.json"):
     config_stripped["dbname"] = config["dbname"]
     config_stripped["dbtype"] = config["dbtype"]
     config_stripped["host"] = config["host"]
-    # config_stripped["user"] = config["user"]
     config_stripped["lwregSchema"] = config["lwregSchema"]
 
     with open(config_filename,"w") as f:

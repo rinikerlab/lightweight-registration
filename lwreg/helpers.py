@@ -1,7 +1,4 @@
-from . import standardization_lib
 from . import utils
-import yaml
-import getpass
 import json
 
 def interactive_config():
@@ -11,40 +8,40 @@ def interactive_config():
     if dbtype_option in ["sqlite3","postgresql"]:
         config["dbtype"] = dbtype_option
     else:
-        raise ValueError('Choosen option is invalid')
+        raise ValueError('Selected option is invalid')
     std_option = input("Choose your standardization: (none, sanitize, [fragment], charge, tautomer, super) ")
     if std_option in ["none", "sanitize", "fragment", "charge", "tautomer", "super"]:
         config["standardization"] = std_option
     else:
-        raise ValueError('Choosen option is invalid')
+        raise ValueError('Selected option is invalid')
     Hs_option = input("Do you want to remove Hs? ([Yes]/no) ")
     if Hs_option == "no":
         config["removeHs"] = 0
     elif Hs_option == "Yes":
         config["removeHs"] = 1
     else:
-        raise ValueError('Choosen option is invalid')
+        raise ValueError('Selected option is invalid')
     tautomerhash_option = input("Do you want to use the TautomerHashv2? (Yes/[no]) ")
     if tautomerhash_option == "no":
         config["useTautomerHashv2"] = 0
     elif tautomerhash_option == "Yes":
         config["useTautomerHashv2"] = 1
     else:
-        raise ValueError('Choosen option is invalid')
+        raise ValueError('Selected option is invalid')
     conf_option = input("Do you want to register conformers? (Yes/[no]) ")
     if conf_option == "no":
         config["registerConformers"] = 0
     elif conf_option == "Yes":
         config["registerConformers"] = 1
     else: 
-        raise ValueError('Choosen option is invalid')
+        raise ValueError('Selected option is invalid')
     numConfDigits_opt = input("Do you want to set the number of conformer digits? (Yes/[no]) ")
     if numConfDigits_opt == "no":
         config["numConformerDigits"] = 3
     elif numConfDigits_opt == "Yes":
         config["numConformerDigits"] = int(input("Please enter the number of digits you want to keep "))
     else:
-        raise ValueError('Choosen option is invalid')
+        raise ValueError('Selected option is invalid')
     if config["dbtype"] == "postgresql":
         config["lwregSchema"] = ""
         newName = input("If you would like lwreg to use its own schema, enter it here: ")

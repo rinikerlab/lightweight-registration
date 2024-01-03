@@ -43,8 +43,6 @@ _defaultConfig = {
     0,  # toggle registering conformers as well as compound structures
     "numConformerDigits":
     3,  # number of digits to use when hashing conformer coordinates
-    "hashConformer":
-    0,  # the molecule's conformer will be part of the basic identity hash
     "lwregSchema":
     "",  # the schema name to use for the lwreg tables (no effect with sqlite3)
 }
@@ -213,8 +211,7 @@ def connect(config):
             if dbnm.startswith('file::'):
                 uri = True
             cn = sqlite3.connect(dbnm, uri=uri)
-        elif dbtype in ('postgres', 'postgresql'):
-            dbtype = 'postgresql'
+        elif dbtype == "postgresql":
             if psycopg2 is None:
                 raise ValueError("psycopg2 package not installed")
             cn = psycopg2.connect(database=dbnm,
@@ -224,7 +221,7 @@ def connect(config):
 
     schemaBase = ''
     lwregSchema = ''
-    if dbtype in ('postgres', 'postgresql'):
+    if dbtype == 'postgresql':
         lwregSchema = config.get('lwregSchema', '')
         if lwregSchema:
             schemaBase = config['lwregSchema'] + '.'
@@ -382,14 +379,6 @@ def hash_mol(mol, escape=None, config=None):
         escape=escape,
         enable_tautomer_hash_v2=_lookupWithDefault(config,
                                                    'useTautomerHashv2'))
-
-    if _lookupWithDefault(config, 'hashConformer'):
-        escape = layers.get(RegistrationHash.HashLayer.ESCAPE, '')
-        if escape:
-            escape += '|\n'
-        layers[
-            RegistrationHash.HashLayer.ESCAPE] = escape + _get_conformer_hash(
-                mol, _lookupWithDefault(config, "numConformerDigits"))
 
     mhash = RegistrationHash.GetMolHash(layers)
 
@@ -1230,15 +1219,6 @@ def initdb(config=None):
         print("cancelled")
         return False
 
-
-FORBIDDEN_COMBINATIONS = [{
-    'registerConformers': 1,
-    'hashConformer': 1
-}, {
-    'dbname': None
-}]
-
-
 def _check_config(config):
     ''' checks that the configuration is valid and no forbidden combinations are present
         
@@ -1253,9 +1233,5 @@ def _check_config(config):
     elif isinstance(config, str):
         config = _configure(filename=config)
 
-    for fc in FORBIDDEN_COMBINATIONS:
-        fc_eval = []
-        for k, v in fc.items():
-            fc_eval.append(_lookupWithDefault(config, k) == v)
-        if all(fc_eval):
-            raise ValueError(f'invalid configuration for combination of {fc}')
+    if config.get("dbtype","sqlite3") not in ('sqlite3', 'postgresql'):
+        raise ValueError("Possible values for dbtype are sqlite3 and postgresql")

@@ -46,17 +46,14 @@ def interactive_config():
         config["registerConformers"] = 0
     elif conf_option == "yes":
         config["registerConformers"] = 1
+        numConfDigits_opt = input("How many conformer digits would you like to include? ([3]) ")
+        if not numConfDigits_opt:
+            config["numConformerDigits"] = 3
+        else:
+            config["numConformerDigits"] = int(numConfDigits_opt)
     else: 
         raise ValueError('Selected option is invalid')
-    numConfDigits_opt = input("Do you want to set the number of conformer digits? (yes/[no]) ")
-    if not numConfDigits_opt:
-        config["numConformerDigits"] = 3
-    elif numConfDigits_opt == "no":
-        config["numConformerDigits"] = 3
-    elif numConfDigits_opt == "yes":
-        config["numConformerDigits"] = int(input("Please enter the number of digits you want to keep "))
-    else:
-        raise ValueError('Selected option is invalid')
+
     if config["dbtype"] == "postgresql":
         config["lwregSchema"] = ""
         newName = input("If you would like lwreg to use its own schema, enter it here: ")
@@ -67,6 +64,10 @@ def interactive_config():
     return config
 
 def write_configfile(config,config_filename="config.json"):
+    """ Writes a stripped version of a configuration dictionary to a json file.
+    The information in the file will allow the user to connect to the lwreg instance after addding username and password. 
+    From the lwreg instance itself, all initial configuration information can be retrieved.
+    """
     config_stripped = {}
     config_stripped["dbname"] = config["dbname"]
     config_stripped["dbtype"] = config["dbtype"]
@@ -75,9 +76,10 @@ def write_configfile(config,config_filename="config.json"):
 
     with open(config_filename,"w") as f:
         json.dump(config_stripped,f)
-    return
 
 def load_configfile(config_filename):
+    """ Loads a configuration dictionary from a json file.
+    """
     with open(config_filename,"r") as f:
         config =  json.load(f)
     return config

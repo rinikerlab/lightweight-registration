@@ -6,43 +6,34 @@ def interactive_config():
     """
     print("This is an interactive configuration assisstant for lwreg. \n Please manually add host, user and password to your configuration.")
     config = utils._defaultConfig
+    config.pop("lwregSchema")
     config['dbname'] = input("Enter the name of your database: ")
-    config["dbtype"] = "sqlite3" # default
-    dbtype_option = input("Choose your database type: ([sqlite3], postgresql) ")
-    if dbtype_option in ["sqlite3","postgresql"]:
-        config["dbtype"] = dbtype_option
-    elif dbtype_option:
+    config["dbtype"] = input("Choose your database type: ([sqlite3], postgresql) ") or "sqlite3"
+    if config["dbtype"] not in ["sqlite3","postgresql"]:
         raise ValueError('Selected option is invalid')
-    std_option = input("Choose your standardization: (none, sanitize, [fragment], charge, tautomer, super) ")
-    config["standardization"] = "fragment" # default
-    if std_option in ["none", "sanitize", "fragment", "charge", "tautomer", "super"]:
-        config["standardization"] = std_option
-    elif dbtype_option:
+    config["standardization"] = input("Choose your standardization: (none, sanitize, [fragment], charge, tautomer, super) ") or "fragment"
+    if config["standardization"] not in ["none", "sanitize", "fragment", "charge", "tautomer", "super"]:
         raise ValueError('Selected option is invalid')
-    Hs_option = input("Do you want to remove Hs? ([yes]/no) ")
-    config["removeHs"] = 1 # default
+    Hs_option = input("Do you want to remove Hs? ([yes]/no) ") or "yes"
     if Hs_option == "no":
         config["removeHs"] = 0
     elif Hs_option == "yes":
         config["removeHs"] = 1
     elif Hs_option:
         raise ValueError('Selected option is invalid')
-    tautomerhash_option = input("Do you want to use the TautomerHashv2? (yes/[no]) ")
-    config["useTautomerHashv2"] = 0 # default
+    tautomerhash_option = input("Do you want to use the TautomerHashv2? (yes/[no]) ") or "no"
     if tautomerhash_option == "no":
         config["useTautomerHashv2"] = 0
     elif tautomerhash_option == "yes":
         config["useTautomerHashv2"] = 1
     elif tautomerhash_option:
         raise ValueError('Selected option is invalid')
-    conf_option = input("Do you want to register conformers? (yes/[no]) ")
-    config["registerConformers"] = 0 # default
+    conf_option = input("Do you want to register conformers? (yes/[no]) ") or "no"
     if conf_option == "no":
         config["registerConformers"] = 0
     elif conf_option == "yes":
         config["registerConformers"] = 1
-        numConfDigits_opt = input("How many conformer digits would you like to include? ([3]) ")
-        config["numConformerDigits"] = 3 # default
+        numConfDigits_opt = input("How many conformer digits would you like to include? ([3]) ") or "3"
         if numConfDigits_opt:
             config["numConformerDigits"] = int(numConfDigits_opt)
     elif conf_option: 

@@ -10,3 +10,5 @@ from .utils import initdb, register, query, retrieve, bulk_register, \
     register_multiple_conformers, registration_counts, get_all_registry_numbers, \
         configure_from_database, set_default_config, connect, standardize_mol, \
             RegistrationFailureReasons
+
+from .helpers import interactive_config, write_configfile, load_configfile

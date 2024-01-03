@@ -9,7 +9,8 @@ import click
 import logging
 import sys
 from . import utils
-
+from . import helpers
+import json
 
 @click.group()
 @click.option(
@@ -83,12 +84,18 @@ def register(**kwargs):
         logging.error("Compound already registered")
         sys.exit(1)
 
+## need to think about how to best pass it back
+@cli.command()
+def interactive_config():
+    config = helpers.interactive_config()
+    with open("./config.json","w") as f:
+        json.dump(config,f)
+    click.echo("Saved the configuration to ./config.json")
 
 @cli.command()
 @click.option('--who', default='world')
 def greet(who):
     print(f'hello {who}')
-
 
 if __name__ == '__main__':
     cli()

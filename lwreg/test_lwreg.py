@@ -593,32 +593,6 @@ class TestStandardizationLabels(unittest.TestCase):
         nm = utils.standardize_mol(m, config=cfg)
         self.assertEqual(Chem.MolToSmiles(nm), 'CCO')
 
-"""
-class TestConformerHashes(unittest.TestCase):
-
-    def setUp(self):
-        self._config = utils.defaultConfig()
-        self._config['hashConformer'] = True
-        self._mol1 = Chem.AddHs(Chem.MolFromSmiles('OC(=O)CCCC'))
-        rdDistGeom.EmbedMolecule(self._mol1, randomSeed=0xf00d)
-        self._mol2 = Chem.Mol(self._mol1)
-        rdDistGeom.EmbedMolecule(self._mol2, randomSeed=0xf00d + 1)
-
-    def testConformerDupes(self):
-        utils._initdb(config=self._config, confirm=True)
-        self.assertEqual(utils.register(mol=self._mol1, config=self._config),
-                         1)
-        self.assertEqual(utils.register(mol=self._mol2, config=self._config),
-                         2)
-        aorder = list(range(self._mol1.GetNumAtoms()))
-        random.shuffle(aorder)
-        nmol = Chem.RenumberAtoms(self._mol1, aorder)
-        self.assertEqual(
-            utils.register(mol=nmol,
-                           config=self._config,
-                           fail_on_duplicate=False), 1)
-"""
-
 class TestRegisterConformers(unittest.TestCase):
     integrityError = sqlite3.IntegrityError
 

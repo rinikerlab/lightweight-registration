@@ -38,11 +38,12 @@ class RemoveHs(Standardization):
 
 class CanonicalizeOrientation(Standardization):
     name = "canonicalize_orientation"
-    explanation = "canonicalizes the orientation of the molecule's first conformer (if present and 3D)"
+    explanation = "canonicalizes the orientation of the molecule's 3D conformers (if present)"
 
     def __call__(self, mol):
-        if mol.GetNumConformers() and mol.GetConformer().Is3D():
-            rdMolTransforms.CanonicalizeConformer(mol.GetConformer())
+        for conf in mol.GetConformers():
+            if conf.Is3D():
+                rdMolTransforms.CanonicalizeConformer(conf)
         return mol
 
 

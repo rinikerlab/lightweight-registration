@@ -900,6 +900,23 @@ class TestRegisterConformers(unittest.TestCase):
         self.assertRaises(self.integrityError,
                           lambda: utils.register(mol=cp, config=cfg))
 
+    def testMultiConformerStandardization(self):
+        cfg = self._config.copy()
+        cfg['standardization'] = [
+            standardization_lib.CanonicalizeOrientation()
+        ]
+        utils._initdb(config=cfg, confirm=True)
+        cp = Chem.Mol(self._mol1)
+        conf = cp.GetConformer()
+        for i in range(conf.GetNumAtoms()):
+            pi = conf.GetAtomPosition(i)
+            conf.SetAtomPosition(i, (pi.y, pi.x, pi.z + 1.5))
+        cp.AddConformer(self._mol1.GetConformer(), assignId=True)
+        print('!!!!!!!!!!!!!!!!!!!')
+        self.assertRaises(
+            self.integrityError, lambda: utils.register_multiple_conformers(
+                mol=cp, fail_on_duplicate=True, config=cfg))
+
 
 @unittest.skipIf(psycopg2 is None, "skipping postgresql tests")
 class TestRegisterConformersPSQL(TestRegisterConformers):

@@ -6,6 +6,7 @@
 
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
+from rdkit.Chem import rdMolTransforms
 
 
 class Standardization:
@@ -34,6 +35,15 @@ class RemoveHs(Standardization):
     def __call__(self, mol):
         return Chem.RemoveHs(mol)
 
+
+class CanonicalizeOrientation(Standardization):
+    name = "canonicalize_orientation"
+    explanation = "canonicalizes the orientation of the molecule's first conformer (if present and 3D)"
+
+    def __call__(self, mol):
+        if mol.GetNumConformers() and mol.GetConformer().Is3D():
+            rdMolTransforms.CanonicalizeConformer(mol.GetConformer())
+        return mol
 
 
 class OverlappingAtomsCheck(Standardization):

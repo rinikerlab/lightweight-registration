@@ -9,6 +9,7 @@ import unittest
 import sqlite3
 from rdkit import Chem
 from rdkit.Chem import rdDistGeom
+from rdkit.Chem import rdMolTransforms
 import random
 import copy
 try:
@@ -593,6 +594,7 @@ class TestStandardizationLabels(unittest.TestCase):
         nm = utils.standardize_mol(m, config=cfg)
         self.assertEqual(Chem.MolToSmiles(nm), 'CCO')
 
+
 class TestRegisterConformers(unittest.TestCase):
     integrityError = sqlite3.IntegrityError
 
@@ -882,6 +884,21 @@ class TestRegisterConformers(unittest.TestCase):
                                                fail_on_duplicate=False,
                                                config=self._config),
             expected[self._config['dbtype']])
+
+    def testConformerStandardization(self):
+        cfg = self._config.copy()
+        cfg['standardization'] = [
+            standardization_lib.CanonicalizeOrientation()
+        ]
+        utils._initdb(config=cfg, confirm=True)
+        self.assertEqual(utils.register(mol=self._mol1, config=cfg), (1, 1))
+        cp = Chem.Mol(self._mol1)
+        conf = cp.GetConformer()
+        for i in range(conf.GetNumAtoms()):
+            pi = conf.GetAtomPosition(i)
+            conf.SetAtomPosition(i, (pi.y, pi.x, pi.z + 1.5))
+        self.assertRaises(self.integrityError,
+                          lambda: utils.register(mol=cp, config=cfg))
 
 
 @unittest.skipIf(psycopg2 is None, "skipping postgresql tests")

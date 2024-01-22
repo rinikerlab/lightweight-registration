@@ -912,7 +912,6 @@ class TestRegisterConformers(unittest.TestCase):
             pi = conf.GetAtomPosition(i)
             conf.SetAtomPosition(i, (pi.y, pi.x, pi.z + 1.5))
         cp.AddConformer(self._mol1.GetConformer(), assignId=True)
-        print('!!!!!!!!!!!!!!!!!!!')
         self.assertRaises(
             self.integrityError, lambda: utils.register_multiple_conformers(
                 mol=cp, fail_on_duplicate=True, config=cfg))

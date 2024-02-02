@@ -31,6 +31,7 @@ standardizationOptions = {
     'charge': standardization_lib.ChargeParent(),
     'tautomer': standardization_lib.TautomerParent(),
     'super': standardization_lib.SuperParent(),
+    'canonicalize': standardization_lib.CanonicalizeOrientation(),
 }
 
 _defaultConfig = {

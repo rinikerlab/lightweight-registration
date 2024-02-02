@@ -11,8 +11,8 @@ def interactive_config():
     config["dbtype"] = input("Choose your database type: ([sqlite3], postgresql) ") or "sqlite3"
     if config["dbtype"] not in ["sqlite3","postgresql"]:
         raise ValueError('Selected option is invalid')
-    config["standardization"] = input("Choose your standardization: (none, sanitize, [fragment], charge, tautomer, super) ") or "fragment"
-    if config["standardization"] not in ["none", "sanitize", "fragment", "charge", "tautomer", "super"]:
+    config["standardization"] = input("Choose your standardization: (none, sanitize, [fragment], charge, tautomer, super, canonicalize) ") or "fragment"
+    if config["standardization"] not in ["none", "sanitize", "fragment", "charge", "tautomer", "super", "canonicalize"]:
         raise ValueError('Selected option is invalid')
     Hs_option = input("Do you want to remove Hs? ([yes]/no) ") or "yes"
     if Hs_option == "no":

@@ -9,16 +9,44 @@ Basic operations:
 - `query`: takes a molecule as input and checks whether or not a matching molecule is registered. returns molregnos (registry IDs) of the matching molecule(s), if any
 - `retrieve`: takes one or more IDs and returns the registered structures for them
 
+## Quick-start installation for non-experts:
+
+Assuming that you have conda (or mamba or something equivalent) installed you can install lwreg directly from this github repo by first creating a conda environment with all the dependencies installed:
+```
+% conda env create --name py311_lwreg --file=https://raw.githubusercontent.com/rinikerlab/lightweight-registration/main/environment.yml
+```
+If you have mamba installed, you can run this instead (it will run faster):
+```
+% mamba env create --name py311_lwreg --file=https://raw.githubusercontent.com/rinikerlab/lightweight-registration/main/environment.yml
+```
+
+You can then activate the new environment and install lwreg:
+```
+% conda activate py311_lwreg
+% python -m pip install git+https://github.com/rinikerlab/lightweight-registration
+```
+
+You can then verify that the install worked by doing:
+```
+% lwreg --help
+```
+
+If you want to use PostgreSQL as the database for lwreg, then you will also need to install the python connector for PostgreSQL:
+```
+% conda install -c conda-forge psycopg2
+```
+
 ## Installation for non-experts:
 
 Please look at the INSTALL.md file.
 
-## Dependencies:
+## Installation for experts:
+
+### Dependencies:
 - rdkit v2023.03.1 or later
 - click
 - psycopg2 (only if you want to use a postgresql database)
 
-## Installation for experts:
 After installing the dependencies (above) and checking out this repo, run this command in this directory:
 ```
 pip install --editable .

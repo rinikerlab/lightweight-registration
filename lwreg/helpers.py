@@ -36,6 +36,9 @@ def interactive_config():
         numConfDigits_opt = input("How many conformer digits would you like to include? ([3]) ") or "3"
         if numConfDigits_opt:
             config["numConformerDigits"] = int(numConfDigits_opt)
+        invariantConfs = input("Would you like to register your conformers as translationally and rotationally invariant? ([yes]/no)") or "yes"
+        if invariantConfs == "yes":
+            config["standardization"] = [config["standardization"],"canonicalize"]
     elif conf_option: 
         raise ValueError('Selected option is invalid')
 

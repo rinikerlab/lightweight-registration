@@ -70,7 +70,12 @@ docker run -i -t -p 8888:8888 rdkit-lwreg /bin/bash -c "\
 
 ### Command line
 ```
-% lwreg initdb --confirm=yes
+# default config
+% lwreg initdb --confirm=yes                          # initialization with default config
+# interactive config
+% lwreg interactive-config                            # interactive configuration, add host, user, password to config.json afterwards
+% lwreg --config config.json initdb --confirm=yes     # initialization with config.json
+
 % lwreg register --smiles CCOCC
 1
 % lwreg register --smiles CCOCCC
@@ -89,11 +94,20 @@ ERROR:root:Compound already registered
 ```
 >>> import lwreg
 
->>> from lwreg import utils
+>>> from lwreg import utils, helpers
 
+# default config 
 >>> lwreg.set_default_config(utils.defaultConfig())   # you generally will want to provide more information about the database
 
 >>> lwreg.initdb()
+This will destroy any existing information in the registration database.
+  are you sure? [yes/no]: yes
+True
+
+# interactive config
+>>> config = helpers.interactive_config()   # interactive configuration
+
+>>> lwreg.initdb(config=config)
 This will destroy any existing information in the registration database.
   are you sure? [yes/no]: yes
 True

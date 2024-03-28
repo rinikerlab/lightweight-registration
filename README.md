@@ -69,13 +69,16 @@ docker run -i -t -p 8888:8888 rdkit-lwreg /bin/bash -c "\
 ## Very basic usage demo
 
 ### Command line
+Using the default configuration options:
 ```
-# default config
 % lwreg initdb --confirm=yes                          # initialization with default config
-# interactive config
+```
+Instead using the interactive configuration:
+```
 % lwreg interactive-config                            # interactive configuration, add host, user, password to config.json afterwards
 % lwreg --config config.json initdb --confirm=yes     # initialization with config.json
-
+```
+```
 % lwreg register --smiles CCOCC
 1
 % lwreg register --smiles CCOCCC

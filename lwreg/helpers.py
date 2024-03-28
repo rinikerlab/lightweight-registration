@@ -11,7 +11,7 @@ def interactive_config():
     config["dbtype"] = input("Choose your database type: ([sqlite3], postgresql) ") or "sqlite3"
     if config["dbtype"] not in ["sqlite3","postgresql"]:
         raise ValueError('Selected option is invalid')
-    config["standardization"] = input("Choose your standardization: (none, sanitize, [fragment], charge, tautomer, super, canonicalize) ") or "fragment"
+    config["standardization"] = input("Choose your standardization: (none, sanitize, [fragment], charge, tautomer, super, overlappingAtoms, polymer) ") or "fragment"
     if config["standardization"] not in utils.standardizationOptions.keys():
         raise ValueError('Selected option is invalid')
     Hs_option = input("Do you want to remove Hs? ([yes]/no) ") or "yes"
@@ -36,7 +36,7 @@ def interactive_config():
         numConfDigits_opt = input("How many conformer digits would you like to include? ([3]) ") or "3"
         if numConfDigits_opt:
             config["numConformerDigits"] = int(numConfDigits_opt)
-        invariantConfs = input("Would you like to register your conformers as translationally and rotationally invariant? ([yes]/no)") or "yes"
+        invariantConfs = input("Would you like to register your conformers as translationally and rotationally invariant? (yes/[no])") or "no"
         if invariantConfs == "yes":
             config["standardization"] = [config["standardization"],"canonicalize"]
     elif conf_option: 

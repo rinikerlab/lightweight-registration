@@ -32,6 +32,8 @@ standardizationOptions = {
     'tautomer': standardization_lib.TautomerParent(),
     'super': standardization_lib.SuperParent(),
     'canonicalize': standardization_lib.CanonicalizeOrientation(),
+    'overlappingAtoms': standardization_lib.OverlappingAtomsCheck(),
+    'polymer': standardization_lib.PolymerCheck()
 }
 
 _defaultConfig = {

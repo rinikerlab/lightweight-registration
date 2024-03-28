@@ -98,7 +98,9 @@ ERROR:root:Compound already registered
 >>> import lwreg
 
 >>> from lwreg import utils, helpers
-
+```
+Using the default configuration options:
+```
 # default config 
 >>> lwreg.set_default_config(utils.defaultConfig())   # you generally will want to provide more information about the database
 
@@ -106,7 +108,9 @@ ERROR:root:Compound already registered
 This will destroy any existing information in the registration database.
   are you sure? [yes/no]: yes
 True
-
+```
+Instead using the interactive configuration:
+```
 # interactive config
 >>> config = helpers.interactive_config()   # interactive configuration
 
@@ -114,7 +118,8 @@ True
 This will destroy any existing information in the registration database.
   are you sure? [yes/no]: yes
 True
-
+```
+```
 >>> lwreg.register(smiles='CCO')
 1
 

@@ -111,7 +111,6 @@ True
 ```
 Instead using the interactive configuration:
 ```
-# interactive config
 >>> config = helpers.interactive_config()   # interactive configuration
 
 >>> lwreg.initdb(config=config)

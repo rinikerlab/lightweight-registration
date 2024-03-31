@@ -817,9 +817,9 @@ def bulk_register(config=None,
         f"select value from {registrationMetadataTableName} where key='rdkitVersion'"
     )
     def_rdkit_version_label = curs.fetchone()[0]
-
-    progress_count = len(mols)
-    start_time = time()
+    if show_progress:
+        progress_count = len(mols)
+        start_time = time()
     for mol_idx, mol in enumerate(mols):
         if show_progress:
             _show_progress_bar(mol_idx+1, progress_count, start_time, prefix='Registering molecules: ')

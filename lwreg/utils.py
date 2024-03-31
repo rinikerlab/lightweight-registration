@@ -14,6 +14,8 @@ import sqlite3
 import enum
 from . import standardization_lib
 import logging
+from time import time
+import sys
 
 _violations = (sqlite3.IntegrityError, )
 try:
@@ -760,7 +762,8 @@ def bulk_register(config=None,
                   smilesfile=None,
                   escapeProperty=None,
                   failOnDuplicate=True,
-                  no_verbose=True):
+                  no_verbose=True,
+                  show_progress=False):
     """ registers multiple new molecules, assuming they don't already exist,
     and returns the new registry numbers (molregno)
     
@@ -783,6 +786,7 @@ def bulk_register(config=None,
                        for each already-registered molecule, otherwise the already existing
                        structure ID will be returned
     no_verbose     -- if this is False then the registry numbers will be printed
+    show_progress   -- if this is True then a progress bar will be shown for the molecules
     """
 
     if mols:
@@ -814,7 +818,11 @@ def bulk_register(config=None,
     )
     def_rdkit_version_label = curs.fetchone()[0]
 
+    progress_count = len(mols)
+    start_time = time()
     for mol_idx, mol in enumerate(mols):
+        if show_progress:
+            _show_progress_bar(mol_idx+1, progress_count, start_time, prefix='Registering molecules: ')
         if mol is None:
             res.append(RegistrationFailureReasons.PARSE_FAILURE)
             continue
@@ -1238,3 +1246,20 @@ def _check_config(config):
 
     if config.get("dbtype","sqlite3") not in ('sqlite3', 'postgresql'):
         raise ValueError("Possible values for dbtype are sqlite3 and postgresql")
+    
+def _show_progress_bar(j, count, start_time, size=60, prefix='', out=sys.stdout):
+        ''' A simple progress bar for the console to keep track of long running processes
+
+        Keyword arguments:
+        j          -- the current iteration number (e.g. the molecule index in a list of molecules)
+        count      -- the total number of iterations (e.g. the total number of molecules to process)
+        start_time -- the time the process started
+        size       -- the size of the progress bar (default 60)
+        prefix     -- a string to prepend to the progress bar (default '')
+        out        -- the output stream to write the progress bar to (default sys.stdout)
+        '''
+        x = int(size*j/count)
+        remaining = ((time() - start_time) / j) * (count - j)
+        mins, sec = divmod(remaining, 60)
+        time_str = f"{int(mins):02}:{sec:05.2f}"
+        print(f"{prefix}[{u'█'*x}{('.'*(size-x))}] {j}/{count} ETA={time_str}", end='\r', file=out, flush=True)

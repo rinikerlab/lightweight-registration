@@ -851,6 +851,13 @@ def bulk_register(config=None,
                 res.append((mrn, conf_id))
         except _violations:
             res.append(RegistrationFailureReasons.DUPLICATE)
+        except psycopg2.errors.ProgramLimitExceeded as e:
+            # check if the exception is ProgramLimitExceeded and config has a
+            # 'registerConformers'==1, if so print user friendly message
+            if _lookupWithDefault(config, "registerConformers"):
+                raise Exception(f"Error registering molecule with index: {mol_idx}.\nProblem might be due to the length of the conformer hash.\nTry reducing the 'numConformerDigits' or the number of atoms in the molecule") from e
+            else:
+                raise Exception(f'Error registering molecule with index: {mol_idx}') from e
         except Exception as e:
             raise Exception(f'Error registering molecule with index: {mol_idx}') from e
     if not no_verbose:

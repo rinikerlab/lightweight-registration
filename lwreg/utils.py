@@ -814,7 +814,7 @@ def bulk_register(config=None,
     )
     def_rdkit_version_label = curs.fetchone()[0]
 
-    for mol in mols:
+    for mol_idx, mol in enumerate(mols):
         if mol is None:
             res.append(RegistrationFailureReasons.PARSE_FAILURE)
             continue
@@ -843,6 +843,8 @@ def bulk_register(config=None,
                 res.append((mrn, conf_id))
         except _violations:
             res.append(RegistrationFailureReasons.DUPLICATE)
+        except Exception as e:
+            raise Exception(f'Error registering molecule with index: {mol_idx}') from e
     if not no_verbose:
         print(res)
     return tuple(res)

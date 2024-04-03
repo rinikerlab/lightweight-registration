@@ -9,3 +9,4 @@ dependencies:
   - ipython-sql
   - sqlalchemy=1.4
   - pytest
+  - tqdm

@@ -14,8 +14,7 @@ import sqlite3
 import enum
 from . import standardization_lib
 import logging
-from time import time
-import sys
+from tqdm import tqdm
 
 _violations = (sqlite3.IntegrityError, )
 try:
@@ -760,8 +759,8 @@ def bulk_register(config=None,
                   mols=None,
                   sdfile=None,
                   smilesfile=None,
-                  escapeProperty=None,
-                  failOnDuplicate=True,
+                  escape_property=None,
+                  fail_on_duplicate=True,
                   no_verbose=True,
                   show_progress=False):
     """ registers multiple new molecules, assuming they don't already exist,
@@ -817,19 +816,14 @@ def bulk_register(config=None,
         f"select value from {registrationMetadataTableName} where key='rdkitVersion'"
     )
     def_rdkit_version_label = curs.fetchone()[0]
-    if show_progress:
-        progress_count = len(mols)
-        start_time = time()
-    for mol_idx, mol in enumerate(mols):
-        if show_progress:
-            _show_progress_bar(mol_idx+1, progress_count, start_time, prefix='Registering molecules: ')
+    for mol in tqdm(mols, disable=not show_progress):
         if mol is None:
             res.append(RegistrationFailureReasons.PARSE_FAILURE)
             continue
         tpl = _parse_mol(mol=mol, config=config)
         try:
-            if escapeProperty is not None and mol.HasProp(escapeProperty):
-                escape = mol.GetProp(escapeProperty)
+            if escape_property is not None and mol.HasProp(escape_property):
+                escape = mol.GetProp(escape_property)
             else:
                 escape = None
             mrn, conf_id = _register_mol(
@@ -838,7 +832,7 @@ def bulk_register(config=None,
                 cn,
                 curs,
                 config,
-                failOnDuplicate,
+                fail_on_duplicate,
                 def_rdkit_version_label=def_rdkit_version_label,
                 def_std_label=def_std_label)
 
@@ -851,15 +845,6 @@ def bulk_register(config=None,
                 res.append((mrn, conf_id))
         except _violations:
             res.append(RegistrationFailureReasons.DUPLICATE)
-        except psycopg2.errors.ProgramLimitExceeded as e:
-            # check if the exception is ProgramLimitExceeded and config has a
-            # 'registerConformers'==1, if so print user friendly message
-            if _lookupWithDefault(config, "registerConformers"):
-                raise Exception(f"Error registering molecule with index: {mol_idx}.\nProblem might be due to the length of the conformer hash.\nTry reducing the 'numConformerDigits' or the number of atoms in the molecule") from e
-            else:
-                raise Exception(f'Error registering molecule with index: {mol_idx}') from e
-        except Exception as e:
-            raise Exception(f'Error registering molecule with index: {mol_idx}') from e
     if not no_verbose:
         print(res)
     return tuple(res)
@@ -1254,19 +1239,3 @@ def _check_config(config):
     if config.get("dbtype","sqlite3") not in ('sqlite3', 'postgresql'):
         raise ValueError("Possible values for dbtype are sqlite3 and postgresql")
     
-def _show_progress_bar(j, count, start_time, size=60, prefix='', out=sys.stdout):
-        ''' A simple progress bar for the console to keep track of long running processes
-
-        Keyword arguments:
-        j          -- the current iteration number (e.g. the molecule index in a list of molecules)
-        count      -- the total number of iterations (e.g. the total number of molecules to process)
-        start_time -- the time the process started
-        size       -- the size of the progress bar (default 60)
-        prefix     -- a string to prepend to the progress bar (default '')
-        out        -- the output stream to write the progress bar to (default sys.stdout)
-        '''
-        x = int(size*j/count)
-        remaining = ((time() - start_time) / j) * (count - j)
-        mins, sec = divmod(remaining, 60)
-        time_str = f"{int(mins):02}:{sec:05.2f}"
-        print(f"{prefix}[{u'█'*x}{('.'*(size-x))}] {j}/{count} ETA={time_str}", end='\r', file=out, flush=True)

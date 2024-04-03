@@ -198,7 +198,7 @@ class TestLWReg(unittest.TestCase):
         ]
 
         res = utils.bulk_register(mols=mols,
-                                  failOnDuplicate=False,
+                                  fail_on_duplicate=False,
                                   config=self._config)
         self.assertEqual(len(res), 6)
         self.assertEqual(res[2], RegistrationFailureReasons.PARSE_FAILURE)
@@ -651,7 +651,7 @@ class TestRegisterConformers(unittest.TestCase):
         self.assertEqual(
             utils.bulk_register(mols=(self._mol1, self._mol2, nmol,
                                       self._mol3),
-                                failOnDuplicate=False,
+                                fail_on_duplicate=False,
                                 config=self._config),
             expected[self._config['dbtype']])
         self.assertEqual(utils.registration_counts(config=self._config),

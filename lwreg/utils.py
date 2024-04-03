@@ -8,6 +8,7 @@ import rdkit
 from rdkit import Chem
 from rdkit import rdBase
 from rdkit.Chem import RegistrationHash
+from hashlib import sha256
 import csv
 import json
 import sqlite3
@@ -358,7 +359,7 @@ def _get_conformer_hash(mol, numDigits, confId=-1):
     for p in ps:
         coords = [str(round(x, numDigits)) for x in p]
         hps.append(','.join(coords))
-    return ';'.join(sorted(hps))
+    return sha256(';'.join(sorted(hps)).encode()).hexdigest()
 
 
 def hash_mol(mol, escape=None, config=None):
@@ -1220,6 +1221,7 @@ def initdb(config=None):
         print("cancelled")
         return False
 
+
 def _check_config(config):
     ''' checks that the configuration is valid and no forbidden combinations are present
         
@@ -1234,5 +1236,6 @@ def _check_config(config):
     elif isinstance(config, str):
         config = _configure(filename=config)
 
-    if config.get("dbtype","sqlite3") not in ('sqlite3', 'postgresql'):
-        raise ValueError("Possible values for dbtype are sqlite3 and postgresql")
+    if config.get("dbtype", "sqlite3") not in ('sqlite3', 'postgresql'):
+        raise ValueError(
+            "Possible values for dbtype are sqlite3 and postgresql")

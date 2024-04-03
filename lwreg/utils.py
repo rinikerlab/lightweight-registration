@@ -51,6 +51,7 @@ _defaultConfig = {
 }
 
 from rdkit.Chem.RegistrationHash import HashLayer
+from rdkit.Chem import KekulizeException
 
 
 class RegistrationFailureReasons(enum.Enum):
@@ -483,7 +484,10 @@ def _register_mol(tpl,
             Chem.AssignStereochemistryFrom3D(sMol, confId)
         if sMol is None:
             return None, None
-        molb = Chem.MolToV3KMolBlock(sMol, confId=confId)
+        try:
+            molb = Chem.MolToV3KMolBlock(sMol, confId=confId)
+        except KekulizeException:
+            return None, None
 
         mhash, layers = hash_mol(sMol, escape=escape, config=config)
 

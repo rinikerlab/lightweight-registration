@@ -439,7 +439,7 @@ def _register_mol(tpl,
                   cn,
                   curs,
                   config,
-                  failOnDuplicate,
+                  fail_on_duplicate,
                   def_rdkit_version_label=None,
                   def_std_label=None,
                   confId=-1,
@@ -525,7 +525,7 @@ def _register_mol(tpl,
         cn.commit()
     except _violations:
         cn.rollback()
-        if failOnDuplicate and not (registerConformers
+        if fail_on_duplicate and not (registerConformers
                                     and sMol.GetNumConformers()):
             raise
         else:
@@ -547,7 +547,7 @@ def _register_mol(tpl,
                                           cn,
                                           curs,
                                           config,
-                                          failOnDuplicate,
+                                          fail_on_duplicate,
                                           confId=confId)
 
     return mrn, conf_id

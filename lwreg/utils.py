@@ -395,7 +395,7 @@ def _register_one_conformer(mrn,
                             cn,
                             curs,
                             config,
-                            failOnDuplicate,
+                            fail_on_duplicate,
                             confId=-1):
     try:
         chash = _get_conformer_hash(sMol,
@@ -422,7 +422,7 @@ def _register_one_conformer(mrn,
         cn.commit()
     except _violations:
         cn.rollback()
-        if failOnDuplicate:
+        if fail_on_duplicate:
             raise
         else:
             curs.execute(
@@ -636,7 +636,7 @@ def register(config=None,
     molblock   -- MOL or SDF block
     smiles     -- smiles
     escape     -- the escape layer
-    failOnDuplicate -- if true then an exception is raised when trying to register a duplicate
+    fail_on_duplicate -- if true then an exception is raised when trying to register a duplicate
     confId     -- the conformer ID to use when in registerConformers mode
     no_verbose -- if this is False then the registry number will be printed
     """
@@ -688,7 +688,7 @@ def register_multiple_conformers(config=None,
     config     -- configuration dict
     mol        -- RDKit molecule object (must have at least one conformer)
     escape     -- the escape layer
-    failOnDuplicate -- if true then an exception is raised when trying to register a duplicate
+    fail_on_duplicate -- if true then an exception is raised when trying to register a duplicate
     no_verbose -- if this is False then the registry number will be printed
     """
     if not config:
@@ -774,7 +774,7 @@ def bulk_register(config=None,
     The result tuple includes a single entry for each molecule in the input.
     That entry can be one of the following:
       - the registry number (molregno) of the registered molecule
-      - RegistrationFailureReasons.DUPLICATE if failOnDuplicate is True and a
+      - RegistrationFailureReasons.DUPLICATE if fail_on_duplicate is True and a
         molecule is a duplicate
       - RegistrationFalureReasons.PARSE_FAILURE if there was a problem processing
         the molecule 
@@ -785,8 +785,8 @@ def bulk_register(config=None,
     config         -- configuration dict
     mols           -- an iterable of RDKit molecule objects
     sdfile         -- SDF filename
-    escapeProperty -- the molecule property to use as the escape layer
-    failOnDuplicate -- if true then RegistraionFailureReasons.DUPLICATE will be returned 
+    escape_property -- the molecule property to use as the escape layer
+    fail_on_duplicate -- if true then RegistraionFailureReasons.DUPLICATE will be returned 
                        for each already-registered molecule, otherwise the already existing
                        structure ID will be returned
     no_verbose     -- if this is False then the registry numbers will be printed

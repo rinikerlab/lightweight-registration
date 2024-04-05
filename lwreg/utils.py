@@ -15,6 +15,7 @@ import sqlite3
 import enum
 from . import standardization_lib
 import logging
+from tqdm import tqdm
 
 _violations = (sqlite3.IntegrityError, )
 try:
@@ -50,6 +51,7 @@ _defaultConfig = {
 }
 
 from rdkit.Chem.RegistrationHash import HashLayer
+from rdkit.Chem import KekulizeException
 
 
 class RegistrationFailureReasons(enum.Enum):
@@ -393,7 +395,7 @@ def _register_one_conformer(mrn,
                             cn,
                             curs,
                             config,
-                            failOnDuplicate,
+                            fail_on_duplicate,
                             confId=-1):
     try:
         chash = _get_conformer_hash(sMol,
@@ -420,7 +422,7 @@ def _register_one_conformer(mrn,
         cn.commit()
     except _violations:
         cn.rollback()
-        if failOnDuplicate:
+        if fail_on_duplicate:
             raise
         else:
             curs.execute(
@@ -439,7 +441,7 @@ def _register_mol(tpl,
                   cn,
                   curs,
                   config,
-                  failOnDuplicate,
+                  fail_on_duplicate,
                   def_rdkit_version_label=None,
                   def_std_label=None,
                   confId=-1,
@@ -482,7 +484,10 @@ def _register_mol(tpl,
             Chem.AssignStereochemistryFrom3D(sMol, confId)
         if sMol is None:
             return None, None
-        molb = Chem.MolToV3KMolBlock(sMol, confId=confId)
+        try:
+            molb = Chem.MolToV3KMolBlock(sMol, confId=confId)
+        except KekulizeException:
+            return None, None
 
         mhash, layers = hash_mol(sMol, escape=escape, config=config)
 
@@ -525,7 +530,7 @@ def _register_mol(tpl,
         cn.commit()
     except _violations:
         cn.rollback()
-        if failOnDuplicate and not (registerConformers
+        if fail_on_duplicate and not (registerConformers
                                     and sMol.GetNumConformers()):
             raise
         else:
@@ -547,7 +552,7 @@ def _register_mol(tpl,
                                           cn,
                                           curs,
                                           config,
-                                          failOnDuplicate,
+                                          fail_on_duplicate,
                                           confId=confId)
 
     return mrn, conf_id
@@ -631,7 +636,7 @@ def register(config=None,
     molblock   -- MOL or SDF block
     smiles     -- smiles
     escape     -- the escape layer
-    failOnDuplicate -- if true then an exception is raised when trying to register a duplicate
+    fail_on_duplicate -- if true then an exception is raised when trying to register a duplicate
     confId     -- the conformer ID to use when in registerConformers mode
     no_verbose -- if this is False then the registry number will be printed
     """
@@ -683,7 +688,7 @@ def register_multiple_conformers(config=None,
     config     -- configuration dict
     mol        -- RDKit molecule object (must have at least one conformer)
     escape     -- the escape layer
-    failOnDuplicate -- if true then an exception is raised when trying to register a duplicate
+    fail_on_duplicate -- if true then an exception is raised when trying to register a duplicate
     no_verbose -- if this is False then the registry number will be printed
     """
     if not config:
@@ -759,16 +764,17 @@ def bulk_register(config=None,
                   mols=None,
                   sdfile=None,
                   smilesfile=None,
-                  escapeProperty=None,
-                  failOnDuplicate=True,
-                  no_verbose=True):
+                  escape_property=None,
+                  fail_on_duplicate=True,
+                  no_verbose=True,
+                  show_progress=False):
     """ registers multiple new molecules, assuming they don't already exist,
     and returns the new registry numbers (molregno)
     
     The result tuple includes a single entry for each molecule in the input.
     That entry can be one of the following:
       - the registry number (molregno) of the registered molecule
-      - RegistrationFailureReasons.DUPLICATE if failOnDuplicate is True and a
+      - RegistrationFailureReasons.DUPLICATE if fail_on_duplicate is True and a
         molecule is a duplicate
       - RegistrationFalureReasons.PARSE_FAILURE if there was a problem processing
         the molecule 
@@ -779,11 +785,12 @@ def bulk_register(config=None,
     config         -- configuration dict
     mols           -- an iterable of RDKit molecule objects
     sdfile         -- SDF filename
-    escapeProperty -- the molecule property to use as the escape layer
-    failOnDuplicate -- if true then RegistraionFailureReasons.DUPLICATE will be returned 
+    escape_property -- the molecule property to use as the escape layer
+    fail_on_duplicate -- if true then RegistraionFailureReasons.DUPLICATE will be returned 
                        for each already-registered molecule, otherwise the already existing
                        structure ID will be returned
     no_verbose     -- if this is False then the registry numbers will be printed
+    show_progress   -- if this is True then a progress bar will be shown for the molecules
     """
 
     if mols:
@@ -814,15 +821,14 @@ def bulk_register(config=None,
         f"select value from {registrationMetadataTableName} where key='rdkitVersion'"
     )
     def_rdkit_version_label = curs.fetchone()[0]
-
-    for mol in mols:
+    for mol in tqdm(mols, disable=not show_progress):
         if mol is None:
             res.append(RegistrationFailureReasons.PARSE_FAILURE)
             continue
         tpl = _parse_mol(mol=mol, config=config)
         try:
-            if escapeProperty is not None and mol.HasProp(escapeProperty):
-                escape = mol.GetProp(escapeProperty)
+            if escape_property is not None and mol.HasProp(escape_property):
+                escape = mol.GetProp(escape_property)
             else:
                 escape = None
             mrn, conf_id = _register_mol(
@@ -831,7 +837,7 @@ def bulk_register(config=None,
                 cn,
                 curs,
                 config,
-                failOnDuplicate,
+                fail_on_duplicate,
                 def_rdkit_version_label=def_rdkit_version_label,
                 def_std_label=def_std_label)
 

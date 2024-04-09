@@ -441,6 +441,33 @@ M  END
             self.integrityError,
             lambda: utils.register(smiles='CCCC(=O)O', config=nconfig))
 
+    def testConfigFromDatabaseWithoutDbType(self):
+        # this test only makes sense for sqlite
+        if self._config['dbtype'] == 'postgresql':
+            return
+        lconfig = self._config.copy()
+        lconfig['standardization'] = 'charge'
+        utils._initdb(config=lconfig, confirm=True)
+        self.assertEqual(
+            utils.register(smiles='CCC[O-].[Na+]', config=lconfig), 1)
+        self.assertEqual(
+            utils.register(smiles='CCC(=O)[O-].[Na+]', config=lconfig), 2)
+        self.assertEqual(utils.registration_counts(config=lconfig), 2)
+        conn = None
+        if 'connection' in lconfig:
+            conn = lconfig['connection']
+        nconfig = utils.configure_from_database(
+            connection=conn,
+            dbname=lconfig['dbname'],
+            dbtype=None,
+            lwregSchema=lconfig['lwregSchema'])
+        configCopy = lconfig.copy()
+        nconfigCopy = nconfig.copy()
+        if 'connection' in configCopy:
+            del configCopy['connection']
+            del nconfigCopy['connection']
+        self.assertEqual(nconfigCopy, configCopy)
+
     def testSetDefaultConfig(self):
         lconfig = self._config.copy()
         lconfig['standardization'] = 'charge'

@@ -8,7 +8,7 @@ from rdkit import Chem
 
 import warnings
 
-# MolStandardize generates a pile of deprecation warnings in the 2024.03 release
+# MolStandardize generates a pile of deprecation warnings in the 2023.09 release
 # of RDKit. We aren't using any of the deprecated code and can ignore the
 # warnings here
 with warnings.catch_warnings():

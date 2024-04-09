@@ -1179,6 +1179,7 @@ def _initdb(config=None, confirm=False):
     curs.execute(
         f'create table {registrationMetadataTableName} (key text, value text)')
     _registerMetadata(curs, config)
+    cn.commit()
 
     curs.execute(f'drop table if exists {hashTableName}')
     if _dbtype != 'postgresql':

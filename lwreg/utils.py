@@ -1,4 +1,4 @@
-# Copyright (C) 2022 Greg Landrum
+# Copyright (C) 2022-2024 Greg Landrum and other lwreg contributors
 # All rights reserved
 # This file is part of lwreg.
 # The contents are covered by the terms of the MIT license
@@ -13,6 +13,7 @@ import csv
 import json
 import sqlite3
 import enum
+import os.path
 from . import standardization_lib
 import logging
 from tqdm import tqdm
@@ -86,6 +87,11 @@ def configure_from_database(dbname=None,
     nondefault schema when initializing the database, you'll also need to
     provide 'lwregSchema' here.
 
+    If 'dbtype' is not provided, the following heuristics are used:
+      - if 'dbname' corresponds to an existing file, then sqlite3 is used
+      - if 'host' is provided, then postgresql is used
+      - otherwise the default dbtype, currently sqlite3, is used
+
     Keyword arguments: 
     dbname -- the name of the database (one of dbname or connection must be provided)
     connection -- a connection object (one of dbname or connection must be provided)
@@ -108,6 +114,14 @@ def configure_from_database(dbname=None,
 
     if dbtype is not None:
         config['dbtype'] = dbtype
+    else:
+        if os.path.exists(dbname):
+            # if the db is a file, then we'll assume sqlite
+            config['dbtype'] = 'sqlite3'
+        elif host is not None:
+            # if they provided a host, it's probably postgresql
+            config['dbtype'] = 'postgresql'
+
     if host is not None:
         config['host'] = host
     if user is not None:
@@ -531,7 +545,7 @@ def _register_mol(tpl,
     except _violations:
         cn.rollback()
         if fail_on_duplicate and not (registerConformers
-                                    and sMol.GetNumConformers()):
+                                      and sMol.GetNumConformers()):
             raise
         else:
             curs.execute(
@@ -1165,6 +1179,7 @@ def _initdb(config=None, confirm=False):
     curs.execute(
         f'create table {registrationMetadataTableName} (key text, value text)')
     _registerMetadata(curs, config)
+    cn.commit()
 
     curs.execute(f'drop table if exists {hashTableName}')
     if _dbtype != 'postgresql':

@@ -12,6 +12,8 @@ from rdkit.Chem import rdDistGeom
 from rdkit.Chem import rdMolTransforms
 import random
 import copy
+import tempfile
+
 try:
     from . import utils
     from .utils import RegistrationFailureReasons
@@ -440,6 +442,32 @@ M  END
         self.assertRaises(
             self.integrityError,
             lambda: utils.register(smiles='CCCC(=O)O', config=nconfig))
+
+    def testConfigFromDatabaseWithoutDbType(self):
+        # this test only makes sense for sqlite
+        if self._config['dbtype'] == 'postgresql':
+            return
+        tmpfile = tempfile.NamedTemporaryFile()
+        lconfig = self._config.copy()
+        if 'connection' in lconfig:
+            del lconfig['connection']
+        lconfig['dbname'] = tmpfile.name
+        lconfig['standardization'] = 'charge'
+        utils._initdb(config=lconfig, confirm=True)
+        self.assertEqual(
+            utils.register(smiles='CCC[O-].[Na+]', config=lconfig), 1)
+        self.assertEqual(
+            utils.register(smiles='CCC(=O)[O-].[Na+]', config=lconfig), 2)
+        self.assertEqual(utils.registration_counts(config=lconfig), 2)
+        nconfig = utils.configure_from_database(
+            connection=None,
+            dbname=lconfig['dbname'],
+            dbtype=None,
+            lwregSchema=lconfig['lwregSchema'])
+        print(lconfig)
+        print(nconfig)
+        self.assertEqual(nconfig['dbtype'], 'sqlite3')
+        self.assertEqual(nconfig, lconfig)
 
     def testSetDefaultConfig(self):
         lconfig = self._config.copy()

@@ -977,12 +977,12 @@ def query(config=None,
                          smiles=smiles,
                          config=config)
         sMol = standardize_mol(tpl.mol, config=config)
-        mhash, hlayers = hash_mol(sMol, escape=escape, config=config)
 
         cn = connect(config)
         curs = cn.cursor()
         if not _lookupWithDefault(config, "registerConformers") or \
            not sMol.GetNumConformers():
+            mhash, hlayers = hash_mol(sMol, escape=escape, config=config)
             if layers == 'ALL':
                 queryText = _replace_placeholders(
                     f'select molregno from {hashTableName} where fullhash=?')
@@ -1188,12 +1188,18 @@ def _initdb(config=None, confirm=False):
             formula text, canonical_smiles text, no_stereo_smiles text, 
             tautomer_hash text, no_stereo_tautomer_hash text, "escape" text, sgroup_data text, rdkitVersion text)'''
         )
+        curs.execute(
+            f'''create unique index {hashTableName}_fullhash_idx on {hashTableName} 
+                (fullhash)''')
     else:
         curs.execute(
             f'''create table {hashTableName} (molregno serial primary key, fullhash text unique, 
             formula text, canonical_smiles text, no_stereo_smiles text, 
             tautomer_hash text, no_stereo_tautomer_hash text, "escape" text, sgroup_data text, rdkitVersion text)'''
         )
+        curs.execute(
+            f'''create index {hashTableName.replace(".","_")}_fullhash_idx on {hashTableName} 
+                using hash(fullhash)''')
     curs.execute(f'drop table if exists {origDataTableName}')
     if _dbtype != 'postgresql':
         curs.execute(
@@ -1214,10 +1220,16 @@ def _initdb(config=None, confirm=False):
             curs.execute(
                 f'''create table {conformersTableName} (conf_id integer primary key, molregno integer not null, 
                    conformer_hash text not null unique, molblock text)''')
+            curs.execute(
+                f'''create unique index {conformersTableName}_hash_idx on {conformersTableName} 
+                    (conformer_hash)''')
         else:
             curs.execute(
                 f'''create table {conformersTableName} (conf_id serial primary key, molregno integer not null, 
                    conformer_hash text not null unique, molblock text)''')
+            curs.execute(
+                f'''create index {conformersTableName.replace(".","_")}_hash_idx on {conformersTableName} 
+                    using hash(conformer_hash)''')
 
     cn.commit()
     return True

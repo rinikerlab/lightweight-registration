@@ -3,6 +3,7 @@
 # This file is part of lwreg.
 # The contents are covered by the terms of the MIT license
 # which is included in the file LICENSE,
+import os
 import time
 from datetime import datetime, timedelta
 import unittest
@@ -953,7 +954,23 @@ class TestRegisterConformersPSQL(TestRegisterConformers):
         super(TestRegisterConformersPSQL, self).setUp()
         self._config['dbname'] = 'lwreg_tests'
         self._config['dbtype'] = 'postgresql'
+        self._config['password'] = 'testpw'
+        self._config['user'] = os.getlogin()
 
+    def testNoSecretsInRegistrationMetadata(self):
+        utils._initdb(config=self._config, confirm=True)
+        with utils.connect(self._config).cursor() as cursor:
+            cursor.execute('select * from registration_metadata;')
+            keys = set(v[0] for v in cursor.fetchall())
+            assert not any(v in keys for v in ('user', 'password'))
+    
+    def testNoSecretsInConfig(self):
+        utils._initdb(config=self._config, confirm=True)
+        config_from_database = utils.configure_from_database(
+            dbname = self._config['dbname'],
+            dbtype= self._config['dbtype']
+        )
+        assert not any(v in config_from_database for v in ('user', 'password'))
 
 if __name__ == '__main__':
     unittest.main()

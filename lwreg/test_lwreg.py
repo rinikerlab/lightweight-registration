@@ -958,6 +958,7 @@ class TestRegisterConformersPSQL(TestRegisterConformers):
         self._config['user'] = os.getlogin()
 
     def testNoSecretsInRegistrationMetadata(self):
+        """Make sure initdb is not storing any secrets."""
         utils._initdb(config=self._config, confirm=True)
         with utils.connect(self._config).cursor() as cursor:
             cursor.execute('select * from registration_metadata;')
@@ -965,11 +966,18 @@ class TestRegisterConformersPSQL(TestRegisterConformers):
             assert not any(v in keys for v in ('user', 'password'))
     
     def testNoSecretsInConfig(self):
-        utils._initdb(config=self._config, confirm=True)
+        """Make sure configure_from_database isn't retrieveing accidentaly stored secrets."""
+        utils._initdb(config=self._config, confirm=True) 
+        with utils.connect(self._config).cursor() as cursor:
+            for key in ('password','user'):
+                cursor.execute(
+                    'insert into registration_metadata values (%s,%s);',
+                    (key, self._config[key])
+                )
         config_from_database = utils.configure_from_database(
             dbname = self._config['dbname'],
             dbtype= self._config['dbtype']
-        )
+        )        
         assert not any(v in config_from_database for v in ('user', 'password'))
 
 if __name__ == '__main__':

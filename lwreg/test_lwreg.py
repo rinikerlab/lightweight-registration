@@ -3,6 +3,7 @@
 # This file is part of lwreg.
 # The contents are covered by the terms of the MIT license
 # which is included in the file LICENSE,
+import os
 import pwd
 import time
 from datetime import datetime, timedelta

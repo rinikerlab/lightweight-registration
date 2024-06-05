@@ -3,7 +3,7 @@
 # This file is part of lwreg.
 # The contents are covered by the terms of the MIT license
 # which is included in the file LICENSE,
-import os
+import pwd
 import time
 from datetime import datetime, timedelta
 import unittest
@@ -952,10 +952,11 @@ class TestRegisterConformersPSQL(TestRegisterConformers):
 
     def setUp(self):
         super(TestRegisterConformersPSQL, self).setUp()
+        getlogin = lambda: pwd.getpwuid(os.getuid())[0]
         self._config['dbname'] = 'lwreg_tests'
         self._config['dbtype'] = 'postgresql'
         self._config['password'] = 'testpw'
-        self._config['user'] = os.getlogin()
+        self._config['user'] = getlogin()
 
     def testNoSecretsInRegistrationMetadata(self):
         """Make sure initdb is not storing any secrets."""

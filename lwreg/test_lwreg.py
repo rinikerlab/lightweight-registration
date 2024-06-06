@@ -965,7 +965,7 @@ class TestRegisterConformersPSQL(TestRegisterConformers):
         with utils.connect(self._config).cursor() as cursor:
             cursor.execute('select * from registration_metadata;')
             keys = set(v[0] for v in cursor.fetchall())
-            assert not any(v in keys for v in ('user', 'password'))
+            self.assertFalse(any(v in keys for v in ('user', 'password'))) 
     
     def testNoSecretsInConfig(self):
         """Make sure configure_from_database isn't retrieveing accidentaly stored secrets."""
@@ -980,7 +980,7 @@ class TestRegisterConformersPSQL(TestRegisterConformers):
             dbname = self._config['dbname'],
             dbtype= self._config['dbtype']
         )        
-        assert not any(v in config_from_database for v in ('user', 'password'))
+        self.assertFalse(any(v in config_from_database for v in ('user', 'password'))) 
 
 if __name__ == '__main__':
     unittest.main()

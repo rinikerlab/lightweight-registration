@@ -139,7 +139,7 @@ def configure_from_database(dbname=None,
     curs.execute(f'select * from {registrationMetadataTableName}')
     rows = curs.fetchall()
     for k, v in rows:
-        if k == 'rdkitVersion':
+        if k in ('rdkitVersion', 'user', 'password'):
             continue
         try:
             v = int(v)
@@ -1139,7 +1139,7 @@ def _registerMetadata(curs, config):
     dc.update(config)
     dc['standardization'] = _get_standardization_label(dc)
     for k, v in dc.items():
-        if k == 'connection':
+        if k in ('connection', 'user', 'password'):
             continue
         curs.execute(
             _replace_placeholders(

@@ -3,6 +3,8 @@
 # This file is part of lwreg.
 # The contents are covered by the terms of the MIT license
 # which is included in the file LICENSE,
+import os
+import pwd
 import time
 from datetime import datetime, timedelta
 import unittest
@@ -951,9 +953,34 @@ class TestRegisterConformersPSQL(TestRegisterConformers):
 
     def setUp(self):
         super(TestRegisterConformersPSQL, self).setUp()
+        getlogin = lambda: pwd.getpwuid(os.getuid())[0]
         self._config['dbname'] = 'lwreg_tests'
         self._config['dbtype'] = 'postgresql'
+        self._config['password'] = 'testpw'
+        self._config['user'] = getlogin()
 
+    def testNoSecretsInRegistrationMetadata(self):
+        """Make sure initdb is not storing any secrets."""
+        utils._initdb(config=self._config, confirm=True)
+        with utils.connect(self._config).cursor() as cursor:
+            cursor.execute('select * from registration_metadata;')
+            keys = set(v[0] for v in cursor.fetchall())
+            self.assertFalse(any(v in keys for v in ('user', 'password'))) 
+    
+    def testNoSecretsInConfig(self):
+        """Make sure configure_from_database isn't retrieveing accidentaly stored secrets."""
+        utils._initdb(config=self._config, confirm=True) 
+        with utils.connect(self._config).cursor() as cursor:
+            for key in ('password','user'):
+                cursor.execute(
+                    'insert into registration_metadata values (%s,%s);',
+                    (key, self._config[key])
+                )
+        config_from_database = utils.configure_from_database(
+            dbname = self._config['dbname'],
+            dbtype= self._config['dbtype']
+        )        
+        self.assertFalse(any(v in config_from_database for v in ('user', 'password'))) 
 
 if __name__ == '__main__':
     unittest.main()

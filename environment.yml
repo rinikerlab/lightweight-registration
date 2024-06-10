@@ -10,3 +10,7 @@ dependencies:
   - sqlalchemy=1.4
   - pytest
   - tqdm
+  - click
+  # the next two are only required if you want to use postgresql
+  - psycopg2=2.9
+  - openssl=3.3

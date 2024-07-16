@@ -1,5 +1,7 @@
 # LWReg: a lightweight chemical registration system
 
+The preprint of the application note describing `lwreg` is here: https://doi.org/10.26434/chemrxiv-2024-zrfl9 
+
 This provides a basic registration system which can be used either as a python
 library or via a command-line interface.
 

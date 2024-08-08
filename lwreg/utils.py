@@ -1210,11 +1210,11 @@ def _initdb(config=None, confirm=False):
         )
     else:
         curs.execute(
-            f'create table {origDataTableName} (molregno integer references {hashTableName} (molregno), data text, datatype text, timestamp TIMESTAMP default now())'
+            f'create table {origDataTableName} (molregno integer primary key references {hashTableName} (molregno), data text, datatype text, timestamp TIMESTAMP default now())'
         )
     curs.execute(f'drop table if exists {molblocksTableName}')
     curs.execute(
-        f'create table {molblocksTableName} (molregno integer references {hashTableName} (molregno), molblock text, standardization text, foreign key(molregno) references {hashTableName} (molregno))'
+        f'create table {molblocksTableName} (molregno integer primary key references {hashTableName} (molregno), molblock text, standardization text, foreign key(molregno) references {hashTableName} (molregno))'
     )
 
     curs.execute(f'drop table if exists {conformersTableName}')

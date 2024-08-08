@@ -1206,15 +1206,15 @@ def _initdb(config=None, confirm=False):
     curs.execute(f'drop table if exists {origDataTableName}')
     if _dbtype != 'postgresql':
         curs.execute(
-            f'create table {origDataTableName} (molregno integer, data text, datatype text, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, foreign key(molregno) references {hashTableName} (molregno))'
+            f'create table {origDataTableName} (molregno integer unique not null, data text, datatype text, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, foreign key(molregno) references {hashTableName} (molregno))'
         )
     else:
         curs.execute(
-            f'create table {origDataTableName} (molregno integer primary key references {hashTableName} (molregno), data text, datatype text, timestamp TIMESTAMP default now())'
+            f'create table {origDataTableName} (molregno integer unique not null references {hashTableName} (molregno), data text, datatype text, timestamp TIMESTAMP default now())'
         )
     curs.execute(f'drop table if exists {molblocksTableName}')
     curs.execute(
-        f'create table {molblocksTableName} (molregno integer primary key references {hashTableName} (molregno), molblock text, standardization text, foreign key(molregno) references {hashTableName} (molregno))'
+        f'create table {molblocksTableName} (molregno integer unique not null references {hashTableName} (molregno), molblock text, standardization text, foreign key(molregno) references {hashTableName} (molregno))'
     )
 
     curs.execute(f'drop table if exists {conformersTableName}')

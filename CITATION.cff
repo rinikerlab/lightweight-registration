@@ -9,7 +9,7 @@ authors:
   orcid: "https://orcid.org/0009-0001-0453-7978"
 title: "lightweight-registration"
 version: v2024.08.1
-doi: "https://zenodo.org/records/13341246"
+#doi: "https://zenodo.org/records/13341246"
 date-released: 2024-08-19
 url: "https://github.com/rinikerlab/lightweight-registration"
 preferred-citation:
@@ -30,7 +30,7 @@ preferred-citation:
   - family-names: "Riniker"
     given-names: "Sereina"
     orcid: "https://orcid.org/0000-0003-1893-4031" 
-  doi: "https://doi.org/10.1021/acs.jcim.4c01133"
+  #doi: "https://doi.org/10.1021/acs.jcim.4c01133"
   journal: "Journal of Chemical Information and Modeling"
   month: X
   start: XX # First page number

@@ -12,3 +12,30 @@ version: v2024.08.1
 doi: "https://zenodo.org/records/13341246"
 date-released: 2024-08-19
 url: "https://github.com/rinikerlab/lightweight-registration"
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Landrum"
+    given-names: "Gregory A."
+    orcid: "https://orcid.org/0000-0001-6279-4481"
+  - family-names: "Braun"
+    given-names: "Jessica"
+    orcid: "https://orcid.org/0009-0001-0453-7978"
+  - family-names: "Katzberger"
+    given-names: "Paul"
+    orcid: "https://orcid.org/0000-0003-4937-4911"
+  - family-names: "Lehner"
+    given-names: "Marc T."
+    orcid: "https://orcid.org/0000-0003-4963-4824"
+  - family-names: "Riniker"
+    given-names: "Sereina"
+    orcid: "https://orcid.org/0000-0003-1893-4031"
+  doi: "https://doi.org/10.1021/acs.jcim.4c01133"
+  journal: "Journal of Chemical Information and Modeling"
+  month: X
+  start: XX # First page number
+  end: XX # Last page number
+  title: "lwreg: A Lightweight System for Chemical Registration and Data Storage"
+  issue: X
+  volume: X
+  year: 2024

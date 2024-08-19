@@ -1,7 +1,5 @@
 # LWReg: a lightweight chemical registration system
 
-The preprint of the application note describing `lwreg` is here: https://doi.org/10.26434/chemrxiv-2024-zrfl9 
-
 This provides a basic registration system which can be used either as a python
 library or via a command-line interface.
 
@@ -10,6 +8,10 @@ Basic operations:
 - `register`: standardize the input molecule, calculates a hash for it, and adds them molecule to the database if it's not already there. returns the molregno (registry ID) of the newly registered molecule.
 - `query`: takes a molecule as input and checks whether or not a matching molecule is registered. returns molregnos (registry IDs) of the matching molecule(s), if any
 - `retrieve`: takes one or more IDs and returns the registered structures for them
+
+## Publications
+
+[1] J. Chem. Inf. Model. 2024, XXXX, XXX, XXX-XXX (ASAP article): https://pubs.acs.org/doi/10.1021/acs.jcim.4c01133
 
 ## Quick-start installation for non-experts:
 

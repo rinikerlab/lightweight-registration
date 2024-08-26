@@ -482,6 +482,25 @@ M  END
         self.assertRaises(self.integrityError,
                           lambda: utils.register(smiles='CCC(=O)O'))
 
+    def testDbIntegrityConstraints(self):
+        cfg = self._config
+        utils.set_default_config(cfg)
+        utils._initdb(confirm=True)
+        self.assertEqual(utils.register(smiles='CCO'), 1)
+        self.assertEqual(utils.register(smiles='CCOC'), 2)
+        cn = utils.connect(cfg)
+        curs = cn.cursor()
+        curs.execute('PRAGMA foreign_keys=ON')
+        self.assertRaises(
+            sqlite3.IntegrityError, lambda: curs.execute(
+                "insert into orig_data (molregno, data, datatype) values (4, 'foo', 'bar')"
+            ))
+        cn.rollback()
+        self.assertRaises(
+            sqlite3.IntegrityError, lambda: curs.execute(
+                "insert into molblocks values (4, 'foo', 'bar')"))
+        cn.rollback()
+
 
 class TestLWRegTautomerv2(unittest.TestCase):
     integrityError = sqlite3.IntegrityError
@@ -536,6 +555,26 @@ class TestLWRegPSQL(TestLWReg):
         for row in d:
             timestamps.append(row[1])
         self.assertEqual(timestamps[1] - timestamps[0] > timedelta(0), True)
+
+    def testDbIntegrityConstraints(self):
+        cfg = self._config
+        utils.set_default_config(cfg)
+        utils._initdb(confirm=True)
+        self.assertEqual(utils.register(smiles='CCO'), 1)
+        self.assertEqual(utils.register(smiles='CCOC'), 2)
+        cn = utils.connect(cfg)
+        curs = cn.cursor()
+
+        self.assertRaises(
+            psycopg2.errors.ForeignKeyViolation, lambda: curs.execute(
+                "insert into orig_data (molregno, data, datatype) values (4, 'foo', 'bar')"
+            ))
+        cn.rollback()
+
+        self.assertRaises(
+            psycopg2.errors.ForeignKeyViolation, lambda: curs.execute(
+                "insert into molblocks values (4, 'foo', 'bar')"))
+        cn.rollback()
 
 
 @unittest.skipIf(psycopg2 is None, "skipping postgresql tests")
@@ -965,22 +1004,21 @@ class TestRegisterConformersPSQL(TestRegisterConformers):
         with utils.connect(self._config).cursor() as cursor:
             cursor.execute('select * from registration_metadata;')
             keys = set(v[0] for v in cursor.fetchall())
-            self.assertFalse(any(v in keys for v in ('user', 'password'))) 
-    
+            self.assertFalse(any(v in keys for v in ('user', 'password')))
+
     def testNoSecretsInConfig(self):
         """Make sure configure_from_database isn't retrieveing accidentaly stored secrets."""
-        utils._initdb(config=self._config, confirm=True) 
+        utils._initdb(config=self._config, confirm=True)
         with utils.connect(self._config).cursor() as cursor:
-            for key in ('password','user'):
+            for key in ('password', 'user'):
                 cursor.execute(
                     'insert into registration_metadata values (%s,%s);',
-                    (key, self._config[key])
-                )
+                    (key, self._config[key]))
         config_from_database = utils.configure_from_database(
-            dbname = self._config['dbname'],
-            dbtype= self._config['dbtype']
-        )        
-        self.assertFalse(any(v in config_from_database for v in ('user', 'password'))) 
+            dbname=self._config['dbname'], dbtype=self._config['dbtype'])
+        self.assertFalse(
+            any(v in config_from_database for v in ('user', 'password')))
+
 
 if __name__ == '__main__':
     unittest.main()

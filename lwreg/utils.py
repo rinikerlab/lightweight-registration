@@ -1181,7 +1181,10 @@ def _initdb(config=None, confirm=False):
     _registerMetadata(curs, config)
     cn.commit()
 
-    curs.execute(f'drop table if exists {hashTableName}')
+    if _dbtype != 'postgresql':
+        curs.execute(f'drop table if exists {hashTableName}')
+    else:
+        curs.execute(f'drop table if exists {hashTableName} cascade')
     if _dbtype != 'postgresql':
         curs.execute(
             f'''create table {hashTableName} (molregno integer primary key, fullhash text unique, 
@@ -1203,15 +1206,15 @@ def _initdb(config=None, confirm=False):
     curs.execute(f'drop table if exists {origDataTableName}')
     if _dbtype != 'postgresql':
         curs.execute(
-            f'create table {origDataTableName} (molregno integer primary key, data text, datatype text, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)'
+            f'create table {origDataTableName} (molregno integer unique not null, data text, datatype text, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, foreign key(molregno) references {hashTableName} (molregno))'
         )
     else:
         curs.execute(
-            f'create table {origDataTableName} (molregno integer primary key, data text, datatype text, timestamp TIMESTAMP default now())'
+            f'create table {origDataTableName} (molregno integer unique not null references {hashTableName} (molregno), data text, datatype text, timestamp TIMESTAMP default now())'
         )
     curs.execute(f'drop table if exists {molblocksTableName}')
     curs.execute(
-        f'create table {molblocksTableName} (molregno integer primary key, molblock text, standardization text)'
+        f'create table {molblocksTableName} (molregno integer unique not null references {hashTableName} (molregno), molblock text, standardization text, foreign key(molregno) references {hashTableName} (molregno))'
     )
 
     curs.execute(f'drop table if exists {conformersTableName}')
@@ -1219,13 +1222,14 @@ def _initdb(config=None, confirm=False):
         if _dbtype != 'postgresql':
             curs.execute(
                 f'''create table {conformersTableName} (conf_id integer primary key, molregno integer not null, 
-                   conformer_hash text not null unique, molblock text)''')
+                   conformer_hash text not null unique, molblock text, foreign key(molregno) references {hashTableName} (molregno))'''
+            )
             curs.execute(
                 f'''create unique index {conformersTableName}_hash_idx on {conformersTableName} 
                     (conformer_hash)''')
         else:
             curs.execute(
-                f'''create table {conformersTableName} (conf_id serial primary key, molregno integer not null, 
+                f'''create table {conformersTableName} (conf_id serial primary key, molregno integer references {hashTableName} (molregno), 
                    conformer_hash text not null unique, molblock text)''')
             curs.execute(
                 f'''create index {conformersTableName.replace(".","_")}_hash_idx on {conformersTableName} 

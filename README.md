@@ -9,6 +9,10 @@ Basic operations:
 - `query`: takes a molecule as input and checks whether or not a matching molecule is registered. returns molregnos (registry IDs) of the matching molecule(s), if any
 - `retrieve`: takes one or more IDs and returns the registered structures for them
 
+## Publications
+
+[1] J. Chem. Inf. Model. 2024, XXXX, XXX, XXX-XXX (ASAP article): https://pubs.acs.org/doi/10.1021/acs.jcim.4c01133
+
 ## Quick-start installation for non-experts:
 
 Assuming that you have conda (or mamba or something equivalent) installed you can install lwreg directly from this github repo by first creating a conda environment with all the dependencies installed:

@@ -17,6 +17,7 @@ import os.path
 from . import standardization_lib
 import logging
 from tqdm import tqdm
+import base64
 
 _violations = (sqlite3.IntegrityError, )
 try:
@@ -279,7 +280,9 @@ def _process_molblock(molblock, config):
 def _parse_mol(mol=None, molfile=None, molblock=None, smiles=None, config={}):
     if mol is not None:
         datatype = 'pkl'
-        raw = mol.ToBinary(propertyFlags=Chem.PropertyPickleOptions.AllProps)
+        raw = base64.encodebytes(
+            mol.ToBinary(propertyFlags=Chem.PropertyPickleOptions.AllProps))
+        raw = raw.decode()
     elif smiles is not None:
         spp = Chem.SmilesParserParams()
         spp.sanitize = False
@@ -1027,6 +1030,18 @@ def query(config=None,
     return res
 
 
+def _parsePickleFromDB(data):
+    # there was a bug in early versions of the code that stored the binary data really badly
+    if data[:2] == r'\x':
+        byts = []
+        for i in range(2, len(data), 2):
+            byts.append(int(data[i:i + 2], base=16))
+        data = bytes(byts)
+    else:
+        data = base64.decodebytes(data.encode())
+    return data
+
+
 def retrieve(config=None,
              ids=None,
              id=None,
@@ -1126,6 +1141,8 @@ def retrieve(config=None,
     else:
         if not getConfs:
             for mrn, data, fmt in res:
+                if as_submitted and fmt == 'pkl':
+                    data = _parsePickleFromDB(data)
                 resDict[mrn] = (data, fmt)
         else:
             for mrn, confId, molb in res:

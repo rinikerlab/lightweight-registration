@@ -890,7 +890,7 @@ def registration_counts(config=None):
     """ returns the number of entries in the registration database
 
     the result is the number of molecules if registerConformers is not set,
-    and a tupe of (number of molecules, number of conformers) if it is
+    and a tuple of (number of molecules, number of conformers) if it is
 
     Keyword arguments:
     config     -- configuration dict

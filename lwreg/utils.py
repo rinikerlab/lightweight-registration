@@ -813,7 +813,7 @@ def bulk_register(config=None,
     if mols:
         pass
     elif sdfile:
-        mols = Chem.ForwardSDMolSupplier(sdfile,removeHs=False)
+        mols = Chem.ForwardSDMolSupplier(sdfile,removeHs=_lookupWithDefault(config, 'removeHs'))
     elif smilesfile:
         mols = _get_mols_from_smilesfile(smilesfile)
     else:

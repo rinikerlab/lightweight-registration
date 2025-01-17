@@ -973,7 +973,7 @@ class TestRegisterConformers(unittest.TestCase):
         conf = cp.GetConformer()
         for i in range(conf.GetNumAtoms()):
             pi = conf.GetAtomPosition(i)
-            conf.SetAtomPosition(i, (pi.y, pi.x, pi.z + 1.5))
+            conf.SetAtomPosition(i, (pi.x + 0.5, pi.y - 0.3, pi.z + 1.5))
         self.assertRaises(self.integrityError,
                           lambda: utils.register(mol=cp, config=cfg))
 
@@ -987,7 +987,7 @@ class TestRegisterConformers(unittest.TestCase):
         conf = cp.GetConformer()
         for i in range(conf.GetNumAtoms()):
             pi = conf.GetAtomPosition(i)
-            conf.SetAtomPosition(i, (pi.y, pi.x, pi.z + 1.5))
+            conf.SetAtomPosition(i, (pi.x + 0.5, pi.y - 0.3, pi.z + 1.5))
         cp.AddConformer(self._mol1.GetConformer(), assignId=True)
         self.assertRaises(
             self.integrityError, lambda: utils.register_multiple_conformers(

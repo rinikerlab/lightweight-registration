@@ -193,6 +193,17 @@ class TestLWReg(unittest.TestCase):
         self.assertEqual(res.count(RegistrationFailureReasons.PARSE_FAILURE),
                          0)
         self.assertEqual(res.count(RegistrationFailureReasons.DUPLICATE), 0)
+        ## add test for config where Hs are to be kept and molecules come from SD file
+        configWithHs = self._config
+        configWithHs["removeHs"] = 0
+        configWithHs["standardization"] = 'none'
+        utils._initdb(config=configWithHs, confirm=True)
+        filename = 'test_data/test_molecules_hs.sdf'
+        res = utils.bulk_register(sdfile=filename,
+                                  config=configWithHs)
+        res = utils.retrieve(ids=[1], config=configWithHs)
+        smiles = Chem.MolToSmiles(Chem.MolFromMolBlock(res[1][0],removeHs=False))
+        self.assertEqual(smiles,'[H]C([H])([H])C([H])([H])C([H])([H])C([H])([H])C([H])([H])C([H])([H])[H]')
 
     def testBulkRegisterAllowDupes(self):
         utils._initdb(config=self._config, confirm=True)
@@ -961,7 +972,7 @@ class TestRegisterConformers(unittest.TestCase):
                                                fail_on_duplicate=False,
                                                config=self._config),
             expected[self._config['dbtype']])
-
+        
     def testConformerStandardization(self):
         cfg = self._config.copy()
         cfg['standardization'] = [
@@ -973,7 +984,7 @@ class TestRegisterConformers(unittest.TestCase):
         conf = cp.GetConformer()
         for i in range(conf.GetNumAtoms()):
             pi = conf.GetAtomPosition(i)
-            conf.SetAtomPosition(i, (pi.y, pi.x, pi.z + 1.5))
+            conf.SetAtomPosition(i, (pi.x + 0.5, pi.y - 0.3, pi.z + 1.5))
         self.assertRaises(self.integrityError,
                           lambda: utils.register(mol=cp, config=cfg))
 
@@ -987,7 +998,7 @@ class TestRegisterConformers(unittest.TestCase):
         conf = cp.GetConformer()
         for i in range(conf.GetNumAtoms()):
             pi = conf.GetAtomPosition(i)
-            conf.SetAtomPosition(i, (pi.y, pi.x, pi.z + 1.5))
+            conf.SetAtomPosition(i, (pi.x + 0.5, pi.y - 0.3, pi.z + 1.5))
         cp.AddConformer(self._mol1.GetConformer(), assignId=True)
         self.assertRaises(
             self.integrityError, lambda: utils.register_multiple_conformers(

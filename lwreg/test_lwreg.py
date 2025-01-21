@@ -1028,11 +1028,14 @@ class TestRegisterConformersPSQL(TestRegisterConformers):
     def testNoSecretsInConfig(self):
         """Make sure configure_from_database isn't retrieveing accidentaly stored secrets."""
         utils._initdb(config=self._config, confirm=True)
+        cfg = copy.deepcopy(self._config)
         with utils.connect(self._config).cursor() as cursor:
             for key in ('password', 'user'):
+                if key not in cfg:
+                    cfg[key] = 'test'
                 cursor.execute(
                     'insert into registration_metadata values (%s,%s);',
-                    (key, self._config[key]))
+                    (key, cfg[key]))
         config_from_database = utils.configure_from_database(
             dbname=self._config['dbname'], dbtype=self._config['dbtype'])
         self.assertFalse(

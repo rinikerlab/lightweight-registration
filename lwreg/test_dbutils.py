@@ -82,5 +82,31 @@ class TestCartridgePgSQLWithSchema(TestCartridgePgSQL):
         self._config['lwregSchema'] = 'lwreg'
 
 
+@unittest.skipIf(psycopg2 is None, "skipping postgresql tests")
+class TestCartridgePgSQLWithRDKitSchema(TestCartridgePgSQL):
+
+    def setUp(self):
+        self._config = utils.defaultConfig()
+        self._config['dbname'] = 'lwreg_tests'
+        self._config['dbtype'] = 'postgresql'
+        self._config['rdkitSchema'] = 'rdkit_test'
+
+    def testPopulateSchema(self):
+        self.baseRegister()
+        db_utils.populate_rdkit_schema(self._config, force=True)
+        conn = utils.connect(config=self._config)
+        curs = conn.cursor()
+        curs.execute("select count(*) from rdkit_test.mols")
+        self.assertEqual(curs.fetchone()[0], 6)
+        curs = None
+
+        # make sure the trigger is there too:
+        utils.register(smiles='CCC[C@H](F)Cl', config=self._config)
+        curs = conn.cursor()
+        curs.execute("select count(*) from rdkit_test.mols")
+        self.assertEqual(curs.fetchone()[0], 7)
+        curs = None
+
+
 if __name__ == '__main__':
     unittest.main()

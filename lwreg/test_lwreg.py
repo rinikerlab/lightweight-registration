@@ -4,7 +4,6 @@
 # The contents are covered by the terms of the MIT license
 # which is included in the file LICENSE,
 import os
-import pwd
 import time
 from datetime import datetime, timedelta
 import unittest
@@ -469,6 +468,7 @@ M  END
         if self._config['dbtype'] == 'postgresql':
             return
         tmpfile = tempfile.NamedTemporaryFile()
+        tmpfile.close()
         lconfig = self._config.copy()
         if 'connection' in lconfig:
             del lconfig['connection']
@@ -1011,11 +1011,11 @@ class TestRegisterConformersPSQL(TestRegisterConformers):
 
     def setUp(self):
         super(TestRegisterConformersPSQL, self).setUp()
-        getlogin = lambda: pwd.getpwuid(os.getuid())[0]
+        #getlogin = lambda: pwd.getpwuid(os.getuid())[0]
         self._config['dbname'] = 'lwreg_tests'
         self._config['dbtype'] = 'postgresql'
         self._config['password'] = 'testpw'
-        self._config['user'] = getlogin()
+        #self._config['user'] = getlogin()
 
     def testNoSecretsInRegistrationMetadata(self):
         """Make sure initdb is not storing any secrets."""

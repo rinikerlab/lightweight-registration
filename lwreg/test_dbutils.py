@@ -7,6 +7,11 @@ import unittest
 
 from rdkit import Chem
 
+import json
+import numpy as np
+import copy
+from collections import namedtuple
+
 try:
     from . import utils
     from . import db_utils
@@ -106,6 +111,50 @@ class TestCartridgePgSQLWithRDKitSchema(TestCartridgePgSQL):
         curs.execute("select count(*) from rdkit_test.mols")
         self.assertEqual(curs.fetchone()[0], 7)
         curs = None
+
+
+class TestToJSON(unittest.TestCase):
+
+    def testBasics(self):
+        data = {
+            'a': 1,
+            'b': 'foo',
+            'c': [1, 2, 3],
+        }
+        self.assertEqual(db_utils.dict_to_json(data), json.dumps(data))
+
+    def testNumpy(self):
+        data = {
+            'a': 1,
+            'b': 'foo',
+            'c': np.array([1, 2, 3]),
+        }
+        encData = copy.deepcopy(data)
+        encData['c'] = encData['c'].tolist()
+
+        self.assertEqual(db_utils.dict_to_json(data), json.dumps(encData))
+
+    def testNamedTuple(self):
+        data = {
+            'a': 1,
+            'b': 'foo',
+            'c': namedtuple('foo', ['a', 'b'])(1, 2),
+        }
+        encData = copy.deepcopy(data)
+        encData['c'] = {'a': 1, 'b': 2}
+
+        self.assertEqual(db_utils.dict_to_json(data), json.dumps(encData))
+
+    def testKwargs(self):
+        data = {
+            'c': 1,
+            'b': 'foo',
+            'a': [1, 2, 3],
+        }
+        self.assertEqual(db_utils.dict_to_json(data),
+                         '{"c": 1, "b": "foo", "a": [1, 2, 3]}')
+        self.assertEqual(db_utils.dict_to_json(data, sort_keys=True),
+                         '{"a": [1, 2, 3], "b": "foo", "c": 1}')
 
 
 if __name__ == '__main__':

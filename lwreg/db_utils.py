@@ -13,6 +13,9 @@ except ImportError:
     psycopg2 = None
     logging.INFO("psycopg2 not available, RDKit cartridge support disabled")
 
+import numpy as np
+import json
+
 
 # decorator to disable functions if psycopg2 is not available
 def psycopg2_available(func):
@@ -51,7 +54,7 @@ def populate_rdkit_schema(config, force=False):
     enable_cartridge(config)
     conn = utils.connect(config)
     curs = conn.cursor()
-    rdkit_schema_name = config.get('rdkit_schema', 'rdk')
+    rdkit_schema_name = config.get('rdkitSchema', 'rdk')
     lwreg_schema_name = config.get('lwregSchema', 'public')
     if not lwreg_schema_name:
         lwreg_schema_name = 'public'
@@ -84,3 +87,29 @@ language plpgsql;''')
      EXECUTE FUNCTION {rdkit_schema_name}_copy_new_mol();''')
     conn.commit()
     return True
+
+
+def _namedtuple_to_json(tpl):
+    dtpl = {}
+    for i, fn in enumerate(tpl._fields):
+        dtpl[fn] = tpl[i]
+    return dtpl
+
+
+def dict_to_json(indict, **kwargs):
+    """ converts a dictionary to a JSON string
+    tries to be clever about handling types like numpy arrays, namedtuples, and defaultdicts.
+
+    all keyword arguments are passed to json.dumps
+    """
+    res = {}
+    for k, v in indict.items():
+        if hasattr(v, '_fields'):
+            res[k] = _namedtuple_to_json(v)
+        elif type(v) is np.ndarray:
+            res[k] = v.tolist()
+        elif type(v) is dict or hasattr(v, "items"):
+            res[k] = dict_to_json(v)
+        else:
+            res[k] = v
+    return json.dumps(res, **kwargs)

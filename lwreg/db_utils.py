@@ -58,7 +58,10 @@ def populate_rdkit_schema(config, force=False):
     curs.execute(f"create schema if not exists {rdkit_schema_name}")
     curs.execute(f"drop table if exists {rdkit_schema_name}.mols cascade")
     curs.execute(
-        f"select molregno, mol_from_ctab(molblock::cstring,false) m into {rdkit_schema_name}.mols from {lwreg_schema_name}.molblocks"
+        f"create table {rdkit_schema_name}.mols (molregno integer not null unique references {lwreg_schema_name}.hashes (molregno), m mol)"
+    )
+    curs.execute(
+        f"insert into {rdkit_schema_name}.mols select molregno, mol_from_ctab(molblock::cstring,false) m from {lwreg_schema_name}.molblocks"
     )
     curs.execute(
         f'create index {rdkit_schema_name}_molidx on {rdkit_schema_name}.mols using gist(m)'

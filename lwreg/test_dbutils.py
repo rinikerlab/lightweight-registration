@@ -40,6 +40,12 @@ class TestCartridgePgSQL(unittest.TestCase):
         self._config['dbname'] = 'lwreg_tests'
         self._config['dbtype'] = 'postgresql'
 
+    def tearDown(self):
+        utils._initdb(config=self._config, confirm=True)
+        utils._clear_cached_connection()
+        self._config = None
+        return super().tearDown()
+
     def baseRegister(self):
         smis = ('CC[C@H](F)Cl', 'CC[C@@H](F)Cl', 'CCC(F)Cl', 'CC(F)(Cl)C')
         utils._initdb(config=self._config, confirm=True)

@@ -23,3 +23,11 @@ The package provides a basic flexible registration system for chemical structurc
    :caption: Registration Details
 
    registrationdetails
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Demos and Tutorials
+
+   tutorials
+   examples
+   

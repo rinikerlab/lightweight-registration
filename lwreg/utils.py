@@ -641,22 +641,51 @@ def register(config=None,
              fail_on_duplicate=True,
              confId=-1,
              no_verbose=True):
-    """ registers a new molecule, assuming it doesn't already exist,
-    and returns the new registry number (molregno)
-    
-    only one of the molecule format objects should be provided
-
-    Keyword arguments:
-    config     -- configuration dict
-    mol        -- RDKit molecule object
-    molfile    -- MOL or SDF filename
-    molblock   -- MOL or SDF block
-    smiles     -- smiles
-    escape     -- the escape layer
-    fail_on_duplicate -- if true then an exception is raised when trying to register a duplicate
-    confId     -- the conformer ID to use when in registerConformers mode
-    no_verbose -- if this is False then the registry number will be printed
     """
+    Registers a new molecule, assuming it doesn't already exist, and returns the new registry number (molregno).
+
+    Only one of the molecule format objects should be provided.
+
+    :param config: Configuration dictionary or filename.
+    :type config: dict or str, optional
+    :param mol: RDKit molecule object.
+    :type mol: rdkit.Chem.rdchem.Mol, optional
+    :param molfile: MOL or SDF filename.
+    :type molfile: str, optional
+    :param molblock: MOL or SDF block.
+    :type molblock: str, optional
+    :param smiles: SMILES string.
+    :type smiles: str, optional
+    :param escape: The escape layer.
+    :type escape: any, optional
+    :param fail_on_duplicate: If True, an exception is raised when trying to register a duplicate.
+    :type fail_on_duplicate: bool, optional
+    :param confId: The conformer ID to use when in registerConformers mode.
+    :type confId: int, optional
+    :param no_verbose: If False, the registry number will be printed.
+    :type no_verbose: bool, optional
+    :return: The new registry number (molregno) or a tuple of (molregno, conf_id) if registerConformers mode is enabled.
+    :rtype: int or tuple
+    :raises RegistrationFailureReasons.PARSE_FAILURE: If molecule parsing fails.
+    :raises RegistrationFailureReasons.FILTERED: If molecule is filtered out.
+    """
+    
+    # """ registers a new molecule, assuming it doesn't already exist,
+    # and returns the new registry number (molregno)
+    
+    # only one of the molecule format objects should be provided
+
+    # Keyword arguments:
+    # config     -- configuration dict
+    # mol        -- RDKit molecule object
+    # molfile    -- MOL or SDF filename
+    # molblock   -- MOL or SDF block
+    # smiles     -- smiles
+    # escape     -- the escape layer
+    # fail_on_duplicate -- if true then an exception is raised when trying to register a duplicate
+    # confId     -- the conformer ID to use when in registerConformers mode
+    # no_verbose -- if this is False then the registry number will be printed
+    # """
     if not config:
         config = _configure()
     elif isinstance(config, str):
@@ -940,26 +969,54 @@ def query(config=None,
           smiles=None,
           escape=None,
           no_verbose=True):
-    """ queries to see if a molecule has already been registered,
-    and returns the corresponding registry numbers
-        
-    only one of the molecule format objects should be provided
-
-    Keyword arguments:
-    config     -- configuration dict
-    layers     -- hash layers to be used to determine identity
-    ids        -- list or tuple of molregnos. 
-                  Only makes sense if registerConformers is set, 
-                  in which case this will return all conf_ids for 
-                  the molregnos in the ids list as a list of 
-                  (molregno, conf_id) tuples
-    mol        -- RDKit molecule object
-    molfile    -- MOL or SDF filename
-    molblock   -- MOL or SDF block
-    smiles     -- smiles
-    escape     -- the escape layer
-    no_verbose -- if this is False then the registry numbers will be printed
     """
+    Queries to see if a molecule has already been registered, and returns the corresponding registry numbers.
+    Only one of the molecule format objects should be provided.
+    
+    :param config: Configuration dict or filename (default: None).
+    :type config: dict or str, optional
+    :param layers: Hash layers to be used to determine identity (default: 'ALL').
+    :type layers: str, optional
+    :param ids: List or tuple of molregnos. Only makes sense if registerConformers is set,
+                in which case this will return all conf_ids for the molregnos in the ids list
+                as a list of (molregno, conf_id) tuples (default: None).
+    :type ids: list or tuple, optional
+    :param mol: RDKit molecule object (default: None).
+    :type mol: RDKit.Mol, optional
+    :param molfile: MOL or SDF filename (default: None).
+    :type molfile: str, optional
+    :param molblock: MOL or SDF block (default: None).
+    :type molblock: str, optional
+    :param smiles: SMILES string (default: None).
+    :type smiles: str, optional
+    :param escape: The escape layer (default: None).
+    :type escape: str, optional
+    :param no_verbose: If False, the registry numbers will be printed (default: True).
+    :type no_verbose: bool, optional
+    :raises ValueError: If ids are provided but registerConformers is not enabled.
+    :return: List of registry numbers or list of (molregno, conf_id) tuples.
+    :rtype: list
+    """
+    # """ queries to see if a molecule has already been registered,
+    # and returns the corresponding registry numbers
+        
+    # only one of the molecule format objects should be provided
+
+    # Keyword arguments:
+    # config     -- configuration dict
+    # layers     -- hash layers to be used to determine identity
+    # ids        -- list or tuple of molregnos. 
+    #               Only makes sense if registerConformers is set, 
+    #               in which case this will return all conf_ids for 
+    #               the molregnos in the ids list as a list of 
+    #               (molregno, conf_id) tuples
+    # mol        -- RDKit molecule object
+    # molfile    -- MOL or SDF filename
+    # molblock   -- MOL or SDF block
+    # smiles     -- smiles
+    # escape     -- the escape layer
+    # no_verbose -- if this is False then the registry numbers will be printed
+    # """
     if not config:
         config = _configure()
     elif isinstance(config, str):
@@ -1048,23 +1105,43 @@ def retrieve(config=None,
              as_submitted=False,
              as_hashes=False,
              no_verbose=True):
-    """ returns the molecule data for one or more registry ids (molregnos)
-    The return value is a dictionary of (data, format) 2-tuples with molregnos as keys
-
-    only one of id or ids should be provided
-
-    If registerConformers is set the conformers can be retrieved by providing
-    the tuples of (molregno, conf_id) and the return value will be a dictionary
-    of (data, 'mol') 2-tuples with (molregno, conf_id) tuples as keys
-
-    Keyword arguments:
-    config       -- configuration dict
-    ids          -- an iterable of registry ids (molregnos)
-    id           -- a registry id (molregno)
-    as_submitted -- if True, then the structure will be returned as registered
-    as_hashes    -- if True, then the hashes will be returned (as a dict) instead of the structures
-    no_verbose   -- if this is False then the registry number will be printed
     """
+    Returns the molecule data for one or more registry ids (molregnos).
+
+    The return value is a dictionary of (data, format) 2-tuples with molregnos as keys.
+
+    Only one of id or ids should be provided.
+
+    If registerConformers is set, the conformers can be retrieved by providing
+    the tuples of (molregno, conf_id) and the return value will be a dictionary
+    of (data, 'mol') 2-tuples with (molregno, conf_id) tuples as keys.
+
+    :param dict config: Configuration dictionary.
+    :param list ids: An iterable of registry ids (molregnos).
+    :param int id: A registry id (molregno).
+    :param bool as_submitted: If True, then the structure will be returned as registered.
+    :param bool as_hashes: If True, then the hashes will be returned (as a dict) instead of the structures.
+    :param bool no_verbose: If this is False, then the registry number will be printed.
+    :return: A dictionary of (data, format) 2-tuples with molregnos as keys.
+    :rtype: dict
+    """
+    # """ returns the molecule data for one or more registry ids (molregnos)
+    # The return value is a dictionary of (data, format) 2-tuples with molregnos as keys
+
+    # only one of id or ids should be provided
+
+    # If registerConformers is set the conformers can be retrieved by providing
+    # the tuples of (molregno, conf_id) and the return value will be a dictionary
+    # of (data, 'mol') 2-tuples with (molregno, conf_id) tuples as keys
+
+    # Keyword arguments:
+    # config       -- configuration dict
+    # ids          -- an iterable of registry ids (molregnos)
+    # id           -- a registry id (molregno)
+    # as_submitted -- if True, then the structure will be returned as registered
+    # as_hashes    -- if True, then the hashes will be returned (as a dict) instead of the structures
+    # no_verbose   -- if this is False then the registry number will be printed
+    # """
     if not config:
         config = _configure()
     elif isinstance(config, str):

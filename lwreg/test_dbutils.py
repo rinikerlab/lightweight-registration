@@ -33,7 +33,7 @@ if psycopg2:
         cn = utils.connect(config=cfg)
         curs = cn.cursor()
         curs.execute(
-            "select * from pg_available_extensions where name='rdkitd'")
+            "select * from pg_available_extensions where name='rdkit'")
         if not curs.fetchone():
             rdkit_cartridge_present = False
         else:

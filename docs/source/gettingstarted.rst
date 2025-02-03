@@ -89,7 +89,7 @@ There is a set of pre-defined standardization options including:
 
 A user can also define their own standardization options. 
 
-Besides the standardization options, there is also the possibility to define custom filers. for example, this filter rejects molecules with a net formal charge:
+Besides the standardization options, there is also the possibility to define custom filers. For example, this filter rejects molecules with a net formal charge:
 
 .. code-block:: python
 

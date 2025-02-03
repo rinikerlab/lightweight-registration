@@ -669,10 +669,10 @@ def register(config=None,
     :raises RegistrationFailureReasons.PARSE_FAILURE: If molecule parsing fails.
     :raises RegistrationFailureReasons.FILTERED: If molecule is filtered out.
     """
-    
+
     # """ registers a new molecule, assuming it doesn't already exist,
     # and returns the new registry number (molregno)
-    
+
     # only one of the molecule format objects should be provided
 
     # Keyword arguments:
@@ -839,19 +839,21 @@ def bulk_register(config=None,
     show_progress   -- if this is True then a progress bar will be shown for the molecules
     """
 
-    if mols:
-        pass
-    elif sdfile:
-        mols = Chem.ForwardSDMolSupplier(sdfile,removeHs=_lookupWithDefault(config, 'removeHs'))
-    elif smilesfile:
-        mols = _get_mols_from_smilesfile(smilesfile)
-    else:
-        raise ValueError('No input molecules provided!')
-
     if not config:
         config = _configure()
     elif isinstance(config, str):
         config = _configure(filename=config)
+
+    if mols:
+        pass
+    elif sdfile:
+        mols = Chem.ForwardSDMolSupplier(sdfile,
+                                         removeHs=_lookupWithDefault(
+                                             config, 'removeHs'))
+    elif smilesfile:
+        mols = _get_mols_from_smilesfile(smilesfile)
+    else:
+        raise ValueError('No input molecules provided!')
 
     _check_config(config)
 
@@ -999,16 +1001,16 @@ def query(config=None,
     """
     # """ queries to see if a molecule has already been registered,
     # and returns the corresponding registry numbers
-        
+
     # only one of the molecule format objects should be provided
 
     # Keyword arguments:
     # config     -- configuration dict
     # layers     -- hash layers to be used to determine identity
-    # ids        -- list or tuple of molregnos. 
-    #               Only makes sense if registerConformers is set, 
-    #               in which case this will return all conf_ids for 
-    #               the molregnos in the ids list as a list of 
+    # ids        -- list or tuple of molregnos.
+    #               Only makes sense if registerConformers is set,
+    #               in which case this will return all conf_ids for
+    #               the molregnos in the ids list as a list of
     #               (molregno, conf_id) tuples
     # mol        -- RDKit molecule object
     # molfile    -- MOL or SDF filename

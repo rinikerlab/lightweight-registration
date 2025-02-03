@@ -29,7 +29,7 @@ except ImportError:
 from collections import namedtuple
 
 standardizationOptions = {
-    'none': lambda x: x,
+    'none': standardization_lib.NoStandardization(),
     'sanitize': standardization_lib.RDKitSanitize(),
     'fragment': standardization_lib.FragmentParent(),
     'charge': standardization_lib.ChargeParent(),
@@ -813,7 +813,9 @@ def bulk_register(config=None,
     if mols:
         pass
     elif sdfile:
-        mols = Chem.ForwardSDMolSupplier(sdfile,removeHs=_lookupWithDefault(config, 'removeHs'))
+        mols = Chem.ForwardSDMolSupplier(sdfile,
+                                         removeHs=_lookupWithDefault(
+                                             config, 'removeHs'))
     elif smilesfile:
         mols = _get_mols_from_smilesfile(smilesfile)
     else:

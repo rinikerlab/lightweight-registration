@@ -7,8 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'lightweight-registration'
-copyright = '2025, Greg Landrum and Jessica Braun'
-author = 'Greg Landrum and Jessica Braun'
+copyright = '2025, Jessica Braun and Greg Landrum'
+author = 'Jessica Braun and Greg Landrum'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -20,8 +20,6 @@ extensions = [
 
 templates_path = ['_templates']
 exclude_patterns = []
-
-
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

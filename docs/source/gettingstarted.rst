@@ -66,7 +66,6 @@ If you choose to use PostgreSQL, you also need to install the psycopg2 package:
 Configuration
 -------------
 Before the lwreg initialization, you need to set up a configuration file.
-The configuration file is a YAML file that containing the following information:
 The configuration file is a YAML file that contains the following information:
 
     - **dbname**: The name of the database.

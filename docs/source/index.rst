@@ -6,7 +6,7 @@
 Welcome to lwreg!
 =================
 
-Lwreg is a lightweight registration system for chemical registration and data storage. 
+lwreg is a lightweight registration system for chemical registration and data storage. 
 The package provides a basic flexible registration system for chemical structurces and associated data. 
 
 :ref:`Get started <GetStarted>` by setting up your first database configured to your project's needs.

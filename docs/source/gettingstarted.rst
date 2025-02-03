@@ -10,7 +10,7 @@ A chemical registration system is a software system (e.g. database) which holds 
 In order to do so, a chemical registration system needs to be able to check a presented compound against already registered ones and decide upon its uniqueness. 
 The identifiers can be used as keys when storing additional data about the chemical structures in additional tables.
 
-Lwreg's Basic Functionality
+lwreg's Basic Functionality
 ---------------------------
 There are four basic operations provides by the lwreg package that can either by called via the Python API or the command line interface:
 
@@ -49,23 +49,22 @@ To verify the installation by running
 When starting to use lwreg, you also must choose your prefered database management system. 
 The two systems compatible with lwreg are SQLite and PostgreSQL.
 
-To check if SQLite is available in your Python environment, run
+SQLite is a serverless database system that stores the database in a single file and which is supported as part of the Python standard library.
 
-.. code-block:: bash
-
-    python -c "import sqlite3; print(sqlite3.sqlite_version)"
-
-For setting up a PostgreSQL database, you need to have the PostgreSQL server installed and running.
-Please refer to the `PostgreSQL documentation <https://www.postgresql.org/docs/>`_ for installation instructions.
-If you choose to use PostgreSQL, you also need to install the psycopg2 package:
+If you choose to use PostgreSQL, you need to install the psycopg2 package:
 
 .. code-block:: bash
 
     conda install -c conda-forge psycopg2
 
+You will also need to have the PostgreSQL server installed and running.
+Please refer to the `PostgreSQL documentation <https://www.postgresql.org/docs/>`_ for installation instructions. Quick setup instructions, suitable for experimentation but not serious work, can be found in an `RDKit blog post <https://greglandrum.github.io/rdkit-blog/posts/2024-10-31-lwreg-and-the-cartridge.html>`_.
+
+
+
 Configuration
 -------------
-Before the lwreg initialization, you need to set up a configuration file.
+If you plan to use the command line interface to lwreg, you need to set up a configuration file before you get started.
 The configuration file is a YAML file that contains the following information:
 
     - **dbname**: The name of the database.
@@ -90,7 +89,7 @@ There is a set of pre-defined standardization options including:
 
 A user can also define their own standardization options. 
 
-Besides the standardization options, there is also the possibility to define custom filers:
+Besides the standardization options, there is also the possibility to define custom filers. for example, this filter rejects molecules with a net formal charge:
 
 .. code-block:: python
 

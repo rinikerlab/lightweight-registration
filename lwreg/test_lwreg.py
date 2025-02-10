@@ -292,6 +292,9 @@ class TestLWReg(unittest.TestCase):
         self.assertEqual(Chem.MolToSmiles(m), 'CCO')
 
     def testStandardizationOptions(self):
+        for k, v in utils.standardizationOptions.items():
+            self.assertTrue(isinstance(v, standardization_lib.Standardization))
+
         lconfig = self._config.copy()
         lconfig['standardization'] = 'charge'
         utils._initdb(config=lconfig, confirm=True)

@@ -15,6 +15,7 @@ RUN micromamba install -y -n base -f /tmp/env.yaml && \
 
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
 
-
 RUN pip install .
 RUN lwreg greet
+ENV PATH "$MAMBA_ROOT_PREFIX/bin:$PATH"  # Not a preferred method!
+ENTRYPOINT ["/usr/local/bin/_entrypoint.sh"]

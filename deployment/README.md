@@ -25,7 +25,6 @@ Build the image and start a container:
 
 And now you can use the running container:
 ```bash
-% docker exec lwreg_demo lwreg initdb --confirm=yes
 % docker exec lwreg_demo lwreg register --smiles="CC"
 1
 % docker exec lwreg_demo lwreg register --smiles="CCO"

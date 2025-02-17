@@ -11,7 +11,7 @@ Basic operations:
 
 ## Publications
 
-[1] J. Chem. Inf. Model. 2024, XXXX, XXX, XXX-XXX (ASAP article): https://pubs.acs.org/doi/10.1021/acs.jcim.4c01133
+[1] J. Chem. Inf. Model. 2024, 64, 16, 6247–6252 : https://pubs.acs.org/doi/10.1021/acs.jcim.4c01133
 
 ## Quick-start installation for non-experts:
 

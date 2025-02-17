@@ -4,7 +4,6 @@
 # The contents are covered by the terms of the MIT license
 # which is included in the file LICENSE,
 import os
-import pwd
 import time
 from datetime import datetime, timedelta
 import unittest
@@ -193,6 +192,17 @@ class TestLWReg(unittest.TestCase):
         self.assertEqual(res.count(RegistrationFailureReasons.PARSE_FAILURE),
                          0)
         self.assertEqual(res.count(RegistrationFailureReasons.DUPLICATE), 0)
+        ## add test for config where Hs are to be kept and molecules come from SD file
+        configWithHs = self._config
+        configWithHs["removeHs"] = 0
+        configWithHs["standardization"] = 'none'
+        utils._initdb(config=configWithHs, confirm=True)
+        filename = 'test_data/test_molecules_hs.sdf'
+        res = utils.bulk_register(sdfile=filename,
+                                  config=configWithHs)
+        res = utils.retrieve(ids=[1], config=configWithHs)
+        smiles = Chem.MolToSmiles(Chem.MolFromMolBlock(res[1][0],removeHs=False))
+        self.assertEqual(smiles,'[H]C([H])([H])C([H])([H])C([H])([H])C([H])([H])C([H])([H])C([H])([H])[H]')
 
     def testBulkRegisterAllowDupes(self):
         utils._initdb(config=self._config, confirm=True)
@@ -272,8 +282,19 @@ class TestLWReg(unittest.TestCase):
         self.assertEqual(len(res), 2)
         self.assertEqual(res[1][1], 'smiles')
         self.assertEqual(res[5][1], 'pkl')
+        m = Chem.Mol(res[5][0])
+        self.assertEqual(Chem.MolToSmiles(m), 'Cc1ccn[nH]1')
+
+    def testPickleBug(self):
+        ipkl = r'\xefbeadde00000000100000000100000000000000030000000200000080010600600000000103060060000000020208006000000001010b00010001020042000000001709000000000000003f00000000126400000003000f0000005f5f636f6d707574656450726f7073060200000000000000070000006e756d41726f6d0f0000005f53746572656f6368656d446f6e65070000006e756d41726f6d01000000000f0000005f53746572656f6368656d446f6e650101000000133ab400000002000f0000005f5f636f6d707574656450726f7073060100000000000000080000005f43495052616e6b080000005f43495052616e6b02000000000002000f0000005f5f636f6d707574656450726f7073060100000000000000080000005f43495052616e6b080000005f43495052616e6b02010000000002000f0000005f5f636f6d707574656450726f7073060100000000000000080000005f43495052616e6b080000005f43495052616e6b0202000000001316'
+        npkl = utils._parsePickleFromDB(ipkl)
+        m = Chem.Mol(npkl)
+        self.assertEqual(Chem.MolToSmiles(m), 'CCO')
 
     def testStandardizationOptions(self):
+        for k, v in utils.standardizationOptions.items():
+            self.assertTrue(isinstance(v, standardization_lib.Standardization))
+
         lconfig = self._config.copy()
         lconfig['standardization'] = 'charge'
         utils._initdb(config=lconfig, confirm=True)
@@ -450,6 +471,7 @@ M  END
         if self._config['dbtype'] == 'postgresql':
             return
         tmpfile = tempfile.NamedTemporaryFile()
+        tmpfile.close()
         lconfig = self._config.copy()
         if 'connection' in lconfig:
             del lconfig['connection']
@@ -953,7 +975,7 @@ class TestRegisterConformers(unittest.TestCase):
                                                fail_on_duplicate=False,
                                                config=self._config),
             expected[self._config['dbtype']])
-
+        
     def testConformerStandardization(self):
         cfg = self._config.copy()
         cfg['standardization'] = [
@@ -965,7 +987,7 @@ class TestRegisterConformers(unittest.TestCase):
         conf = cp.GetConformer()
         for i in range(conf.GetNumAtoms()):
             pi = conf.GetAtomPosition(i)
-            conf.SetAtomPosition(i, (pi.y, pi.x, pi.z + 1.5))
+            conf.SetAtomPosition(i, (pi.x + 0.5, pi.y - 0.3, pi.z + 1.5))
         self.assertRaises(self.integrityError,
                           lambda: utils.register(mol=cp, config=cfg))
 
@@ -979,7 +1001,7 @@ class TestRegisterConformers(unittest.TestCase):
         conf = cp.GetConformer()
         for i in range(conf.GetNumAtoms()):
             pi = conf.GetAtomPosition(i)
-            conf.SetAtomPosition(i, (pi.y, pi.x, pi.z + 1.5))
+            conf.SetAtomPosition(i, (pi.x + 0.5, pi.y - 0.3, pi.z + 1.5))
         cp.AddConformer(self._mol1.GetConformer(), assignId=True)
         self.assertRaises(
             self.integrityError, lambda: utils.register_multiple_conformers(
@@ -992,11 +1014,11 @@ class TestRegisterConformersPSQL(TestRegisterConformers):
 
     def setUp(self):
         super(TestRegisterConformersPSQL, self).setUp()
-        getlogin = lambda: pwd.getpwuid(os.getuid())[0]
+        #getlogin = lambda: pwd.getpwuid(os.getuid())[0]
         self._config['dbname'] = 'lwreg_tests'
         self._config['dbtype'] = 'postgresql'
         self._config['password'] = 'testpw'
-        self._config['user'] = getlogin()
+        #self._config['user'] = getlogin()
 
     def testNoSecretsInRegistrationMetadata(self):
         """Make sure initdb is not storing any secrets."""
@@ -1009,11 +1031,14 @@ class TestRegisterConformersPSQL(TestRegisterConformers):
     def testNoSecretsInConfig(self):
         """Make sure configure_from_database isn't retrieveing accidentaly stored secrets."""
         utils._initdb(config=self._config, confirm=True)
+        cfg = copy.deepcopy(self._config)
         with utils.connect(self._config).cursor() as cursor:
             for key in ('password', 'user'):
+                if key not in cfg:
+                    cfg[key] = 'test'
                 cursor.execute(
                     'insert into registration_metadata values (%s,%s);',
-                    (key, self._config[key]))
+                    (key, cfg[key]))
         config_from_database = utils.configure_from_database(
             dbname=self._config['dbname'], dbtype=self._config['dbtype'])
         self.assertFalse(

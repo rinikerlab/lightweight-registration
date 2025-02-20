@@ -28,7 +28,7 @@ There are four basic operations provides by the lwreg package that can either by
    * - retrieve
      - Get the resgisted structure(s) for one or multiple given identifier(s).
 
-See the :ref:`Basic Functionality Reference` for more details.
+See the :ref:`Basic Functionality Reference` for more details and :ref:`Additional Functionality Reference` for advanced features.
 
 Installation Guide
 ------------------

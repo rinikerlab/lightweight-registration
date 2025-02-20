@@ -814,29 +814,26 @@ def bulk_register(config=None,
                   fail_on_duplicate=True,
                   no_verbose=True,
                   show_progress=False):
-    """ registers multiple new molecules, assuming they don't already exist,
-    and returns the new registry numbers (molregno)
-    
-    The result tuple includes a single entry for each molecule in the input.
-    That entry can be one of the following:
-      - the registry number (molregno) of the registered molecule
-      - RegistrationFailureReasons.DUPLICATE if fail_on_duplicate is True and a
-        molecule is a duplicate
-      - RegistrationFalureReasons.PARSE_FAILURE if there was a problem processing
-        the molecule 
-    
-    only one of the molecule format objects should be provided
-
-    Keyword arguments:
-    config         -- configuration dict
-    mols           -- an iterable of RDKit molecule objects
-    sdfile         -- SDF filename
-    escape_property -- the molecule property to use as the escape layer
-    fail_on_duplicate -- if true then RegistraionFailureReasons.DUPLICATE will be returned 
-                       for each already-registered molecule, otherwise the already existing
-                       structure ID will be returned
-    no_verbose     -- if this is False then the registry numbers will be printed
-    show_progress   -- if this is True then a progress bar will be shown for the molecules
+    """
+    Registers multiple new molecules, assuming they don't already exist, and returns the new registry numbers (molregno). ``RegistrationFailureReasons.DUPLICATE`` if ``fail_on_duplicate`` is True and a molecule is a duplicate ``RegistrationFailureReasons.PARSE_FAILURE`` if there was a problem processing the molecule. Only one of the molecule format objects should be provided.
+    :param config: Configuration dict or filename.
+    :type config: dict or str, optional
+    :param mols: An iterable of RDKit molecule objects.
+    :type mols: iterable, optional
+    :param sdfile: SDF filename.
+    :type sdfile: str, optional
+    :param smilesfile: SMILES filename.
+    :type smilesfile: str, optional
+    :param escape_property: The molecule property to use as the escape layer.
+    :type escape_property: str, optional
+    :param fail_on_duplicate: If True, then ``RegistrationFailureReasons.DUPLICATE`` will be returned for each already-registered molecule, otherwise the already existing structure ID will be returned.
+    :type fail_on_duplicate: bool, optional
+    :param no_verbose: If False, then the registry numbers will be printed.
+    :type no_verbose: bool, optional
+    :param show_progress: If True, then a progress bar will be shown for the molecules.
+    :type show_progress: bool, optional
+    :return: A tuple containing the registry numbers or failure reasons for each molecule.
+    :rtype: tuple
     """
 
     if not config:

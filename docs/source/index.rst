@@ -17,6 +17,7 @@ The package provides a basic flexible registration system for chemical structurc
 
    gettingstarted
    basicfunctionality
+   additionalfunctionality
 
 .. toctree::
    :maxdepth: 2

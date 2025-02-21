@@ -15,6 +15,7 @@ author = 'Jessica Braun and Greg Landrum'
 
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx_rtd_theme',
     'sphinx_copybutton',
 ]
 

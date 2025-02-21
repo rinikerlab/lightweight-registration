@@ -78,6 +78,7 @@ def configure_from_database(dbname=None,
                             lwregSchema=None):
     """
     Returns a config dict with values from the registration metadata table in the database.
+
     :param dbname: the name of the database (one of dbname or connection must be provided)
     :type dbname: str, optional
     :param connection: a connection object (one of dbname or connection must be provided)
@@ -96,33 +97,6 @@ def configure_from_database(dbname=None,
     :rtype: dict
     :raises ValueError: If neither dbname nor connection is provided.
     """
-    # ''' returns a config dict with values from the registration 
-    # metadata table in the database.
-
-    # This will overwrite some of the values already in the config dict.
-
-    # Note that in order for this to work the arguments must provide whatever
-    # information is needed to connect to the database. This can be 'connection'
-    # with a direct connection object or 'dbname' and 'dbtype' (potentially with
-    # 'host', 'user', and 'password' if those are required). If you used a
-    # nondefault schema when initializing the database, you'll also need to
-    # provide 'lwregSchema' here.
-
-    # If 'dbtype' is not provided, the following heuristics are used:
-    #   - if 'dbname' corresponds to an existing file, then sqlite3 is used
-    #   - if 'host' is provided, then postgresql is used
-    #   - otherwise the default dbtype, currently sqlite3, is used
-
-    # Keyword arguments: 
-    # dbname -- the name of the database (one of dbname or connection must be provided)
-    # connection -- a connection object (one of dbname or connection must be provided)
-    # dbtype -- the type of database (sqlite3 or postgresql)
-    # host -- the host to connect to (for postgresql)
-    # user -- the user to connect as (for postgresql)
-    # password -- the password to use (for postgresql)
-    # lwregSchema -- the schema name to use for the lwreg tables (for postgresql)
-        
-    # '''
     global _config
     config = {}
     if connection is not None:
@@ -962,10 +936,13 @@ def registration_counts(config=None):
 
 
 def get_all_registry_numbers(config=None):
-    """ returns a tuple with all of the registry numbers (molregnos) in the database
-        
-    Keyword arguments:
-    config     -- configuration dict
+    """
+    Returns a tuple with all of the registry numbers (molregnos) in the database.
+
+    :param config: Configuration dictionary.
+    :type config: dict, optional
+    :return: A tuple with all of the registry numbers (molregnos) in the database.
+    :rtype: tuple
     """
     if not config:
         config = _configure()
@@ -1355,12 +1332,13 @@ def _initdb(config=None, confirm=False):
 def initdb(config=None):
     """
     Initializes the registration database.
+    
     You will be prompted to confirm this action since this call can destroy any 
     existing information in the registration database.
 
-    :param config: Configuration dictionary, defaults to None
-    :type config: dict
-    :return: Returns the result of the _initdb function if confirmed, otherwise False
+    :param config: Configuration dictionary, defaults to None.
+    :type config: dict, optional
+    :return: Returns the result of the _initdb function if confirmed, otherwise False.
     :rtype: bool
     """
     print(

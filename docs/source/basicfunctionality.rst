@@ -3,5 +3,7 @@
 Basic Functionality Reference
 ==============================
 
-.. automodule:: lwreg.utils
-    :members: register, query, retrieve
+.. autofunction:: lwreg.utils.initdb
+.. autofunction:: lwreg.utils.register
+.. autofunction:: lwreg.utils.query
+.. autofunction:: lwreg.utils.retrieve

@@ -20,6 +20,8 @@ There are four basic operations provides by the lwreg package that can either by
 
    * - Operation
      - Description
+   * - initdb
+     - Initialize a new database. **Warning**: This will delete all existing data in the database.
    * - register
      - Register a new compound, returns a unique identifier (molregno) upon success.
    * - query

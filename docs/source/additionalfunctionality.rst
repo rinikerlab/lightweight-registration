@@ -3,5 +3,5 @@
 Additional Functionality Reference
 ==============================
 
-.. automodule:: lwreg.utils
-    :members: bulk_register
+.. autofunction:: lwreg.utils.configure_from_database
+.. autofunction:: lwreg.utils.get_all_registry_numbers

@@ -56,5 +56,17 @@ The first question to answer after that is if you want to run your registration 
   lwreg.query(smiles='Cc1[nH]ncc1[C@H](F)Cl')
 
   # query using just the no_stereo_smiles layer (this pays attention to tautomers but ignores stereochemistry):
-  lwreg.query(smiles='Cc1[nH]ncc1[C@H](F)Cl',
+  ids = lwreg.query(smiles='Cc1[nH]ncc1[C@H](F)Cl',
             layers=utils.HashLayer.NO_STEREO_SMILES)
+
+  # retrieving the structures for the query matches
+  res = lwreg.retrieve(ids=ids)
+
+  # retrieve returns a dictionary with the molregnos as keys. The values are two-tuples with the molecule structure and its configure_from_database
+  res[1] 
+
+  # build an rdkit mol object from the retrieved information
+  mol = Chem.MolFromMolBlock(res[1][0],removeHs=False)
+
+Lwreg and Computational Experiments
+-----------------------------------

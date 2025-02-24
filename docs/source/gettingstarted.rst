@@ -28,7 +28,7 @@ There are four basic operations provides by the lwreg package that can either by
      - Query the database if a compound is already registered.
        If so, returns the respective molregno(s) matching the search.
    * - retrieve
-     - Get the resgisted structure(s) for one or multiple given identifier(s).
+     - Get the resgisted structure(s) for one or multiple given identifier(s). Ids in the retrieve list that do not exist do not show up in the results.
 
 See the :ref:`Basic Functionality Reference` for more details and :ref:`Additional Functionality Reference` for advanced features.
 

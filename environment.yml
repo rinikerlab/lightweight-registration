@@ -1,9 +1,9 @@
-name: py311_lwreg
+name: py313_lwreg
 channels:
   - conda-forge
 dependencies:
-  - python=3.11
-  - rdkit >=2023.03.1
+  - python=3.13
+  - rdkit >=2024.09.1
   - ipython
   - jupyter
   - ipython-sql

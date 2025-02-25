@@ -6,7 +6,7 @@ dependencies:
   - rdkit >=2024.09.1
   - ipython
   - jupyter
-  - ipython-sql
+  - jupysql
   - sqlalchemy
   - pytest
   - tqdm

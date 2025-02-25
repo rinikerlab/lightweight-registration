@@ -20,7 +20,7 @@ import os
     default='',
 )
 def cli(config=''):
-    if config is '' and 'LWREG_CONFIG' in os.environ:
+    if config == '' and 'LWREG_CONFIG' in os.environ:
         config = os.environ['LWREG_CONFIG']
     utils._configure(filename=config)
 

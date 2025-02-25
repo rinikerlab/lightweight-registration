@@ -7,10 +7,10 @@ dependencies:
   - ipython
   - jupyter
   - ipython-sql
-  - sqlalchemy=1.4
+  - sqlalchemy
   - pytest
   - tqdm
   - click
   # the next two are only required if you want to use postgresql
-  - psycopg2=2.9
-  - openssl=3.3
+  - psycopg
+  - openssl=3.4

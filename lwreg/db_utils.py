@@ -8,41 +8,41 @@ from . import utils
 
 import logging
 try:
-    import psycopg2
+    import psycopg
 except ImportError:
-    psycopg2 = None
-    logging.INFO("psycopg2 not available, RDKit cartridge support disabled")
+    psycopg = None
+    logging.INFO("psycopg not available, RDKit cartridge support disabled")
 
 import numpy as np
 import json
 
 
-# decorator to disable functions if psycopg2 is not available
-def psycopg2_available(func):
+# decorator to disable functions if psycopg is not available
+def psycopg_available(func):
 
     def pass_through(*args, **kwargs):
-        if psycopg2 is None:
-            raise NotImplementedError("psycopg2 is not available")
+        if psycopg is None:
+            raise NotImplementedError("psycopg is not available")
         return func(*args, **kwargs)
 
     return pass_through
 
 
-@psycopg2_available
+@psycopg_available
 def enable_cartridge(config):
     conn = utils.connect(config)
     curs = conn.cursor()
     curs.execute("create extension if not exists rdkit")
 
 
-@psycopg2_available
+@psycopg_available
 def disable_cartridge(config):
     conn = utils.connect(config)
     curs = conn.cursor()
     curs.execute("drop extension if exists rdkit")
 
 
-@psycopg2_available
+@psycopg_available
 def populate_rdkit_schema(config, force=False):
     if not force:
         print("This will destroy any existing information in the rdkit schema")

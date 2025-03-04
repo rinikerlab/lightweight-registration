@@ -1,7 +1,7 @@
 FROM continuumio/miniconda3
 
-ENV PYTHON_VERSION=3.11
-ENV RDKIT_VERSION=2023.03.1
+ENV PYTHON_VERSION=3.13
+ENV RDKIT_VERSION=2024.09.1
 
 RUN conda install -c conda-forge python>=$PYTHON_VERSION
 RUN conda install -c conda-forge rdkit>=RDKIT_VERSION

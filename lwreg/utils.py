@@ -21,15 +21,15 @@ import base64
 
 _violations = (sqlite3.IntegrityError, )
 try:
-    import psycopg2
-    _violations = (sqlite3.IntegrityError, psycopg2.errors.UniqueViolation)
+    import psycopg
+    _violations = (sqlite3.IntegrityError, psycopg.errors.UniqueViolation)
 except ImportError:
-    psycopg2 = None
+    psycopg = None
 
 from collections import namedtuple
 
 standardizationOptions = {
-    'none': lambda x: x,
+    'none': standardization_lib.NoStandardization(),
     'sanitize': standardization_lib.RDKitSanitize(),
     'fragment': standardization_lib.FragmentParent(),
     'charge': standardization_lib.ChargeParent(),
@@ -225,12 +225,11 @@ def connect(config):
                 uri = True
             cn = sqlite3.connect(dbnm, uri=uri)
         elif dbtype == "postgresql":
-            if psycopg2 is None:
-                raise ValueError("psycopg2 package not installed")
-            cn = psycopg2.connect(database=dbnm,
-                                  host=config.get('host', None),
-                                  user=config.get('user', None),
-                                  password=config.get('password', None))
+            if psycopg is None:
+                raise ValueError("psycopg package not installed")
+            cn = psycopg.connect(
+                f'''host={config.get("host","''")} dbname={dbnm} user={config.get("user","''")} password={config.get("password","''")}'''
+            )
 
     schemaBase = ''
     lwregSchema = ''

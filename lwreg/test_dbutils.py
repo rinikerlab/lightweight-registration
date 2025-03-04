@@ -20,10 +20,10 @@ except ImportError:
     import db_utils
 
 try:
-    import psycopg2
+    import psycopg
 except ImportError:
-    psycopg2 = None
-if psycopg2:
+    psycopg = None
+if psycopg:
     # we have the connector for postgresql. Is there a server running?
     cfg = utils.defaultConfig()
     cfg['dbname'] = 'lwreg_tests'
@@ -38,16 +38,16 @@ if psycopg2:
             rdkit_cartridge_present = False
         else:
             rdkit_cartridge_present = True
-    except psycopg2.OperationalError:
+    except psycopg.OperationalError:
         # server not running
-        psycopg2 = None
+        psycopg = None
         rdkit_cartridge_present = False
 
 
-@unittest.skipIf(psycopg2 is None or not rdkit_cartridge_present,
+@unittest.skipIf(psycopg is None or not rdkit_cartridge_present,
                  "skipping postgresql tests")
 class TestCartridgePgSQL(unittest.TestCase):
-    integrityError = psycopg2.errors.UniqueViolation if psycopg2 else None
+    integrityError = psycopg.errors.UniqueViolation if psycopg else None
 
     def setUp(self):
         self._config = utils.defaultConfig()
@@ -86,7 +86,7 @@ class TestCartridgePgSQL(unittest.TestCase):
         curs = None
 
 
-@unittest.skipIf(psycopg2 is None or not rdkit_cartridge_present,
+@unittest.skipIf(psycopg is None or not rdkit_cartridge_present,
                  "skipping postgresql tests")
 class TestCartridgePgSQLWithSchema(TestCartridgePgSQL):
 
@@ -97,7 +97,7 @@ class TestCartridgePgSQLWithSchema(TestCartridgePgSQL):
         self._config['lwregSchema'] = 'lwreg'
 
 
-@unittest.skipIf(psycopg2 is None or not rdkit_cartridge_present,
+@unittest.skipIf(psycopg is None or not rdkit_cartridge_present,
                  "skipping postgresql tests")
 class TestCartridgePgSQLWithRDKitSchema(TestCartridgePgSQL):
 

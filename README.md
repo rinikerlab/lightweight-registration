@@ -11,22 +11,22 @@ Basic operations:
 
 ## Publications
 
-[1] J. Chem. Inf. Model. 2024, XXXX, XXX, XXX-XXX (ASAP article): https://pubs.acs.org/doi/10.1021/acs.jcim.4c01133
+[1] J. Chem. Inf. Model. 2024, 64, 16, 6247–6252 : https://pubs.acs.org/doi/10.1021/acs.jcim.4c01133
 
 ## Quick-start installation for non-experts:
 
 Assuming that you have conda (or mamba or something equivalent) installed you can install lwreg directly from this github repo by first creating a conda environment with all the dependencies installed:
 ```
-% conda env create --name py311_lwreg --file=https://raw.githubusercontent.com/rinikerlab/lightweight-registration/main/environment.yml
+% conda env create --name py313_lwreg --file=https://raw.githubusercontent.com/rinikerlab/lightweight-registration/main/environment.yml
 ```
 If you have mamba installed, you can run this instead (it will run faster):
 ```
-% mamba env create --name py311_lwreg --file=https://raw.githubusercontent.com/rinikerlab/lightweight-registration/main/environment.yml
+% mamba env create --name py313_lwreg --file=https://raw.githubusercontent.com/rinikerlab/lightweight-registration/main/environment.yml
 ```
 
 You can then activate the new environment and install lwreg:
 ```
-% conda activate py311_lwreg
+% conda activate py313_lwreg
 % python -m pip install git+https://github.com/rinikerlab/lightweight-registration
 ```
 
@@ -49,7 +49,7 @@ Please look at the INSTALL.md file.
 ### Dependencies:
 - rdkit v2023.03.1 or later
 - click
-- psycopg2 (only if you want to use a postgresql database)
+- psycopg
 
 After installing the dependencies (above) and checking out this repo, run this command in this directory:
 ```

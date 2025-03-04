@@ -25,10 +25,10 @@ except ImportError:
     import standardization_lib
 
 try:
-    import psycopg2
+    import psycopg
 except ImportError:
-    psycopg2 = None
-if psycopg2:
+    psycopg = None
+if psycopg:
     # we have the connector for postgresql. Is there a server running?
     cfg = utils.defaultConfig()
     cfg['dbname'] = 'lwreg_tests'
@@ -36,9 +36,9 @@ if psycopg2:
     cfg['dbtype'] = 'postgresql'
     try:
         cn = utils.connect(config=cfg)
-    except psycopg2.OperationalError:
+    except psycopg.OperationalError:
         # server not running
-        psycopg2 = None
+        psycopg = None
 
 
 class TestLWReg(unittest.TestCase):
@@ -198,11 +198,14 @@ class TestLWReg(unittest.TestCase):
         configWithHs["standardization"] = 'none'
         utils._initdb(config=configWithHs, confirm=True)
         filename = 'test_data/test_molecules_hs.sdf'
-        res = utils.bulk_register(sdfile=filename,
-                                  config=configWithHs)
+        res = utils.bulk_register(sdfile=filename, config=configWithHs)
         res = utils.retrieve(ids=[1], config=configWithHs)
-        smiles = Chem.MolToSmiles(Chem.MolFromMolBlock(res[1][0],removeHs=False))
-        self.assertEqual(smiles,'[H]C([H])([H])C([H])([H])C([H])([H])C([H])([H])C([H])([H])C([H])([H])[H]')
+        smiles = Chem.MolToSmiles(
+            Chem.MolFromMolBlock(res[1][0], removeHs=False))
+        self.assertEqual(
+            smiles,
+            '[H]C([H])([H])C([H])([H])C([H])([H])C([H])([H])C([H])([H])C([H])([H])[H]'
+        )
 
     def testBulkRegisterAllowDupes(self):
         utils._initdb(config=self._config, confirm=True)
@@ -292,6 +295,9 @@ class TestLWReg(unittest.TestCase):
         self.assertEqual(Chem.MolToSmiles(m), 'CCO')
 
     def testStandardizationOptions(self):
+        for k, v in utils.standardizationOptions.items():
+            self.assertTrue(isinstance(v, standardization_lib.Standardization))
+
         lconfig = self._config.copy()
         lconfig['standardization'] = 'charge'
         utils._initdb(config=lconfig, confirm=True)
@@ -549,9 +555,9 @@ class TestLWRegTautomerv2(unittest.TestCase):
                         config=self._config), [3])
 
 
-@unittest.skipIf(psycopg2 is None, "skipping postgresql tests")
+@unittest.skipIf(psycopg is None, "skipping postgresql tests")
 class TestLWRegPSQL(TestLWReg):
-    integrityError = psycopg2.errors.UniqueViolation if psycopg2 else None
+    integrityError = psycopg.errors.UniqueViolation if psycopg else None
 
     def setUp(self):
         self._config = utils.defaultConfig()
@@ -585,18 +591,18 @@ class TestLWRegPSQL(TestLWReg):
         curs = cn.cursor()
 
         self.assertRaises(
-            psycopg2.errors.ForeignKeyViolation, lambda: curs.execute(
+            psycopg.errors.ForeignKeyViolation, lambda: curs.execute(
                 "insert into orig_data (molregno, data, datatype) values (4, 'foo', 'bar')"
             ))
         cn.rollback()
 
         self.assertRaises(
-            psycopg2.errors.ForeignKeyViolation, lambda: curs.execute(
+            psycopg.errors.ForeignKeyViolation, lambda: curs.execute(
                 "insert into molblocks values (4, 'foo', 'bar')"))
         cn.rollback()
 
 
-@unittest.skipIf(psycopg2 is None, "skipping postgresql tests")
+@unittest.skipIf(psycopg is None, "skipping postgresql tests")
 class TestLWRegPSQLWithSchema(TestLWRegPSQL):
 
     def setUp(self):
@@ -972,7 +978,7 @@ class TestRegisterConformers(unittest.TestCase):
                                                fail_on_duplicate=False,
                                                config=self._config),
             expected[self._config['dbtype']])
-        
+
     def testConformerStandardization(self):
         cfg = self._config.copy()
         cfg['standardization'] = [
@@ -1005,9 +1011,9 @@ class TestRegisterConformers(unittest.TestCase):
                 mol=cp, fail_on_duplicate=True, config=cfg))
 
 
-@unittest.skipIf(psycopg2 is None, "skipping postgresql tests")
+@unittest.skipIf(psycopg is None, "skipping postgresql tests")
 class TestRegisterConformersPSQL(TestRegisterConformers):
-    integrityError = psycopg2.errors.UniqueViolation if psycopg2 else None
+    integrityError = psycopg.errors.UniqueViolation if psycopg else None
 
     def setUp(self):
         super(TestRegisterConformersPSQL, self).setUp()

@@ -5,10 +5,11 @@ Here, we provide a small set of tutorials to help ypu get started with lwreg.
 Please keep in mind that lwreg allow for problem dependent customization:
 The tutorials are meant as a starting point, but might not be applicable to your specific use case.
 
-Setting up a Database
-----------------------
+Setting up a Database and First Registration
+---------------------------------------------
 For a single user, SQLite is the easiest way to get started with lwreg.
-The first question to answer after that is if you want to run your registration system in conformer or molecule mode::
+In this first example, we will show how to set up an lwreg instance for registering molecules and querying them.
+We will also see how to retrieve the registerd structures::
      
   import lwreg
   from lwreg import utils
@@ -68,5 +69,14 @@ The first question to answer after that is if you want to run your registration 
   # build an rdkit mol object from the retrieved information
   mol = Chem.MolFromMolBlock(res[1][0],removeHs=False)
 
+Setting Up the Conformer Registration
+--------------------------------------
+Should the 3D information (conformers) be relevant for your project, you will want to run lwreg in conformer mode::
+  
+  import lwreg
+  from lwreg import utils
+
+
+
 Lwreg and Computational Experiments
------------------------------------
+------------------------------------

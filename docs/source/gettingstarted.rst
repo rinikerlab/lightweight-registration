@@ -6,7 +6,7 @@ Quick Start
 
 What is a registration system?
 ------------------------------
-A chemical registration system is a software system (e.g. database) which holds chemical structures and assigns them identifiers.
+A chemical registration system is a software system (e.g. database) that holds chemical structures and assigns them identifiers.
 In order to do so, a chemical registration system needs to be able to check a presented compound against already registered ones and decide upon its uniqueness. 
 The identifiers can be used as keys when storing additional data about the chemical structures in additional tables.
 

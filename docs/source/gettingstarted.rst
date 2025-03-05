@@ -34,7 +34,7 @@ See the :ref:`Basic Functionality Reference` for more details and :ref:`Addition
 
 Installation Guide
 ------------------
-The following outline assumes that the user has conda (or an equivalent) installed. 
+The following outline assumes that the user has conda installed. 
 
 .. code-block:: bash
 

@@ -53,7 +53,7 @@ The two systems currently supported by lwreg are SQLite and PostgreSQL.
 
 SQLite is a serverless database system that stores the database in a single file and which is supported as part of the Python standard library.
 
-If you choose to use PostgreSQL, you need to install the psycopg2 package:
+If you choose to use PostgreSQL, you need to install the psycopg package:
 
 .. code-block:: bash
 

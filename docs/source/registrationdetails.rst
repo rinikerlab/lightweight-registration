@@ -6,7 +6,7 @@ As all comparisons are simply string comparisons, lwreg is a fast approach in an
 
 Methodology of Molecule Hash Computation
 ----------------------------------------
-lwreg makes uses of the RDKit's RegistrationHash functionality. 
+lwreg makes uses of the `RDKit's RegistrationHash <https://rdkit.org/docs/source/rdkit.Chem.RegistrationHash.html>`_ functionality.
 It consists of seven hash layers:
 
 

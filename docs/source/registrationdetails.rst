@@ -2,7 +2,7 @@ Registration Details
 =====================
 
 The method for the determination of uniqueness, deciding whether or not two structures are the same, is the core of any chemical registration system. lwreg uses a hash-based approach to identify duplicates. 
-As all comparisons are simply string comparisons, lwreg is a fast approach in any modern database system.
+As all comparisons are simply string comparisons, lwreg is a fast approach in any modern database system and does not require any database extensions for handling chemical structures.
 
 Methodology of Molecule Hash Computation
 ----------------------------------------

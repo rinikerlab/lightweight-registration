@@ -38,7 +38,7 @@ The following outline assumes that the user has conda installed.
 
 .. code-block:: bash
 
-    conda env create --name py311_lwreg --file=https://raw.githubusercontent.com/rinikerlab/lightweight-registration/main/environment.yml
+    conda env create --name py313_lwreg --file=https://raw.githubusercontent.com/rinikerlab/lightweight-registration/main/environment.yml
     conda activate py311_lwreg
     python -m pip install git+https://github.com/rinikerlab/lightweight-registration
 

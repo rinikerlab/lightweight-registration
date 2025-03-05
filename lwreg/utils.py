@@ -79,6 +79,17 @@ def configure_from_database(dbname=None,
     """
     Returns a config dict with values from the registration metadata table in the database.
 
+    Note that in order for this to work the arguments must provide whatever
+    information is needed to connect to the database. This can be 'connection'
+    with a direct connection object or 'dbname' and 'dbtype' (potentially with
+    'host', 'user', and 'password' if those are required). If you used a
+    nondefault schema when initializing the database, you'll also need to
+    provide 'lwregSchema' here.
+    If 'dbtype' is not provided, the following heuristics are used:
+      - if 'dbname' corresponds to an existing file, then sqlite3 is used
+      - if 'host' is provided, then postgresql is used
+      - otherwise the default dbtype, currently sqlite3, is used
+
     :param dbname: the name of the database (one of dbname or connection must be provided)
     :param connection: a connection object (one of dbname or connection must be provided)
     :param dbtype: the type of database (sqlite3 or postgresql)
@@ -774,7 +785,9 @@ def bulk_register(config=None,
                   no_verbose=True,
                   show_progress=False):
     """
-    Registers multiple new molecules, assuming they don't already exist, and returns the new registry numbers (molregno). ``RegistrationFailureReasons.DUPLICATE`` if ``fail_on_duplicate`` is True and a molecule is a duplicate ``RegistrationFailureReasons.PARSE_FAILURE`` if there was a problem processing the molecule. Only one of the molecule format objects should be provided.
+    Registers multiple new molecules, assuming they don't already exist, and returns the new registry numbers (molregno). 
+    ``RegistrationFailureReasons.DUPLICATE`` if ``fail_on_duplicate`` is True and a molecule is a duplicate ``RegistrationFailureReasons.PARSE_FAILURE`` if there was a problem processing the molecule. 
+    Only one of the molecule format objects should be provided.
     :param config: Configuration dict or filename.
     :param mols: An iterable of RDKit molecule objects.
     :param sdfile: SDF filename.

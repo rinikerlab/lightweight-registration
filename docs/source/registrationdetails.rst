@@ -1,9 +1,7 @@
 Registration Details
 =====================
 
-The determination of uniqueness is the core of any chemical registration system, 
-meaning the method to decide weather two molecular structures are the same or not.
-lwreg uses a hash-based approach to identify duplicates. 
+The method for the determination of uniqueness, deciding whether or not two structures are the same, is the core of any chemical registration system. lwreg uses a hash-based approach to identify duplicates. 
 As all comparisons are simply string comparisons, lwreg is a fast approach in any modern database system.
 
 Methodology of Molecule Hash Computation

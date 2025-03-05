@@ -66,7 +66,7 @@ Please refer to the `PostgreSQL documentation <https://www.postgresql.org/docs/>
 
 Configuration
 -------------
-If you plan to use the command line interface to lwreg, you need to set up a configuration file before you get started.
+If you plan to use the command-line interface to lwreg, you need to set up a configuration file before you get started.
 The configuration file is a YAML file that contains the following information:
 
     - **dbname**: The name of the database.

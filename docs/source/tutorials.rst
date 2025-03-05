@@ -2,7 +2,7 @@ Tutorials
 =========
 
 Here, we provide a small set of tutorials to help ypu get started with lwreg. 
-Please keep in mind that lwreg allow for problem dependent customization:
+Please keep in mind that lwreg allows for problem dependent customization:
 The tutorials are meant as a starting point, but might not be applicable to your specific use case.
 
 Setting up a Database and First Registration

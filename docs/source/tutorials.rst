@@ -1,7 +1,7 @@
 Tutorials
 =========
 
-Here, we provide a small set of tutorials to help ypu get started with lwreg. 
+Here, we provide a small set of tutorials to help you get started with lwreg. 
 Please keep in mind that lwreg allows for problem dependent customization:
 The tutorials are meant as a starting point, but might not be directly applicable to your specific use case.
 
@@ -30,6 +30,9 @@ We will also see how to retrieve the registerd structures::
   # now we can initialize the database
   lwreg.initdb(config)
 
+The user will need to confirm the initialization of the database. 
+After that, the database is ready to be used and we can proceed to register molecules. ::
+
   # after confirming the intialization, we can register some molecules
   from rdkit import Chem
   from rdkit.Chem import Draw
@@ -41,8 +44,10 @@ We will also see how to retrieve the registerd structures::
   IPythonConsole.drawOptions.legendFontSize=24
   Draw.MolsToGridImage(ms,legends=[str(i+1) for i in range(len(ms))],molsPerRow=2,subImgSize=(300,300))
 
-  # let's also assume that you maybe set up your database and are now coming back to register some molecules
-  # in that case, you should always start by retrieving the config from the database
+You will see the molecules drawn on a grid displayed in the notebook.
+Let's also assume that you set up your database and are now coming back to register some molecules.
+In that case, you should always start by retrieving the config from the database. ::
+
   config = utils.configure_from_database(dbname='./testdb.sqlt',dbtype='sqlite3')
 
   # registering one molecule
@@ -69,14 +74,18 @@ We will also see how to retrieve the registerd structures::
   # build an rdkit mol object from the retrieved information
   mol = Chem.MolFromMolBlock(res[1][0],removeHs=False)
 
-Setting Up the Conformer Registration
---------------------------------------
-Should the 3D information (conformers) be relevant for your project, you will want to run lwreg in conformer mode::
-  
-  import lwreg
-  from lwreg import utils
 
+Tutorial Notebooks
+------------------
+.. list-table:: Tutorial notebooks
+   :widths: 10 30
+   :header-rows: 1
 
-
-Lwreg and Computational Experiments
-------------------------------------
+   * - Notebook
+     - Description
+   * - 01_registration_basics
+     - Explain content here.
+   * - 02_conformer_registration
+     - Explain content here.
+   * - 03_computational_experiments
+     - Explain content here.

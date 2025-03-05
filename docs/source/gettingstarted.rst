@@ -67,7 +67,7 @@ Please refer to the `PostgreSQL documentation <https://www.postgresql.org/docs/>
 Configuration
 -------------
 If you plan to use the command line interface to lwreg, you need to set up a configuration file before you get started.
-The configuration file is a YAML file that contains the following information:
+The configuration file is a JSON file that contains the following information:
 
     - **dbname**: The name of the database.
     - **dbtype**: The type of the database (sqlite or postgres).
@@ -77,6 +77,21 @@ The configuration file is a YAML file that contains the following information:
     - **registerConformers**: Whether to register conformers.
     - **numConformerDigits**: The number of digits to use when hashing conformer coordinates.
     - **lwregSchema**: The schema name for the lwreg tables (PostgreSQL only).
+
+An example configuration file is shown below:
+
+.. code-block:: json
+
+    {
+        "dbname": "test.db",
+        "dbtype": "sqlite",
+        "standardization": "fragment",
+        "removeHs": 1,
+        "useTautomerHashv2": 0,
+        "registerConformers": 0
+    }
+
+If you are using lwreg through the Python API, you can pass the configuration as a dictionary to the lwreg functions.
 
 Choosing the right standardization options for your project is crucial for the registration system to work properly.
 There is a set of pre-defined standardization options including:

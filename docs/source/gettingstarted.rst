@@ -49,7 +49,7 @@ To verify the installation by running
     lwreg --help
 
 When starting to use lwreg, you also must choose your prefered database management system. 
-The two systems compatible with lwreg are SQLite and PostgreSQL.
+The two systems currently supported by lwreg are SQLite and PostgreSQL.
 
 SQLite is a serverless database system that stores the database in a single file and which is supported as part of the Python standard library.
 

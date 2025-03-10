@@ -76,10 +76,8 @@ def configure_from_database(dbname=None,
                             user=None,
                             password=None,
                             lwregSchema=None):
-    ''' returns a config dict with values from the registration 
-    metadata table in the database.
-
-    This will overwrite some of the values already in the config dict.
+    """
+    Returns a config dict with values from the registration metadata table in the database.
 
     Note that in order for this to work the arguments must provide whatever
     information is needed to connect to the database. This can be 'connection'
@@ -87,22 +85,21 @@ def configure_from_database(dbname=None,
     'host', 'user', and 'password' if those are required). If you used a
     nondefault schema when initializing the database, you'll also need to
     provide 'lwregSchema' here.
-
     If 'dbtype' is not provided, the following heuristics are used:
       - if 'dbname' corresponds to an existing file, then sqlite3 is used
       - if 'host' is provided, then postgresql is used
       - otherwise the default dbtype, currently sqlite3, is used
 
-    Keyword arguments: 
-    dbname -- the name of the database (one of dbname or connection must be provided)
-    connection -- a connection object (one of dbname or connection must be provided)
-    dbtype -- the type of database (sqlite3 or postgresql)
-    host -- the host to connect to (for postgresql)
-    user -- the user to connect as (for postgresql)
-    password -- the password to use (for postgresql)
-    lwregSchema -- the schema name to use for the lwreg tables (for postgresql)
-        
-    '''
+    :param dbname: the name of the database (one of dbname or connection must be provided)
+    :param connection: a connection object (one of dbname or connection must be provided)
+    :param dbtype: the type of database (sqlite3 or postgresql)
+    :param host: the host to connect to (for postgresql)
+    :param user: the user to connect as (for postgresql)
+    :param password: the password to use (for postgresql)
+    :param lwregSchema: the schema name to use for the lwreg tables (for postgresql)
+    :return: A config dictionary with values from the registration metadata table in the database.
+    :raises ValueError: If neither dbname nor connection is provided.
+    """
     global _config
     config = {}
     if connection is not None:
@@ -640,22 +637,25 @@ def register(config=None,
              fail_on_duplicate=True,
              confId=-1,
              no_verbose=True):
-    """ registers a new molecule, assuming it doesn't already exist,
-    and returns the new registry number (molregno)
-    
-    only one of the molecule format objects should be provided
-
-    Keyword arguments:
-    config     -- configuration dict
-    mol        -- RDKit molecule object
-    molfile    -- MOL or SDF filename
-    molblock   -- MOL or SDF block
-    smiles     -- smiles
-    escape     -- the escape layer
-    fail_on_duplicate -- if true then an exception is raised when trying to register a duplicate
-    confId     -- the conformer ID to use when in registerConformers mode
-    no_verbose -- if this is False then the registry number will be printed
     """
+    Registers a new molecule, assuming it doesn't already exist, and returns the new registry number (molregno).
+
+    Only one of the molecule format objects should be provided.
+
+    :param config: Configuration dictionary or filename.
+    :param mol: RDKit molecule object.
+    :param molfile: MOL or SDF filename.
+    :param molblock: MOL or SDF block.
+    :param smiles: SMILES string.
+    :param escape: The escape layer.
+    :param fail_on_duplicate: If True, an exception is raised when trying to register a duplicate.
+    :param confId: The conformer ID to use when in registerConformers mode.
+    :param no_verbose: If False, the registry number will be printed.
+    :return: The new registry number (molregno) or a tuple of (molregno, conf_id) if registerConformers mode is enabled.
+    :raises RegistrationFailureReasons.PARSE_FAILURE: If molecule parsing fails.
+    :raises RegistrationFailureReasons.FILTERED: If molecule is filtered out.
+    """
+
     if not config:
         config = _configure()
     elif isinstance(config, str):
@@ -784,30 +784,25 @@ def bulk_register(config=None,
                   fail_on_duplicate=True,
                   no_verbose=True,
                   show_progress=False):
-    """ registers multiple new molecules, assuming they don't already exist,
-    and returns the new registry numbers (molregno)
-    
-    The result tuple includes a single entry for each molecule in the input.
-    That entry can be one of the following:
-      - the registry number (molregno) of the registered molecule
-      - RegistrationFailureReasons.DUPLICATE if fail_on_duplicate is True and a
-        molecule is a duplicate
-      - RegistrationFalureReasons.PARSE_FAILURE if there was a problem processing
-        the molecule 
-    
-    only one of the molecule format objects should be provided
-
-    Keyword arguments:
-    config         -- configuration dict
-    mols           -- an iterable of RDKit molecule objects
-    sdfile         -- SDF filename
-    escape_property -- the molecule property to use as the escape layer
-    fail_on_duplicate -- if true then RegistraionFailureReasons.DUPLICATE will be returned 
-                       for each already-registered molecule, otherwise the already existing
-                       structure ID will be returned
-    no_verbose     -- if this is False then the registry numbers will be printed
-    show_progress   -- if this is True then a progress bar will be shown for the molecules
     """
+    Registers multiple new molecules, assuming they don't already exist, and returns the new registry numbers (molregno). 
+    ``RegistrationFailureReasons.DUPLICATE`` if ``fail_on_duplicate`` is True and a molecule is a duplicate ``RegistrationFailureReasons.PARSE_FAILURE`` if there was a problem processing the molecule. 
+    Only one of the molecule format objects should be provided.
+    :param config: Configuration dict or filename.
+    :param mols: An iterable of RDKit molecule objects.
+    :param sdfile: SDF filename.
+    :param smilesfile: SMILES filename.
+    :param escape_property: The molecule property to use as the escape layer.
+    :param fail_on_duplicate: If True, then ``RegistrationFailureReasons.DUPLICATE`` will be returned for each already-registered molecule, otherwise the already existing structure ID will be returned.
+    :param no_verbose: If False, then the registry numbers will be printed.
+    :param show_progress: If True, then a progress bar will be shown for the molecules.
+    :return: A tuple containing the registry numbers or failure reasons for each molecule.
+    """
+
+    if not config:
+        config = _configure()
+    elif isinstance(config, str):
+        config = _configure(filename=config)
 
     if mols:
         pass
@@ -819,11 +814,6 @@ def bulk_register(config=None,
         mols = _get_mols_from_smilesfile(smilesfile)
     else:
         raise ValueError('No input molecules provided!')
-
-    if not config:
-        config = _configure()
-    elif isinstance(config, str):
-        config = _configure(filename=config)
 
     _check_config(config)
 
@@ -915,10 +905,11 @@ def registration_counts(config=None):
 
 
 def get_all_registry_numbers(config=None):
-    """ returns a tuple with all of the registry numbers (molregnos) in the database
-        
-    Keyword arguments:
-    config     -- configuration dict
+    """
+    Returns a tuple with all of the registry numbers (molregnos) in the database.
+
+    :param config: Configuration dictionary.
+    :return: A tuple with all of the registry numbers (molregnos) in the database.
     """
     if not config:
         config = _configure()
@@ -941,25 +932,23 @@ def query(config=None,
           smiles=None,
           escape=None,
           no_verbose=True):
-    """ queries to see if a molecule has already been registered,
-    and returns the corresponding registry numbers
-        
-    only one of the molecule format objects should be provided
-
-    Keyword arguments:
-    config     -- configuration dict
-    layers     -- hash layers to be used to determine identity
-    ids        -- list or tuple of molregnos. 
-                  Only makes sense if registerConformers is set, 
-                  in which case this will return all conf_ids for 
-                  the molregnos in the ids list as a list of 
-                  (molregno, conf_id) tuples
-    mol        -- RDKit molecule object
-    molfile    -- MOL or SDF filename
-    molblock   -- MOL or SDF block
-    smiles     -- smiles
-    escape     -- the escape layer
-    no_verbose -- if this is False then the registry numbers will be printed
+    """
+    Queries to see if a molecule has already been registered, and returns the corresponding registry numbers.
+    Only one of the molecule format objects should be provided.
+    
+    :param config: Configuration dict or filename.
+    :param layers: Hash layers to be used to determine identity. 
+    :param ids: List or tuple of molregnos. Only makes sense if registerConformers is set,
+                in which case this will return all conf_ids for the molregnos in the ids list
+                as a list of (molregno, conf_id) tuples.
+    :param mol: RDKit molecule object.
+    :param molfile: MOL or SDF filename.
+    :param molblock: MOL or SDF block.
+    :param smiles: SMILES string.
+    :param escape: The escape layer.
+    :param no_verbose: If False, the registry numbers will be printed.
+    :raises ValueError: If ids are provided but registerConformers is not enabled.
+    :return: List of registry numbers or list of (molregno, conf_id) tuples.
     """
     if not config:
         config = _configure()
@@ -1049,23 +1038,26 @@ def retrieve(config=None,
              as_submitted=False,
              as_hashes=False,
              no_verbose=True):
-    """ returns the molecule data for one or more registry ids (molregnos)
-    The return value is a dictionary of (data, format) 2-tuples with molregnos as keys
-
-    only one of id or ids should be provided
-
-    If registerConformers is set the conformers can be retrieved by providing
-    the tuples of (molregno, conf_id) and the return value will be a dictionary
-    of (data, 'mol') 2-tuples with (molregno, conf_id) tuples as keys
-
-    Keyword arguments:
-    config       -- configuration dict
-    ids          -- an iterable of registry ids (molregnos)
-    id           -- a registry id (molregno)
-    as_submitted -- if True, then the structure will be returned as registered
-    as_hashes    -- if True, then the hashes will be returned (as a dict) instead of the structures
-    no_verbose   -- if this is False then the registry number will be printed
     """
+    Returns the molecule data for one or more registry ids (molregnos).
+
+    The return value is a dictionary of (data, format) 2-tuples with molregnos as keys.
+
+    Only one of id or ids should be provided.
+
+    If registerConformers is set, the conformers can be retrieved by providing
+    the tuples of (molregno, conf_id) and the return value will be a dictionary
+    of (data, 'mol') 2-tuples with (molregno, conf_id) tuples as keys.
+
+    :param dict config: Configuration dictionary.
+    :param list ids: An iterable of registry ids (molregnos).
+    :param int id: A registry id (molregno).
+    :param bool as_submitted: If True, then the structure will be returned as registered.
+    :param bool as_hashes: If True, then the hashes will be returned (as a dict) instead of the structures.
+    :param bool no_verbose: If this is False, then the registry number will be printed.
+    :return: A dictionary of (data, format) 2-tuples with molregnos as keys.
+    """
+
     if not config:
         config = _configure()
     elif isinstance(config, str):
@@ -1258,13 +1250,14 @@ def _initdb(config=None, confirm=False):
 
 
 def initdb(config=None):
-    """ initializes the registration database    
+    """
+    Initializes the registration database.
+    
+    You will be prompted to confirm this action since this call can destroy any 
+    existing information in the registration database.
 
-    NOTE you will be prompted to confirm this action since this call can destroy any 
-    existing information in the registration database
-
-    Keyword arguments:
-    config  -- configuration dict
+    :param config: Configuration dictionary, defaults to None.
+    :return: Returns the result of the _initdb function if confirmed, otherwise False.
     """
     print(
         "This will destroy any existing information in the registration database."

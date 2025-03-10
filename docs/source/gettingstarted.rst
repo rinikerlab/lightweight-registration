@@ -57,7 +57,7 @@ If you choose to use PostgreSQL, you need to install the psycopg package (note t
 
 .. code-block:: bash
 
-    conda install -c conda-forge psycopg2
+    conda install -c conda-forge psycopg
 
 You will also need to have the PostgreSQL server installed and running.
 Please refer to the `PostgreSQL documentation <https://www.postgresql.org/docs/>`_ for installation instructions. Quick setup instructions, suitable for experimentation but not serious work, can be found in an `RDKit blog post <https://greglandrum.github.io/rdkit-blog/posts/2024-10-31-lwreg-and-the-cartridge.html>`_.

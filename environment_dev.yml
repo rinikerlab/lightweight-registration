@@ -1,20 +1,20 @@
-name: py311_lwreg
+name: py313_lwreg
 channels:
   - conda-forge
 dependencies:
-  - python=3.11
-  - rdkit >=2023.03.1
+  - python=3.13
+  - rdkit >=2024.09.1
   - ipython
   - jupyter
-  - ipython-sql
-  - sqlalchemy=1.4
+  - jupysql
+  - sqlalchemy
   - pytest
   - tqdm
   - click
   # the next two are only required if you want to use postgresql
-  - psycopg2=2.9
-  - openssl=3.3
-  # for the documentation
+  - psycopg
+  - openssl=3.4  
+# for the documentation
   - sphinx
   - sphinx_rtd_theme
   - sphinx-copybutton

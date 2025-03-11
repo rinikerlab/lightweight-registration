@@ -26,7 +26,5 @@ html_static_path = ['_static']
 
 import os
 import sys
-print("KOKO:", os.path.abspath('..'))
-sys.path.insert(0, os.path.abspath('..'))
-print("KOKO:", os.path.abspath('../lwreg'))
-sys.path.insert(0, os.path.abspath('../lwreg'))
+
+sys.path.insert(0, os.path.abspath('../../lwreg'))

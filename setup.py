@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='lwreg',
     description='lightweight compound registration system',
-    version='0.0.1',
+    version='0.1.0',
     py_modules=['lwreg'],
     packages=['lwreg'],
     install_requires=[
@@ -16,5 +16,4 @@ setup(
     },
     author="Greg Landrum",
     author_email="greg.landrum@gmail.com",
-
 )

@@ -1,2 +1,10 @@
 sphinx_rtd_theme
 sphinx_copybutton
+rdkit
+ipython
+jupyter
+jupysql
+sqlalchemy
+pytest
+tqdm
+click

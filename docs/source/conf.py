@@ -24,9 +24,8 @@ exclude_patterns = []
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
-import sys
 import os
-import numpy as np
+import sys
 print("KOKO:", os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('..'))
 print("KOKO:", os.path.abspath('../lwreg'))

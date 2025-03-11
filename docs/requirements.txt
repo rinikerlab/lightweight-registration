@@ -1,6 +1,5 @@
 sphinx_rtd_theme
 sphinx_copybutton
-python
 rdkit
 ipython
 jupyter

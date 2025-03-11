@@ -1,10 +1,6 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# For the full list of built-in configuration values, see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+import sphinx_rtd_theme
 
 # -- Project information -----------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'lightweight-registration'
 copyright = '2025, Jessica Braun and Greg Landrum'
@@ -27,3 +23,11 @@ exclude_patterns = []
 
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
+
+import sys
+import os
+import numpy as np
+print("KOKO:", os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('..'))
+print("KOKO:", os.path.abspath('../lwreg'))
+sys.path.insert(0, os.path.abspath('../lwreg'))

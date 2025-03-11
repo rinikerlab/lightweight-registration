@@ -1,6 +1,6 @@
 sphinx_rtd_theme
 sphinx_copybutton
-python==3.13
+python
 rdkit
 ipython
 jupyter

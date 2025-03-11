@@ -1,7 +1,7 @@
 sphinx_rtd_theme
 sphinx_copybutton
-python=3.13
-rdkit >=2024.09.1
+python==3.13
+rdkit
 ipython
 jupyter
 jupysql

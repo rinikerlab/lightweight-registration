@@ -1,5 +1,5 @@
-Quick Start
-===========
+Introduction
+=============
 
 .. _GetStarted:
 
@@ -117,6 +117,23 @@ Besides the standardization options, there is also the possibility to define cus
 
 Multiple standardization options and filters can be combined in a list in a user defined order.
 The chosen standardization pipeline is stored in the database itself. 
+
+lwreg's Command Line interface
+-------------------------------
+
+
+Running lwreg in Docker
+-----------------------
+lwreg can also be run in a docker container. ::
+    
+    docker build -t lwreg .
+    docker run -i -t -p 8888:8888 rdkit-lwreg /bin/bash -c "\
+    apt update && apt install libtiff5 -y && \
+    pip install notebook && \
+    jupyter notebook \
+    --notebook-dir=/lw-reg --ip='*' --port=8888 \
+    --no-browser --allow-root"
+
 
 Registering Conformers
 ----------------------

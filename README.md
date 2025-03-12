@@ -1,4 +1,6 @@
 # LWReg: a lightweight chemical registration system
+![TOC Image](https://github.com/rinikerlab/lightweight-registration/blob/main/Lwreg.pdf
+
 
 This provides a basic registration system which can be used either as a python
 library or via a command-line interface.
@@ -12,6 +14,11 @@ Basic operations:
 ## Publications
 
 [1] J. Chem. Inf. Model. 2024, 64, 16, 6247–6252 : https://pubs.acs.org/doi/10.1021/acs.jcim.4c01133
+
+## Documentation
+
+Our in detail documentation: https://lightweight-registration.readthedocs.io/en/
+
 
 ## Quick-start installation for non-experts:
 

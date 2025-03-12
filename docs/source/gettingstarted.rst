@@ -137,3 +137,10 @@ lwreg can also be run in a docker container. ::
 
 Registering Conformers
 ----------------------
+When the configuration option `registerConformers` is set to True, lwreg expects that the compounds to be registered will have an associated conformer. 
+The conformers are tracked in a different table than the molecule topologies and expectation is that every molecule registered will have a conformer (it's an error if they don't). 
+It is possible to register multiple conformers for a single molecular structure (topology).
+Note that once a database is created in `registerConformers` mode, it probably should always be used in that mode. 
+When in `registerConformers` mode, the following behaviour in the API is changed:
+
+- `register()` and `bulk_register()` require molecules to have associated conformers. 

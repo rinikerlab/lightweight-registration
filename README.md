@@ -2,6 +2,7 @@
 
 [![Lwreg](https://img.shields.io/badge/DOI-10.1021/acs.jcim.3c00800-blue)](https://pubs.acs.org/doi/10.1021/acs.jcim.4c01133)
 [![ReadTheDocs](https://readthedocs.org/projects/docs/badge/?version=latest)](https://lightweight-registration.readthedocs.io/en/)
+[![RDKit](https://img.shields.io/badge/Powered%20by-RDKit-3838ff.svg?logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAFVBMVEXc3NwUFP8UPP9kZP+MjP+0tP////9ZXZotAAAAAXRSTlMAQObYZgAAAAFiS0dEBmFmuH0AAAAHdElNRQfmAwsPGi+MyC9RAAAAQElEQVQI12NgQABGQUEBMENISUkRLKBsbGwEEhIyBgJFsICLC0iIUdnExcUZwnANQWfApKCK4doRBsKtQFgKAQC5Ww1JEHSEkAAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMi0wMy0xMVQxNToyNjo0NyswMDowMDzr2J4AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjItMDMtMTFUMTU6MjY6NDcrMDA6MDBNtmAiAAAAAElFTkSuQmCC)](https://www.rdkit.org/)
 ![TOC Image](https://github.com/rinikerlab/lightweight-registration/blob/feat/docs/Lwreg.png)
 
 This provides a basic registration system which can be used either as a python
@@ -203,11 +204,6 @@ That last one failed because the quarternary nitrogen can't be neutralized.
 There are a collection of other standardizers/filters available in the module lwreg.standardization_lib
 
 
-## Registering conformers
-
-When the configuration option `registerConformers` is set to True, lwreg expects that the compounds to be registered will have an associated conformer. The conformers are tracked in a different table than the molecule topologies and expectation is that every molecule registered will have a conformer (it's an error if they don't). It is possible to register multiple conformers for a single molecular structure (topology).
-
-Note that once a database is created in `registerConformers` mode, it probably should always be used in that mode. 
 
 ### Differences when in `registerConformers` mode
 

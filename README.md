@@ -1,6 +1,7 @@
 # LWReg: a lightweight chemical registration system
 
 [![Lwreg](https://img.shields.io/badge/DOI-10.1021/acs.jcim.3c00800-blue)](https://pubs.acs.org/doi/10.1021/acs.jcim.4c01133)
+|docs|
 ![TOC Image](https://github.com/rinikerlab/lightweight-registration/blob/feat/docs/Lwreg.png)
 
 This provides a basic registration system which can be used either as a python
@@ -241,3 +242,11 @@ Here's the SQL to create the conformers table in sqlite when `registerConformers
 create table conformers (conf_id integer primary key, molregno integer not null, 
                    conformer_hash text not null unique, molblock text);
 ```
+
+
+
+
+.. |docs| image:: https://readthedocs.org/projects/docs/badge/?version=latest
+    :alt: Documentation Status
+    :scale: 100%
+    :target: https://lightweight-registration.readthedocs.io/en/

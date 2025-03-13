@@ -22,8 +22,7 @@ Basic operations:
 
 Our in detail documentation: https://lightweight-registration.readthedocs.io/en/
 
-
-## Quick-start installation for non-experts:
+## Quick-start
 
 Assuming that you have conda (or mamba or something equivalent) installed you can install lwreg directly from this github repo by first creating a conda environment with all the dependencies installed:
 ```
@@ -50,35 +49,7 @@ If you want to use PostgreSQL as the database for lwreg, then you will also need
 % conda install -c conda-forge psycopg2
 ```
 
-## Installation for non-experts:
-
-Please look at the INSTALL.md file.
-
-## Installation for experts:
-
-### Dependencies:
-- rdkit v2023.03.1 or later
-- click
-- psycopg
-
-After installing the dependencies (above) and checking out this repo, run this command in this directory:
-```
-pip install --editable .
-```
-
-## Run in Docker
-```shell
-docker build -t lwreg .
-
-# Run Jupyter notebook on the docker container
-docker run -i -t -p 8888:8888 rdkit-lwreg /bin/bash -c "\
-    apt update && apt install libtiff5 -y && \
-    pip install notebook && \
-    jupyter notebook \
-    --notebook-dir=/lw-reg --ip='*' --port=8888 \
-    --no-browser --allow-root"
-```
-
+For further information, consult the INSTALL.md file.
 
 ## Very basic usage demo
 
@@ -204,32 +175,6 @@ That last one failed because the quarternary nitrogen can't be neutralized.
 There are a collection of other standardizers/filters available in the module lwreg.standardization_lib
 
 
-
-### Differences when in `registerConformers` mode
-
-- `register()` and `bulk_register()` require molecules to have associated conformers. Both return `(molregno, conf_id)` tuples instead of just `molregno`s
-- `query()`: if called with the `ids` argument, this will return all of the conformers for the supplied molregnos as `(molregno, conf_id)` tuples. If called with a molecule, the conformer of the molecule will be hashed and looked up in the `conformers`` table, returns a list of `(molregno, conf_id)` tuples.
-- `retrieve()`: if called with `(molregno, conf_id)` tuple(s), this will return a dictionary of `(molblock, 'mol')` tuples with `(molregno, conf_id)` tuples as keys where the `molblock`s contain the coordinates of the registered conformers.
-
-### Hashing conformers for registration
-
-Just as molecular hashes are used to recognize when two molecules are the same, lwreg uses a hashing scheme to detect when two conformers are the same. The algorithm for this is simple:
-The atomic positions are converted into strings (rounding the floating point values to a fixed, but configurable, number of digits), sorting the positions, and then combining them into a single string. A SHA256 hash of this string is generated to give the final conformer hash.
-
-If registering a multi-conformer molecule, it is most efficient to call `register_multiple_conformers()`. That only does the work of standardizing the molecule and calculating the molecule hash once.
-
-# Data layout
-
-## The base tables
-Here's the SQL to create the base lwreg tables in sqlite:
-```
-create table registration_metadata (key text, value text);
-create table hashes (molregno integer primary key, fullhash text unique, 
-            formula text, canonical_smiles text, no_stereo_smiles text, 
-            tautomer_hash text, no_stereo_tautomer_hash text, "escape" text, sgroup_data text, rdkitVersion text);
-create table orig_data (molregno integer primary key, data text, datatype text, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
-create table molblocks (molregno integer primary key, molblock text, standardization text);
-```
 
 
 ## The conformers table

@@ -57,18 +57,8 @@ For further information, consult the INSTALL.md file.
 ```
 % lwreg initdb --confirm=yes
 % lwreg register --smiles CCOCC
-1
-% lwreg register --smiles CCOCCC
-2
-% lwreg register --smiles CCNCCC
-3
-% lwreg register --smiles CCOCCC
-ERROR:root:Compound already registered
 % lwreg query --smiles CCOCCC
-2
 % lwreg retrieve --id 2
-(2, '\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 6 5 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.000000 0.000000 0.000000 0\nM  V30 2 C 1.299038 0.750000 0.000000 0\nM  V30 3 O 2.598076 -0.000000 0.000000 0\nM  V30 4 C 3.897114 0.750000 0.000000 0\nM  V30 5 C 5.196152 -0.000000 0.000000 0\nM  V30 6 C 6.495191 0.750000 0.000000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 2 1 2 3\nM  V30 3 1 3 4\nM  V30 4 1 4 5\nM  V30 5 1 5 6\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n', 'mol')
-```
 
 ### Python
 ```

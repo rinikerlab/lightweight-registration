@@ -75,3 +75,5 @@ Lwreg will create the following tables in the database:
      - fields include: molregno, data, datatype, timestamp
    * - molblocks
      - fields include: molregno, molblock, standardization
+   * - conformers (only created in conformer mode)
+      - fields include: conf_id, molregno, conformer_hash, molblock

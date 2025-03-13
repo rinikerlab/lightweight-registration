@@ -116,6 +116,7 @@ Besides the standardization options, there is also the possibility to define cus
         return mol
 
 Multiple standardization options and filters can be combined in a list in a user defined order.
+The current collection of standardizers/filters is available in the module :code:`lwreg.standardization_lib`.
 The chosen standardization pipeline is stored in the database itself. 
 
 lwreg's Command Line interface

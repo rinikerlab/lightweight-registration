@@ -59,6 +59,7 @@ For further information, consult the INSTALL.md file.
 % lwreg register --smiles CCOCC
 % lwreg query --smiles CCOCCC
 % lwreg retrieve --id 2
+```
 
 ### Python
 ```

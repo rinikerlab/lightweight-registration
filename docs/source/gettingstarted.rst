@@ -145,4 +145,4 @@ When in :code:`registerConformers` mode, the following behaviour in the API is c
 
 - :code:`register()` and :code:`bulk_register()` require molecules to have associated conformers. Both return :code:`(molregno, conf_id)` tuples instead of just :code:`molregno` s.
 - :code:`query()` can either be called with the :code:`ids` argument, which returns all of the conformers for the supplied molregnos as :code:`(molregno, conf_id)` tuples. If called with a molecule, the conformer of the molecule will be hashed and looked up in the conformers table, returning a list of :code:`(molregno,conf_id)` tuples.
-- :code:`retrieve()` called with :code:`(molregno, conf_id)` tuples as keys  
+- :code:`retrieve()` called with :code:`(molregno, conf_id)` tuples, it will return a dictionary of :code:`(molblock, 'mol')` tuples with :code:`(molregno, conf_id)` tuples as keys where the :code:`molblock`s contain the coordinates of the registered conformers.

@@ -4,8 +4,8 @@ Registration Details
 The method for the determination of uniqueness, deciding whether or not two structures are the same, is the core of any chemical registration system. lwreg uses a hash-based approach to identify duplicates. 
 As all comparisons are simply string comparisons, lwreg is a fast approach in any modern database system and does not require any database extensions for handling chemical structures.
 
-Methodology of Molecule Hash Computation
-----------------------------------------
+Molecule Hash Computation
+--------------------------
 lwreg makes uses of the `RDKit's RegistrationHash <https://rdkit.org/docs/source/rdkit.Chem.RegistrationHash.html>`_ functionality.
 It consists of seven hash layers:
 
@@ -41,8 +41,8 @@ It consists of seven hash layers:
 
 The registration hash is then a SHA1 hash of all layers computed using Python's hashlib library.
 
-Methodology of Conformer Hash Computation
------------------------------------------
+Conformer Hash Computation
+---------------------------
 
 We use a simple hashing scheme to quickly recognize whether or not a particular conformer has already been seen in the database. The algorithm used for hashing a conformer is:
 
@@ -52,3 +52,26 @@ We use a simple hashing scheme to quickly recognize whether or not a particular 
 * Construct the final hash by concatenating the sorted string representations together with semicolons and generating the SHA256 hash of the result.
 
 Note that this simple scheme is independent of the atom ordering but it is neither translationally nor rotationally invariant. This is essential to allow the system to be used for storing pre-aligned conformers (e.g., for storing docking poses). If the user desires translational and/or rotational invariance, they should either standardize the orientation of conformers themselves before registering them or use the ``CanonicalizeOrientation`` step in the standardization pipeline to automate that process.
+
+If registering a multi-conformer molecule, it is most efficient to call :code:`register_multiple_conformers()`. 
+That only does the work of standardizing the molecule and calculating the molecule hash once.
+
+The Base Tables
+----------------
+
+Lwreg will create the following tables in the database:
+
+.. list-table:: Lwreg tables
+   :widths: 10 30
+   :header-rows: 1
+
+   * - Table name
+     - Description
+   * - registration_metadata
+     - stores metadata about the registration system
+   * - hashes
+     - fields include: molregno, fullhash, formula, canonical_smiles, no_stereo_smiles, tautomer_hash, no_stereo_tautomer_hash, escape, sgroup_data, rdkitVersion
+   * - orig_data
+     - fields include: molregno, data, datatype, timestamp
+   * - molblocks
+     - fields include: molregno, molblock, standardization

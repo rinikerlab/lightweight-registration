@@ -77,15 +77,20 @@ In that case, you should always start by retrieving the config from the database
 
 Tutorial Notebooks
 ------------------
-.. list-table:: Tutorial notebooks
-   :widths: 10 30
-   :header-rows: 1
 
-   * - Notebook
-     - Description
-   * - 01_registration_basics
-     - Explain content here.
-   * - 02_conformer_registration
-     - Explain content here.
-   * - 03_computational_experiments
-     - Explain content here.
+* `01_registration_basics.ipynb <https://github.com/rinikerlab/lightweight-registration/blob/main/tutorial/01_registration_basics.ipynb>`_
+   Setting up a database and the basics of registering and querying with molecules.
+* `02_querying_existing_database.ipynb <https://github.com/rinikerlab/lightweight-registration/blob/main/tutorial/02_querying_existing_database.ipynb>`_
+   Connecting to an existing database and querying for and retrieving registered molecules._
+* `03_registering_conformers.ipynb <https://github.com/rinikerlab/lightweight-registration/blob/main/tutorial/03_registering_conformers.ipynb>`_
+   Working with lwreg in conformer mode to store conformers with the molecules.
+* `04_registering_molecules_and_data.ipynb <https://github.com/rinikerlab/lightweight-registration/blob/main/tutorial/04_registering_compounds_and_data.ipynb>`_
+   Storing additional data together with the registered molecules.
+
+Advanced Tutorials
+^^^^^^^^^^^^^^^^^^
+
+* `100_computational_experiment_1.ipynb <https://github.com/rinikerlab/lightweight-registration/blob/main/tutorial/100_computational_experiment_1.ipynb>`_
+   Storing and working with results from a computational experiment that produces files.
+* `101_computational_experiment_2.ipynb <https://github.com/rinikerlab/lightweight-registration/blob/main/tutorial/101_computational_experiment_2.ipynb>`_
+   Storing and working with results from a computational experiment that uses a multi-conformer database.

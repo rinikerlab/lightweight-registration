@@ -6,6 +6,8 @@ As all comparisons are simply string comparisons, lwreg is a fast approach in an
 
 Molecule Hash Computation
 --------------------------
+Molecule Hash Computation
+--------------------------
 lwreg makes uses of the `RDKit's RegistrationHash <https://rdkit.org/docs/source/rdkit.Chem.RegistrationHash.html>`_ functionality.
 It consists of seven hash layers:
 
@@ -41,6 +43,8 @@ It consists of seven hash layers:
 
 The registration hash is then a SHA1 hash of all layers computed using Python's hashlib library.
 
+Conformer Hash Computation
+---------------------------
 Conformer Hash Computation
 ---------------------------
 

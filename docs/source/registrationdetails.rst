@@ -61,19 +61,12 @@ The Base Tables
 
 Lwreg will create the following tables in the database:
 
-.. list-table:: Lwreg tables
-   :widths: 10 30
-   :header-rows: 1
-
-   * - Table name
-     - Description
-   * - registration_metadata
-     - stores metadata about the registration system
-   * - hashes
-     - fields include: molregno, fullhash, formula, canonical_smiles, no_stereo_smiles, tautomer_hash, no_stereo_tautomer_hash, escape, sgroup_data, rdkitVersion
-   * - orig_data
-     - fields include: molregno, data, datatype, timestamp
-   * - molblocks
-     - fields include: molregno, molblock, standardization
-   * - conformers (only created in conformer mode)
-      - fields include: conf_id, molregno, conformer_hash, molblock
+    - **registration_metadata**: Stores metadata about the registration system.
+    - **hashes**: Stores the hashes for each molecule. 
+        - Fields: molregno, fullhash, formula, canonical_smiles, no_stereo_smiles, tautomer_hash, no_stereo_tautomer_hash, escape, sgroup_data, rdkitVersion
+    - **orig_data**: Stores the original data for each molecule.
+        - Fields: molregno, data, datatype, timestamp
+    - **molblocks**: Stores the molblocks for each molecule.
+        - Fields: molregno, molblock, standardization
+    - **conformers (only created in conformer mode)**: Stores the conformers for each molecule. 
+        - Fields: conf_id, molregno, conformer_hash, molblock

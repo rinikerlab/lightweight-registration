@@ -86,3 +86,11 @@ Tutorial Notebooks
    Working with lwreg in conformer mode to store conformers with the molecules.
 * `04_registering_molecules_and_data.ipynb <https://github.com/rinikerlab/lightweight-registration/blob/main/tutorial/04_registering_compounds_and_data.ipynb>`_
    Storing additional data together with the registered molecules.
+
+Advanced Tutorials
+^^^^^^^^^^^^^^^^^^
+
+* `100_computational_experiment_1.ipynb <https://github.com/rinikerlab/lightweight-registration/blob/main/tutorial/100_computational_experiment_1.ipynb>`_
+   Storing and working with results from a computational experiment that produces files.
+* `101_computational_experiment_2.ipynb <https://github.com/rinikerlab/lightweight-registration/blob/main/tutorial/101_computational_experiment_2.ipynb>`_
+   Storing and working with results from a computational experiment that uses a multi-conformer database.

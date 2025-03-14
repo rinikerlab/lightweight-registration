@@ -1,5 +1,5 @@
-Quick Start
-===========
+Introduction
+=============
 
 .. _GetStarted:
 
@@ -116,7 +116,49 @@ Besides the standardization options, there is also the possibility to define cus
         return mol
 
 Multiple standardization options and filters can be combined in a list in a user defined order.
+The current collection of standardizers/filters is available in the module :code:`lwreg.standardization_lib`.
 The chosen standardization pipeline is stored in the database itself. 
+
+lwreg's Command Line interface
+-------------------------------
+Lwreg also provides a command line interface. ::
+
+    % lwreg initdb --confirm=yes
+    % lwreg register --smiles CCOCC
+    1
+    % lwreg register --smiles CCOCCC
+    2
+    % lwreg register --smiles CCNCCC
+    3
+    % lwreg register --smiles CCOCCC
+    ERROR:root:Compound already registered
+    % lwreg query --smiles CCOCCC
+    2
+    % lwreg retrieve --id 2
+    (2, '\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 6 5 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.000000 0.000000 0.000000 0\nM  V30 2 C 1.299038 0.750000 0.000000 0\nM  V30 3 O 2.598076 -0.000000 0.000000 0\nM  V30 4 C 3.897114 0.750000 0.000000 0\nM  V30 5 C 5.196152 -0.000000 0.000000 0\nM  V30 6 C 6.495191 0.750000 0.000000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 2 1 2 3\nM  V30 3 1 3 4\nM  V30 4 1 4 5\nM  V30 5 1 5 6\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n', 'mol')
+
+
+Running lwreg in Docker
+-----------------------
+lwreg can be run in a docker container. ::
+    
+    docker build -t lwreg .
+    docker run -i -t -p 8888:8888 rdkit-lwreg /bin/bash -c "\
+    apt update && apt install libtiff5 -y && \
+    pip install notebook && \
+    jupyter notebook \
+    --notebook-dir=/lw-reg --ip='*' --port=8888 \
+    --no-browser --allow-root"
+
 
 Registering Conformers
 ----------------------
+When the configuration option :code:`registerConformers` is set to True, lwreg expects that the compounds to be registered will have an associated conformer. 
+The conformers are tracked in a different table than the molecule topologies and expectation is that every molecule registered will have a conformer (it's an error if they don't). 
+It is possible to register multiple conformers for a single molecular structure (topology).
+Note that once a database is created in :code:`registerConformers` mode, it probably should always be used in that mode. 
+When in :code:`registerConformers` mode, the following behaviour in the API is changed:
+
+- :code:`register()` and :code:`bulk_register()` require molecules to have associated conformers. Both return :code:`(molregno, conf_id)` tuples instead of just :code:`molregno` s.
+- :code:`query()` can either be called with the :code:`ids` argument, which returns all of the conformers for the supplied molregnos as :code:`(molregno, conf_id)` tuples. If called with a molecule, the conformer of the molecule will be hashed and looked up in the conformers table, returning a list of :code:`(molregno,conf_id)` tuples.
+- :code:`retrieve()` called with :code:`(molregno, conf_id)` tuples, it will return a dictionary of :code:`(molblock, 'mol')` tuples with :code:`(molregno, conf_id)` tuples as keys where the :code:`molblock`s contain the coordinates of the registered conformers.

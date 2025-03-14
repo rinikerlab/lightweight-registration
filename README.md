@@ -20,7 +20,7 @@ Basic operations:
 
 ## Documentation
 
-Our in detail documentation: https://lightweight-registration.readthedocs.io/en/
+Our full documentation: https://lightweight-registration.readthedocs.io/en/
 
 ## Quick-start
 

@@ -140,7 +140,7 @@ Lwreg also provides a command line interface. ::
 
 Running lwreg in Docker
 -----------------------
-lwreg can also be run in a docker container. ::
+lwreg can be run in a docker container. ::
     
     docker build -t lwreg .
     docker run -i -t -p 8888:8888 rdkit-lwreg /bin/bash -c "\

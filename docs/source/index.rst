@@ -22,6 +22,12 @@ The package provides a basic, yet flexible registration system that is useable f
 
 .. toctree::
    :maxdepth: 2
+   :caption: Technical Details
+
+   technicaldetails
+
+.. toctree::
+   :maxdepth: 2
    :caption: Demos and Tutorials
 
    tutorials

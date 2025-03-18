@@ -54,8 +54,16 @@ For further information, consult the INSTALL.md file.
 ## Very basic usage demo
 
 ### Command line
+Using the default configuration options:
 ```
-% lwreg initdb --confirm=yes
+% lwreg initdb --confirm=yes                          # initialization with default config
+```
+Instead using the interactive configuration:
+```
+% lwreg interactive-config                            # interactive configuration, add host, user, password to config.json afterwards
+% lwreg --config config.json initdb --confirm=yes     # initialization with config.json
+```
+```
 % lwreg register --smiles CCOCC
 % lwreg query --smiles CCOCCC
 % lwreg retrieve --id 2
@@ -66,15 +74,28 @@ For further information, consult the INSTALL.md file.
 ```
 >>> import lwreg
 
->>> from lwreg import utils
-
+>>> from lwreg import utils, helpers
+```
+Using the default configuration options:
+```
+# default config 
 >>> lwreg.set_default_config(utils.defaultConfig())   # you generally will want to provide more information about the database
 
 >>> lwreg.initdb()
 This will destroy any existing information in the registration database.
   are you sure? [yes/no]: yes
 True
+```
+Instead using the interactive configuration:
+```
+>>> config = helpers.interactive_config()   # interactive configuration
 
+>>> lwreg.initdb(config=config)
+This will destroy any existing information in the registration database.
+  are you sure? [yes/no]: yes
+True
+```
+```
 >>> lwreg.register(smiles='CCO')
 1
 

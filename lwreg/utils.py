@@ -313,7 +313,6 @@ def _get_standardization_list(config):
         config = _configure(filename=config)
     sopts = _lookupWithDefault(config, 'standardization')
 
-    res = []
     if type(sopts) not in (list, tuple):
         sopts = (sopts, )
     return tuple(sopts)

@@ -1029,7 +1029,7 @@ def query(config=None,
                 ), (chash, ))
             res = [tuple(x) for x in curs.fetchall()]
     
-    if not _lookupWithDefault(config, "cacheConfig"):
+    if not _lookupWithDefault(config, "cacheConnection"):
         _clear_cached_connection()
 
     if not no_verbose:

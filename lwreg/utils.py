@@ -139,8 +139,6 @@ def configure_from_database(dbname=None,
     curs = cn.cursor()
     curs.execute(f'select * from {registrationMetadataTableName}')
     rows = curs.fetchall()
-    if not _lookupWithDefault(config, "cacheConnection"):
-        _clear_cached_connection()
     for k, v in rows:
         if k in ('rdkitVersion', 'user', 'password'):
             continue
@@ -256,7 +254,8 @@ def connect(config):
         _replace_placeholders = _replace_placeholders_pcts
     else:
         _replace_placeholders = _replace_placeholders_noop
-    _dbConnection = cn
+    if _lookupWithDefault(config, "cacheConnection"):
+        _dbConnection = cn
     _dbConfig = config
     return cn
 
@@ -692,8 +691,6 @@ def register(config=None,
         res = mrn
     else:
         res = mrn, conf_id
-    if not _lookupWithDefault(config, "cacheConnection"):
-        _clear_cached_connection()
     if not no_verbose:
         print(res)
     return res
@@ -777,10 +774,6 @@ def register_multiple_conformers(config=None,
                                           fail_on_duplicate,
                                           confId=conf.GetId())
         res.append((mrn, conf_id))
-
-    if not _lookupWithDefault(config, "cacheConnection"):
-        _clear_cached_connection()
-
     if not no_verbose:
         print(res)
     return tuple(res)
@@ -868,8 +861,6 @@ def bulk_register(config=None,
                 res.append((mrn, conf_id))
         except _violations:
             res.append(RegistrationFailureReasons.DUPLICATE)
-    if not _lookupWithDefault(config, "cacheConnection"):
-        _clear_cached_connection()
     if not no_verbose:
         print(res)
     return tuple(res)
@@ -913,10 +904,7 @@ def registration_counts(config=None):
         curs.execute(f'select count(*) from {conformersTableName}')
         nConfs = curs.fetchone()[0]
         ret = nHashes, nConfs
-
-    if not _lookupWithDefault(config, "cacheConnection"):
-        _clear_cached_connection()
-
+    
     return ret
 
 
@@ -936,8 +924,6 @@ def get_all_registry_numbers(config=None):
     curs = cn.cursor()
     curs.execute(f'select molregno from {hashTableName}')
     res = curs.fetchall()
-    if not _lookupWithDefault(config, "cacheConnection"):
-        _clear_cached_connection()
     return tuple(sorted(x[0] for x in res))
 
 
@@ -1028,9 +1014,6 @@ def query(config=None,
                     f'select molregno,conf_id from {conformersTableName} where conformer_hash=?'
                 ), (chash, ))
             res = [tuple(x) for x in curs.fetchall()]
-    
-    if not _lookupWithDefault(config, "cacheConnection"):
-        _clear_cached_connection()
 
     if not no_verbose:
         if res:
@@ -1161,8 +1144,6 @@ def retrieve(config=None,
         else:
             for mrn, confId, molb in res:
                 resDict[(mrn, confId)] = (molb, 'mol')
-    if not _lookupWithDefault(config, "cacheConnection"):
-        _clear_cached_connection()
     return resDict
 
 
@@ -1286,10 +1267,7 @@ def initdb(config=None):
     )
     response = input("  are you sure? [yes/no]: ")
     if response == 'yes':
-        success =  _initdb(config=config, confirm=True)
-        if not _lookupWithDefault(config, "cacheConnection"):
-            _clear_cached_connection()
-        return success
+        return _initdb(config=config, confirm=True)
     print("cancelled")
     return False
 

@@ -50,6 +50,7 @@ _defaultConfig = {
     3,  # number of digits to use when hashing conformer coordinates
     "lwregSchema":
     "",  # the schema name to use for the lwreg tables (no effect with sqlite3)
+    "cacheConnection": True,
 }
 
 from rdkit.Chem.RegistrationHash import HashLayer
@@ -130,7 +131,7 @@ def configure_from_database(dbname=None,
         config['password'] = password
     if lwregSchema is not None:
         config['lwregSchema'] = lwregSchema
-
+    config["cacheConnection"] = cache_connection
     if 'connection' in config:
         cn = config['connection']
     else:
@@ -138,7 +139,7 @@ def configure_from_database(dbname=None,
     curs = cn.cursor()
     curs.execute(f'select * from {registrationMetadataTableName}')
     rows = curs.fetchall()
-    if not cache_connection:
+    if not _lookupWithDefault(config, "cacheConnection"):
         _clear_cached_connection()
     for k, v in rows:
         if k in ('rdkitVersion', 'user', 'password'):
@@ -640,8 +641,7 @@ def register(config=None,
              escape=None,
              fail_on_duplicate=True,
              confId=-1,
-             no_verbose=True,
-             cache_connection=True):
+             no_verbose=True):
     """
     Registers a new molecule, assuming it doesn't already exist, and returns the new registry number (molregno).
 
@@ -656,7 +656,6 @@ def register(config=None,
     :param fail_on_duplicate: If True, an exception is raised when trying to register a duplicate.
     :param confId: The conformer ID to use when in registerConformers mode.
     :param no_verbose: If False, the registry number will be printed.
-    :param bool cache_connection: Cache the connection after registering the data.
     :return: The new registry number (molregno) or a tuple of (molregno, conf_id) if registerConformers mode is enabled.
     :raises RegistrationFailureReasons.PARSE_FAILURE: If molecule parsing fails.
     :raises RegistrationFailureReasons.FILTERED: If molecule is filtered out.
@@ -693,7 +692,7 @@ def register(config=None,
         res = mrn
     else:
         res = mrn, conf_id
-    if not cache_connection:
+    if not _lookupWithDefault(config, "cacheConnection"):
         _clear_cached_connection()
     if not no_verbose:
         print(res)
@@ -704,8 +703,7 @@ def register_multiple_conformers(config=None,
                                  mol=None,
                                  escape=None,
                                  fail_on_duplicate=True,
-                                 no_verbose=True,
-                                 cache_connection=True):
+                                 no_verbose=True):
     """ registers all of the conformers of a multi-conformer molecule
     Using this function only makes sense when registerConformers is enabled.
     
@@ -715,7 +713,6 @@ def register_multiple_conformers(config=None,
     escape     -- the escape layer
     fail_on_duplicate -- if true then an exception is raised when trying to register a duplicate
     no_verbose -- if this is False then the registry number will be printed
-    cache_connection -- Cache the connection after registering the data
     """
     if not config:
         config = _configure()
@@ -781,7 +778,7 @@ def register_multiple_conformers(config=None,
                                           confId=conf.GetId())
         res.append((mrn, conf_id))
 
-    if not cache_connection:
+    if not _lookupWithDefault(config, "cacheConnection"):
         _clear_cached_connection()
 
     if not no_verbose:
@@ -796,8 +793,7 @@ def bulk_register(config=None,
                   escape_property=None,
                   fail_on_duplicate=True,
                   no_verbose=True,
-                  show_progress=False,
-                  cache_connection=True):
+                  show_progress=False):
     """
     Registers multiple new molecules, assuming they don't already exist, and returns the new registry numbers (molregno). 
     ``RegistrationFailureReasons.DUPLICATE`` if ``fail_on_duplicate`` is True and a molecule is a duplicate ``RegistrationFailureReasons.PARSE_FAILURE`` if there was a problem processing the molecule. 
@@ -810,7 +806,6 @@ def bulk_register(config=None,
     :param fail_on_duplicate: If True, then ``RegistrationFailureReasons.DUPLICATE`` will be returned for each already-registered molecule, otherwise the already existing structure ID will be returned.
     :param no_verbose: If False, then the registry numbers will be printed.
     :param show_progress: If True, then a progress bar will be shown for the molecules.
-    :param bool cache_connection: Cache the connection after registering the data.
     :return: A tuple containing the registry numbers or failure reasons for each molecule.
     """
 
@@ -873,7 +868,7 @@ def bulk_register(config=None,
                 res.append((mrn, conf_id))
         except _violations:
             res.append(RegistrationFailureReasons.DUPLICATE)
-    if not cache_connection:
+    if not _lookupWithDefault(config, "cacheConnection"):
         _clear_cached_connection()
     if not no_verbose:
         print(res)
@@ -912,21 +907,24 @@ def registration_counts(config=None):
     curs = cn.cursor()
     curs.execute(f'select count(*) from {hashTableName}')
     nHashes = curs.fetchone()[0]
+    ret = nHashes
 
     if _lookupWithDefault(config, "registerConformers"):
         curs.execute(f'select count(*) from {conformersTableName}')
         nConfs = curs.fetchone()[0]
-        return nHashes, nConfs
-    else:
-        return nHashes
+        ret = nHashes, nConfs
+
+    if not _lookupWithDefault(config, "cacheConnection"):
+        _clear_cached_connection()
+
+    return ret
 
 
-def get_all_registry_numbers(config=None, cache_connection=True):
+def get_all_registry_numbers(config=None):
     """
     Returns a tuple with all of the registry numbers (molregnos) in the database.
 
     :param config: Configuration dictionary.
-    :param bool cache_connection: Cache the connection after retrieving the data.
     :return: A tuple with all of the registry numbers (molregnos) in the database.
     """
     if not config:
@@ -938,7 +936,7 @@ def get_all_registry_numbers(config=None, cache_connection=True):
     curs = cn.cursor()
     curs.execute(f'select molregno from {hashTableName}')
     res = curs.fetchall()
-    if not cache_connection:
+    if not _lookupWithDefault(config, "cacheConnection"):
         _clear_cached_connection()
     return tuple(sorted(x[0] for x in res))
 
@@ -951,8 +949,7 @@ def query(config=None,
           molblock=None,
           smiles=None,
           escape=None,
-          no_verbose=True,
-          cache_connection=True):
+          no_verbose=True):
     """
     Queries to see if a molecule has already been registered, and returns the corresponding registry numbers.
     Only one of the molecule format objects should be provided.
@@ -968,7 +965,6 @@ def query(config=None,
     :param smiles: SMILES string.
     :param escape: The escape layer.
     :param no_verbose: If False, the registry numbers will be printed.
-    :param bool cache_connection: Cache the connection after retrieving the data.
     :raises ValueError: If ids are provided but registerConformers is not enabled.
     :return: List of registry numbers or list of (molregno, conf_id) tuples.
     """
@@ -1033,7 +1029,7 @@ def query(config=None,
                 ), (chash, ))
             res = [tuple(x) for x in curs.fetchall()]
     
-    if not cache_connection:
+    if not _lookupWithDefault(config, "cacheConfig"):
         _clear_cached_connection()
 
     if not no_verbose:
@@ -1062,8 +1058,7 @@ def retrieve(config=None,
              id=None,
              as_submitted=False,
              as_hashes=False,
-             no_verbose=True,
-             cache_connection=True):
+             no_verbose=True):
     """
     Returns the molecule data for one or more registry ids (molregnos).
 
@@ -1081,7 +1076,6 @@ def retrieve(config=None,
     :param bool as_submitted: If True, then the structure will be returned as registered.
     :param bool as_hashes: If True, then the hashes will be returned (as a dict) instead of the structures.
     :param bool no_verbose: If this is False, then the registry number will be printed.
-    :param bool cache_connection: Cache the connection after retrieving the data.
     :return: A dictionary of (data, format) 2-tuples with molregnos as keys.
     """
 
@@ -1167,7 +1161,7 @@ def retrieve(config=None,
         else:
             for mrn, confId, molb in res:
                 resDict[(mrn, confId)] = (molb, 'mol')
-    if not cache_connection:
+    if not _lookupWithDefault(config, "cacheConnection"):
         _clear_cached_connection()
     return resDict
 
@@ -1177,7 +1171,7 @@ def _registerMetadata(curs, config):
     dc.update(config)
     dc['standardization'] = _get_standardization_label(dc)
     for k, v in dc.items():
-        if k in ('connection', 'user', 'password'):
+        if k in ('connection', 'user', 'password', 'cacheConnection'):
             continue
         curs.execute(
             _replace_placeholders(
@@ -1292,10 +1286,12 @@ def initdb(config=None):
     )
     response = input("  are you sure? [yes/no]: ")
     if response == 'yes':
-        return _initdb(config=config, confirm=True)
-    else:
-        print("cancelled")
-        return False
+        success =  _initdb(config=config, confirm=True)
+        if not _lookupWithDefault(config, "cacheConnection"):
+            _clear_cached_connection()
+        return success
+    print("cancelled")
+    return False
 
 
 def _check_config(config):

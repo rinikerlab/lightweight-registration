@@ -258,8 +258,6 @@ def connect(config):
         _dbConnection = cn
     else:
         _dbConnection = None
-    else:
-        _dbConnection = None
     _dbConfig = config
     return cn
 

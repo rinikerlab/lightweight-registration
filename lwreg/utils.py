@@ -256,6 +256,8 @@ def connect(config):
         _replace_placeholders = _replace_placeholders_noop
     if _lookupWithDefault(config, "cacheConnection"):
         _dbConnection = cn
+    else:
+        _dbConnection = None
     _dbConfig = config
     return cn
 

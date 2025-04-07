@@ -9,4 +9,4 @@ However, in a scenario where you are working with multiple connections to the sa
 When calling :code:`configure_from_database`, there is a function argument called :code:`cacheConnection` which allows you to set the caching behaviour to :code:`False`.
 This will disable the caching and create a new connection to the database every time you call :code:`configure_from_database`.
 
-For the rest of the lwreg functions, the caching behaviour is set through the passed :code:`config` setting of :code:`cacheConnection`.
+For the rest of the lwreg functions, the caching behaviour is set through the code:`cacheConnection` setting of the code:`config` being used.

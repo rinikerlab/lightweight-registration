@@ -50,6 +50,7 @@ _defaultConfig = {
     3,  # number of digits to use when hashing conformer coordinates
     "lwregSchema":
     "",  # the schema name to use for the lwreg tables (no effect with sqlite3)
+    "cacheConnection": True,
 }
 
 from rdkit.Chem.RegistrationHash import HashLayer
@@ -75,7 +76,8 @@ def configure_from_database(dbname=None,
                             host=None,
                             user=None,
                             password=None,
-                            lwregSchema=None):
+                            lwregSchema=None,
+                            cache_connection=True):
     """
     Returns a config dict with values from the registration metadata table in the database.
 
@@ -97,6 +99,7 @@ def configure_from_database(dbname=None,
     :param user: the user to connect as (for postgresql)
     :param password: the password to use (for postgresql)
     :param lwregSchema: the schema name to use for the lwreg tables (for postgresql)
+    :param bool cache_connection: Cache connection after retrieveing the config
     :return: A config dictionary with values from the registration metadata table in the database.
     :raises ValueError: If neither dbname nor connection is provided.
     """
@@ -128,7 +131,7 @@ def configure_from_database(dbname=None,
         config['password'] = password
     if lwregSchema is not None:
         config['lwregSchema'] = lwregSchema
-
+    config["cacheConnection"] = cache_connection
     if 'connection' in config:
         cn = config['connection']
     else:
@@ -251,7 +254,10 @@ def connect(config):
         _replace_placeholders = _replace_placeholders_pcts
     else:
         _replace_placeholders = _replace_placeholders_noop
-    _dbConnection = cn
+    if _lookupWithDefault(config, "cacheConnection"):
+        _dbConnection = cn
+    else:
+        _dbConnection = None
     _dbConfig = config
     return cn
 
@@ -309,7 +315,6 @@ def _get_standardization_list(config):
         config = _configure(filename=config)
     sopts = _lookupWithDefault(config, 'standardization')
 
-    res = []
     if type(sopts) not in (list, tuple):
         sopts = (sopts, )
     return tuple(sopts)
@@ -770,7 +775,6 @@ def register_multiple_conformers(config=None,
                                           fail_on_duplicate,
                                           confId=conf.GetId())
         res.append((mrn, conf_id))
-
     if not no_verbose:
         print(res)
     return tuple(res)
@@ -895,13 +899,14 @@ def registration_counts(config=None):
     curs = cn.cursor()
     curs.execute(f'select count(*) from {hashTableName}')
     nHashes = curs.fetchone()[0]
+    ret = nHashes
 
     if _lookupWithDefault(config, "registerConformers"):
         curs.execute(f'select count(*) from {conformersTableName}')
         nConfs = curs.fetchone()[0]
-        return nHashes, nConfs
-    else:
-        return nHashes
+        ret = nHashes, nConfs
+    
+    return ret
 
 
 def get_all_registry_numbers(config=None):
@@ -1140,7 +1145,6 @@ def retrieve(config=None,
         else:
             for mrn, confId, molb in res:
                 resDict[(mrn, confId)] = (molb, 'mol')
-
     return resDict
 
 
@@ -1149,7 +1153,7 @@ def _registerMetadata(curs, config):
     dc.update(config)
     dc['standardization'] = _get_standardization_label(dc)
     for k, v in dc.items():
-        if k in ('connection', 'user', 'password'):
+        if k in ('connection', 'user', 'password', 'cacheConnection'):
             continue
         curs.execute(
             _replace_placeholders(
@@ -1265,9 +1269,8 @@ def initdb(config=None):
     response = input("  are you sure? [yes/no]: ")
     if response == 'yes':
         return _initdb(config=config, confirm=True)
-    else:
-        print("cancelled")
-        return False
+    print("cancelled")
+    return False
 
 
 def _check_config(config):

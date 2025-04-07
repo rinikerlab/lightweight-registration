@@ -155,7 +155,7 @@ lwreg can be run in a docker container. ::
 Registering Molecules
 ---------------------
 The default configuration (see above), sets your lwreg instance up in molecule mode. 
-In this case, the registration hash is purely based on hashes calculated from the molecule (no 3D information) using the RDKit.
+In this case, the registration hash is purely based on hashes calculated from the molecular topology (no 2D or 3D information) using the RDKit.
 For more details on the hash calculation, see :ref:`Registration Details`.
 
 Registering Conformers

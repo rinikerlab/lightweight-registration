@@ -26,25 +26,25 @@ lwreg = "lwreg.lwreg:cli"
 
 [tool.tox]
 legacy_tox_ini = """
-    [tox]
-    envlist = py311
-    requires = tox-conda
+[tox]
+envlist = py311
+requires = tox-conda
 
-    [testenv]
-    setenv =
-        CONDA_DLL_SEARCH_MODIFICATION_ENABLE = 1
-    whitelist_externals = python
-    conda_deps =
-        pytest
-    conda_channels =
-        conda-forge
-    commands = 
-        conda install -q -c conda-forge rdkit>=2023.03.1 rdkit-postgresql postgresql psycopg tqdm
-        pip install .
-        # init database cluster
-        initdb -D /tmp/testingdb
-        pg_ctl -D /tmp/testingdb -l /tmp/testingdb_logfile start
-        createdb lwreg_tests
-        # run tests
-        pytest -p no:warnings --basetemp="{envtmpdir}" {posargs}   
+[testenv]
+setenv =
+    CONDA_DLL_SEARCH_MODIFICATION_ENABLE = 1
+whitelist_externals = python
+conda_deps =
+    pytest
+conda_channels =
+    conda-forge
+commands = 
+    conda install -q -c conda-forge rdkit>=2023.03.1 rdkit-postgresql postgresql psycopg tqdm
+    pip install .
+    # init database cluster
+    initdb -D /tmp/testingdb
+    pg_ctl -D /tmp/testingdb -l /tmp/testingdb_logfile start
+    createdb lwreg_tests
+    # run tests
+    pytest -p no:warnings --basetemp="{envtmpdir}" {posargs}   
 """

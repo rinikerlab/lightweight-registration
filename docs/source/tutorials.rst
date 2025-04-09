@@ -56,7 +56,7 @@ In that case, you should always start by retrieving the config from the database
   lwreg.bulk_register(config,ms[1::])
 
   # there should now be 4 molecules in the database
-  utils.get_all_registry_numbers(config)
+  utils.get_all_identifiers(config)
 
   # we can now query the database
   lwreg.query(smiles='Cc1[nH]ncc1[C@H](F)Cl')

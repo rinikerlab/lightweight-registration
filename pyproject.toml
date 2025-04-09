@@ -27,6 +27,7 @@ lwreg = "lwreg.lwreg:cli"
 [tool.tox]
 legacy_tox_ini = """
 [tox]
+isolated_build = True
 envlist = py311
 requires = tox-conda
 

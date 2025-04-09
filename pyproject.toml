@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lwreg"
+version = "0.2.0"
+authors = [
+    { name = "Greg Landrum", email = "glandrum@ethz.ch" },
+    { name = "Jessica Braun", email = "braunje@ethz.ch" }
+]
+description = "lightweight compound registration system"
+readme = "README.md"
+dependencies = [
+    "Click"
+]
+license = "MIT"
+license-files = ["LICENSE"]
+
+[project.urls]
+Homepage = "https://github.com/rinikerlab/lightweight-registration"
+Issues = "https://github.com/rinikerlab/lightweight-registration/issues"
+
+[project.scripts]
+lwreg = "lwreg.lwreg:cli"
+
+

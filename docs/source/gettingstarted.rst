@@ -12,7 +12,7 @@ The identifiers can be used as keys when storing additional data about the chemi
 
 lwreg's Basic Functionality
 ---------------------------
-There are four basic operations provides by the lwreg package that can either by called via the Python API or the command line interface:
+There are four basic operations provided by the lwreg package that can either by called via the Python API or the command line interface:
 
 .. list-table:: Basic operations
    :widths: 10 30
@@ -77,6 +77,7 @@ The configuration file is a JSON file that contains the following information:
     - **registerConformers**: Whether to register conformers.
     - **numConformerDigits**: The number of digits to use when hashing conformer coordinates.
     - **lwregSchema**: The schema name for the lwreg tables (PostgreSQL only).
+    - **cacheConnection**: Whether to cache the connection to the database (default: True).
 
 An example configuration file is shown below:
 
@@ -88,7 +89,8 @@ An example configuration file is shown below:
         "standardization": "fragment",
         "removeHs": 1,
         "useTautomerHashv2": 0,
-        "registerConformers": 0
+        "registerConformers": 0,
+        "cacheConnection": True
     }
 
 If you are using lwreg through the Python API, you can pass the configuration as a dictionary to the lwreg functions.
@@ -101,7 +103,7 @@ There is a set of pre-defined standardization options including:
     - **fragment**: Generates the fragment parent of the molecule.
     - **charge**: Generates the charge parent of the molecule.
     - **tautomer**: Generates the tautomer parent of the molecule.
-    - **super**: Generates the super parent of the molecule.
+    - **super**: Generates the super parent of the molecule (fragment, charge, isotope, stereo, and tautomer parent of the molecule).
     - **canonicalize**: Canonicalizes the orientation of the molecule's 3D conformers (if present).
 
 A user can also define their own standardization options. 
@@ -150,13 +152,19 @@ lwreg can be run in a docker container. ::
     --notebook-dir=/lw-reg --ip='*' --port=8888 \
     --no-browser --allow-root"
 
+Registering Molecules
+---------------------
+The default configuration (see above), sets your lwreg instance up in molecule mode. 
+In this case, the registration hash is purely based on hashes calculated from the molecular topology (no 2D or 3D information) using the RDKit.
+For more details on the hash calculation, see :ref:`Registration Details`.
 
 Registering Conformers
 ----------------------
 When the configuration option :code:`registerConformers` is set to True, lwreg expects that the compounds to be registered will have an associated conformer. 
 The conformers are tracked in a different table than the molecule topologies and expectation is that every molecule registered will have a conformer (it's an error if they don't). 
 It is possible to register multiple conformers for a single molecular structure (topology).
-Note that once a database is created in :code:`registerConformers` mode, it probably should always be used in that mode. 
+Note that once a database is created in :code:`registerConformers` mode, it should always be used in that mode, meaning your :code:`config` object should always have :code:`registerConformers` set to True.
+
 When in :code:`registerConformers` mode, the following behaviour in the API is changed:
 
 - :code:`register()` and :code:`bulk_register()` require molecules to have associated conformers. Both return :code:`(molregno, conf_id)` tuples instead of just :code:`molregno` s.

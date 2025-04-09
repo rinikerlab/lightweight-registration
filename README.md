@@ -3,7 +3,7 @@
 [![Lwreg](https://img.shields.io/badge/DOI-10.1021/acs.jcim.3c00800-blue)](https://pubs.acs.org/doi/10.1021/acs.jcim.4c01133)
 [![ReadTheDocs](https://readthedocs.org/projects/docs/badge/?version=latest)](https://lightweight-registration.readthedocs.io/en/)
 [![RDKit](https://img.shields.io/badge/Powered%20by-RDKit-3838ff.svg?logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAFVBMVEXc3NwUFP8UPP9kZP+MjP+0tP////9ZXZotAAAAAXRSTlMAQObYZgAAAAFiS0dEBmFmuH0AAAAHdElNRQfmAwsPGi+MyC9RAAAAQElEQVQI12NgQABGQUEBMENISUkRLKBsbGwEEhIyBgJFsICLC0iIUdnExcUZwnANQWfApKCK4doRBsKtQFgKAQC5Ww1JEHSEkAAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMi0wMy0xMVQxNToyNjo0NyswMDowMDzr2J4AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjItMDMtMTFUMTU6MjY6NDcrMDA6MDBNtmAiAAAAAElFTkSuQmCC)](https://www.rdkit.org/)
-![TOC Image](https://github.com/rinikerlab/lightweight-registration/blob/feat/docs/Lwreg.png)
+![TOC Image](https://github.com/rinikerlab/lightweight-registration/blob/main/Lwreg.png)
 
 This provides a basic registration system which can be used either as a python
 library or via a command-line interface.

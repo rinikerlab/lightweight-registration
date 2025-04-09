@@ -77,7 +77,7 @@ def configure_from_database(dbname=None,
                             user=None,
                             password=None,
                             lwregSchema=None,
-                            cache_connection=True):
+                            cacheConnection=True):
     """
     Returns a config dict with values from the registration metadata table in the database.
 
@@ -99,7 +99,7 @@ def configure_from_database(dbname=None,
     :param user: the user to connect as (for postgresql)
     :param password: the password to use (for postgresql)
     :param lwregSchema: the schema name to use for the lwreg tables (for postgresql)
-    :param bool cache_connection: Cache connection after retrieveing the config
+    :param bool cacheConnection: Cache connection after retrieveing the config
     :return: A config dictionary with values from the registration metadata table in the database.
     :raises ValueError: If neither dbname nor connection is provided.
     """
@@ -131,7 +131,7 @@ def configure_from_database(dbname=None,
         config['password'] = password
     if lwregSchema is not None:
         config['lwregSchema'] = lwregSchema
-    config["cacheConnection"] = cache_connection
+    config["cacheConnection"] = cacheConnection
     if 'connection' in config:
         cn = config['connection']
     else:
@@ -1265,7 +1265,7 @@ def initdb(config=None):
     """
     Initializes the registration database.
     
-    You will be prompted to confirm this action since this call can destroy any 
+    You will be prompted to confirm this action since this call will destroy any 
     existing information in the registration database.
 
     :param config: Configuration dictionary, defaults to None.

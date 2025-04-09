@@ -1,11 +1,13 @@
+.. _Registration Details:
+
 Registration Details
 =====================
 
 The method for the determination of uniqueness, deciding whether or not two structures are the same, is the core of any chemical registration system. lwreg uses a hash-based approach to identify duplicates. 
 As all comparisons are simply string comparisons, lwreg is a fast approach in any modern database system and does not require any database extensions for handling chemical structures.
 
-Molecule Hash Computation
---------------------------
+Molecule Hash
+--------------
 lwreg makes uses of the `RDKit's RegistrationHash <https://rdkit.org/docs/source/rdkit.Chem.RegistrationHash.html>`_ functionality.
 It consists of seven hash layers:
 
@@ -41,8 +43,8 @@ It consists of seven hash layers:
 
 The registration hash is then a SHA1 hash of all layers computed using Python's hashlib library.
 
-Conformer Hash Computation
----------------------------
+Conformer Hash
+---------------
 
 We use a simple hashing scheme to quickly recognize whether or not a particular conformer has already been seen in the database. The algorithm used for hashing a conformer is:
 
@@ -61,19 +63,17 @@ The Base Tables
 
 Lwreg will create the following tables in the database:
 
-.. list-table:: Lwreg tables
-   :widths: 10 30
-   :header-rows: 1
-
-   * - Table name
-     - Description
-   * - registration_metadata
-     - stores metadata about the registration system
-   * - hashes
-     - fields include: molregno, fullhash, formula, canonical_smiles, no_stereo_smiles, tautomer_hash, no_stereo_tautomer_hash, escape, sgroup_data, rdkitVersion
-   * - orig_data
-     - fields include: molregno, data, datatype, timestamp
-   * - molblocks
-     - fields include: molregno, molblock, standardization
-   * - conformers (only created in conformer mode)
-      - fields include: conf_id, molregno, conformer_hash, molblock
+- **registration_metadata**: 
+    - Stores metadata about the registration system.
+- **hashes**: 
+    - Stores the hashes for each molecule.
+    - Fields: molregno, fullhash, formula, canonical_smiles, no_stereo_smiles, tautomer_hash, no_stereo_tautomer_hash, escape, sgroup_data, rdkitVersion
+- **orig_data**: 
+    - Stores the original data for each molecule.
+    - Fields: molregno, data, datatype, timestamp
+- **molblocks**: 
+    - Stores the molblocks for each molecule.
+    - Fields: molregno, molblock, standardization
+- **conformers** (only created in conformer mode): 
+    - Stores the conformers for each molecule.
+    - Fields: conf_id, molregno, conformer_hash, molblock

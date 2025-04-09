@@ -909,13 +909,14 @@ def registration_counts(config=None):
     return ret
 
 
-def get_all_registry_numbers(config=None):
+def get_all_identifiers(config=None):
     """
-    Returns a tuple with all of the registry numbers (molregnos) in the database.
-    If in conformer mode, it returns the list of all (molregno, conf_id) tuples.
+    Returns a tuple with all of the identifiers in the database.
+    If in molecule mode, it returns a tuple with all of the molregnos in the database.
+    If in conformer mode, it returns a tuple of all (molregno, conf_id) tuples in the database.
 
     :param config: Configuration dictionary.
-    :return: A tuple with all of the registry numbers (molregnos) in the database.
+    :return: A tuple with all of the identifiers in the database.
     """
     if not config:
         config = _configure()

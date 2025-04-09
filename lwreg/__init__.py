@@ -7,7 +7,7 @@
 # which is included in the file LICENSE,
 
 from .utils import initdb, register, query, retrieve, bulk_register, \
-    register_multiple_conformers, registration_counts, get_all_registry_numbers, \
+    register_multiple_conformers, registration_counts, get_all_identifiers, \
         configure_from_database, set_default_config, connect, standardize_mol, \
             RegistrationFailureReasons
 

@@ -84,7 +84,7 @@ Tutorial Notebooks
    Connecting to an existing database and querying for and retrieving registered molecules._
 * `03_registering_conformers.ipynb <https://github.com/rinikerlab/lightweight-registration/blob/main/tutorial/03_registering_conformers.ipynb>`_
    Working with lwreg in conformer mode to store conformers with the molecules.
-* `04_registering_molecules_and_data.ipynb <https://github.com/rinikerlab/lightweight-registration/blob/main/tutorial/04_registering_compounds_and_data.ipynb>`_
+* `04_registering_molecules_and_data.ipynb <https://github.com/rinikerlab/lightweight-registration/blob/main/tutorial/04_registering_molecules_and_data.ipynb>`_
    Storing additional data together with the registered molecules.
 
 Advanced Tutorials

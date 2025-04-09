@@ -62,7 +62,7 @@ class TestLWReg(unittest.TestCase):
         utils._initdb(config=self._config, confirm=True)
 
         self.assertEqual(utils.registration_counts(config=self._config), 0)
-        self.assertEqual(utils.get_all_registry_numbers(config=self._config),
+        self.assertEqual(utils.get_all_identifiers(config=self._config),
                          ())
 
         self.assertEqual(utils.register(smiles='CCC', config=self._config), 1)
@@ -94,7 +94,7 @@ class TestLWReg(unittest.TestCase):
             'sqlite3': (1, 2, 3, 4),
             'postgresql': (1, 2, 6, 7),
         }
-        self.assertEqual(utils.get_all_registry_numbers(config=self._config),
+        self.assertEqual(utils.get_all_identifiers(config=self._config),
                          expected[self._config['dbtype']])
 
     def testGetDelimiter(self):
@@ -751,10 +751,10 @@ class TestRegisterConformers(unittest.TestCase):
         self.assertEqual(utils.registration_counts(config=self._config),
                          (2, 3))
         expected = {
-            'sqlite3': (1, 2),
-            'postgresql': (1, 4),
+            'sqlite3': ((1, 1), (1, 2), (2, 3)),
+            'postgresql': ((1, 1), (1, 2), (4, 4)),
         }
-        self.assertEqual(utils.get_all_registry_numbers(config=self._config),
+        self.assertEqual(utils.get_all_identifiers(config=self._config),
                          expected[self._config['dbtype']])
 
     def testNoConformers(self):

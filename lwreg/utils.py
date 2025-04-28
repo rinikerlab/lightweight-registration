@@ -89,6 +89,7 @@ def configure_from_database(dbname=None,
     nondefault schema when initializing the database, you'll also need to
     provide 'lwregSchema' here.
     If 'dbtype' is not provided, the following heuristics are used:
+
       - if 'dbname' corresponds to an existing file, then sqlite3 is used
       - if 'host' is provided, then postgresql is used
       - otherwise the default dbtype, currently sqlite3, is used
@@ -156,11 +157,11 @@ def configure_from_database(dbname=None,
 
 
 def set_default_config(config):
-    ''' sets the default configuration to be used by the other functions in 
+    ''' Sets the default configuration to be used by the other functions in 
     this module to the configuration object which is passed in
     
-    Arguments:
-    config -- configuration dict
+    :param config: configuration dict
+    :return: None
 
     '''
     global _config
@@ -198,11 +199,10 @@ _dbConfig = None
 
 
 def connect(config):
-    ''' creates a connection to the database and returns it
+    ''' Creates a connection to the database and returns it
     
-    Arguments:
-    config -- configuration dict
-
+    :param config: configuration dict
+    :return: a database connection object (by default this is cached and reused in subsequent calls)
     '''
     global _replace_placeholders
     global _dbtype
@@ -703,15 +703,16 @@ def register_multiple_conformers(config=None,
                                  escape=None,
                                  fail_on_duplicate=True,
                                  no_verbose=True):
-    """ registers all of the conformers of a multi-conformer molecule
+    """ Registers all of the conformers of a multi-conformer molecule
     Using this function only makes sense when registerConformers is enabled.
     
-    Keyword arguments:
-    config     -- configuration dict
-    mol        -- RDKit molecule object (must have at least one conformer)
-    escape     -- the escape layer
-    fail_on_duplicate -- if true then an exception is raised when trying to register a duplicate
-    no_verbose -- if this is False then the registry number will be printed
+    :param config: Configuration dictionary or filename.
+    :param mol: RDKit molecule object (must have at least one conformer).
+    :param escape: The escape layer.
+    :param fail_on_duplicate: If True, an exception is raised when trying to register a duplicate.
+    :param no_verbose: If False, the registry number will be printed.
+    :return: A tuple of (molregno, conf_id) for each conformer registered.
+
     """
     if not config:
         config = _configure()
@@ -792,7 +793,9 @@ def bulk_register(config=None,
     """
     Registers multiple new molecules, assuming they don't already exist, and returns the new registry numbers (molregno). 
     ``RegistrationFailureReasons.DUPLICATE`` if ``fail_on_duplicate`` is True and a molecule is a duplicate ``RegistrationFailureReasons.PARSE_FAILURE`` if there was a problem processing the molecule. 
+    
     Only one of the molecule format objects should be provided.
+    
     :param config: Configuration dict or filename.
     :param mols: An iterable of RDKit molecule objects.
     :param sdfile: SDF filename.
@@ -883,13 +886,13 @@ def _getConfIdsForMolregnos(ids, config):
 
 
 def registration_counts(config=None):
-    """ returns the number of entries in the registration database
+    """ Returns the number of entries in the registration database
 
     the result is the number of molecules if registerConformers is not set,
     and a tuple of (number of molecules, number of conformers) if it is
 
-    Keyword arguments:
-    config     -- configuration dict
+    :param config: Configuration dictionary.
+    :return: either the number of molecule in the database or a 2-tuple withe (number of molecules, number of conformers).
     """
     if not config:
         config = _configure()
@@ -906,7 +909,7 @@ def registration_counts(config=None):
         curs.execute(f'select count(*) from {conformersTableName}')
         nConfs = curs.fetchone()[0]
         ret = nHashes, nConfs
-    
+
     return ret
 
 
@@ -936,7 +939,7 @@ def get_all_identifiers(config=None):
         curs.execute(f'select molregno from {hashTableName}')
         res = curs.fetchall()
         return tuple(sorted(x[0] for x in res))
-    
+
 
 def get_all_registry_numbers(config=None):
     """
@@ -949,8 +952,7 @@ def get_all_registry_numbers(config=None):
         "get_all_registry_numbers() is deprecated and will be removed in a future version. "
         "Use get_all_identifiers() instead.",
         DeprecationWarning,
-        stacklevel=2
-    )
+        stacklevel=2)
     if not config:
         config = _configure()
     elif isinstance(config, str):

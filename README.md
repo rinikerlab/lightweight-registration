@@ -46,7 +46,7 @@ You can then verify that the install worked by doing:
 
 If you want to use PostgreSQL as the database for lwreg, then you will also need to install the python connector for PostgreSQL:
 ```
-% conda install -c conda-forge psycopg2
+% conda install -c conda-forge psycopg
 ```
 
 For further information, consult the INSTALL.md file.

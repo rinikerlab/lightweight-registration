@@ -75,7 +75,9 @@ def query(**kwargs):
     "--smiles",
     default=None,
 )
-@click.option("--fail-on-duplicate", default=True, is_flag=True)
+@click.option("--fail-on-duplicate/--no-fail-on-duplicate",
+              default=True,
+              is_flag=True)
 @click.option(
     "--escape",
     default=None,

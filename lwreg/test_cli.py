@@ -60,7 +60,7 @@ class TestLWRegCLI(unittest.TestCase):
 
         result = runner.invoke(lwreg.cli, [
             f'--config={self.configFile}', 'register', '--smiles=CCC',
-            '--fail-on-duplicate'
+            '--no-fail-on-duplicate'
         ])
         self.assertEqual(result.exit_code, 0)
         self.assertEqual(result.output.strip(), '1')

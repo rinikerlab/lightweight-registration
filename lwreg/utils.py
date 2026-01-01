@@ -1,4 +1,4 @@
-# Copyright (C) 2022-2024 Greg Landrum and other lwreg contributors
+# Copyright (C) 2022-2026 ETH Zurich, Greg Landrum, and other lwreg contributors
 # All rights reserved
 # This file is part of lwreg.
 # The contents are covered by the terms of the MIT license

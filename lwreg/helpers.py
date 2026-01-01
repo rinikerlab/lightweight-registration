@@ -1,3 +1,4 @@
+# Copyright (C) 2022-2026 ETH Zurich, Jessica Braun, and other lwreg contributors
 from . import utils
 import json
 

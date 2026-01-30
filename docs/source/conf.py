@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.abspath('../../'))
 # -- Project information -----------------------------------------------------
 
 project = 'lightweight-registration'
-copyright = '2025, Jessica Braun and Greg Landrum'
+copyright = '2025-2026, ETH Zürich, Jessica Braun and Greg Landrum'
 author = 'Jessica Braun and Greg Landrum'
 
 # -- General configuration ---------------------------------------------------

@@ -215,10 +215,7 @@ def connect(config):
     global conformersTableName
     global lwregSchema
 
-    if not config:
-        config = _configure()
-    elif isinstance(config, str):
-        config = _configure(filename=config)
+    config = _check_config(config)
 
     cn = config.get('connection', None)
     if not cn and _dbConnection is not None and _dbConfig == config:
@@ -310,10 +307,7 @@ def _parse_mol(mol=None, molfile=None, molblock=None, smiles=None, config={}):
 
 
 def _get_standardization_list(config):
-    if not config:
-        config = _configure()
-    elif isinstance(config, str):
-        config = _configure(filename=config)
+    config = _check_config(config)
     sopts = _lookupWithDefault(config, 'standardization')
 
     if type(sopts) not in (list, tuple):
@@ -349,12 +343,7 @@ def standardize_mol(mol, config=None):
     Keyword arguments:
     config -- configuration dict
     """
-    if not config:
-        config = _configure()
-    elif isinstance(config, str):
-        config = _configure(filename=config)
-
-    _check_config(config)
+    config = _check_config(config)
 
     sopts = _get_standardization_list(config)
     for sopt in sopts:
@@ -390,12 +379,7 @@ def hash_mol(mol, escape=None, config=None):
     escape -- the escape layer
     config -- configuration dict
     """
-    if not config:
-        config = _configure()
-    elif isinstance(config, str):
-        config = _configure(filename=config)
-
-    _check_config(config)
+    config = _check_config(config)
 
     layers = RegistrationHash.GetMolLayers(
         mol,
@@ -661,13 +645,7 @@ def register(config=None,
     :raises RegistrationFailureReasons.PARSE_FAILURE: If molecule parsing fails.
     :raises RegistrationFailureReasons.FILTERED: If molecule is filtered out.
     """
-
-    if not config:
-        config = _configure()
-    elif isinstance(config, str):
-        config = _configure(filename=config)
-
-    _check_config(config)
+    config = _check_config(config)
 
     tpl = _parse_mol(mol=mol,
                      molfile=molfile,
@@ -698,6 +676,56 @@ def register(config=None,
     return res
 
 
+def _register_multiple_conformers(tpl, escape, cn, curs, config,
+                                  fail_on_duplicate):
+    # start by registering the first conformer in order to
+    # get the molregno that we'll use later
+    mrns = {}
+    rc = []
+    smiToCache = {}
+    res = []
+    for conf in tpl.mol.GetConformers():
+        Chem.AssignStereochemistryFrom3D(tpl.mol, conf.GetId())
+        smi = Chem.MolToSmiles(tpl.mol)
+        if smi not in mrns:
+            try:
+                mrn, conf_id = _register_mol(tpl,
+                                             escape,
+                                             cn,
+                                             curs,
+                                             config,
+                                             fail_on_duplicate,
+                                             confId=conf.GetId(),
+                                             molCache=rc)
+            except _violations:
+                res.append(RegistrationFailureReasons.DUPLICATE)
+                continue
+            if mrn is None:
+                res.append(RegistrationFailureReasons.FILTERED)
+                continue
+            mrns[smi] = mrn
+            smiToCache[smi] = len(rc) - 1
+            res.append((mrn, conf_id))
+        else:
+            sMol = rc[smiToCache[smi]]
+            mrn = mrns[smi]
+            molb = Chem.MolToV3KMolBlock(sMol, confId=conf.GetId())
+            try:
+                conf_id = _register_one_conformer(mrn,
+                                                  sMol,
+                                                  molb,
+                                                  cn,
+                                                  curs,
+                                                  config,
+                                                  fail_on_duplicate,
+                                                  confId=conf.GetId())
+            except _violations:
+                res.append(RegistrationFailureReasons.DUPLICATE)
+                continue
+            res.append((mrn, conf_id))
+    return tuple(res)
+
+
 def register_multiple_conformers(config=None,
                                  mol=None,
                                  escape=None,
@@ -709,17 +737,12 @@ def register_multiple_conformers(config=None,
     :param config: Configuration dictionary or filename.
     :param mol: RDKit molecule object (must have at least one conformer).
     :param escape: The escape layer.
-    :param fail_on_duplicate: If True, an exception is raised when trying to register a duplicate.
+    :param fail_on_duplicate: If True, ``RegistrationFailureReasons.DUPLICATE`` will be returned for each already-registered conformer, otherwise the already existing structure ID will be returned.
     :param no_verbose: If False, the registry number will be printed.
     :return: A tuple of (molregno, conf_id) for each conformer registered.
 
     """
-    if not config:
-        config = _configure()
-    elif isinstance(config, str):
-        config = _configure(filename=config)
-
-    _check_config(config)
+    config = _check_config(config)
     if not _lookupWithDefault(config, "registerConformers"):
         raise ValueError(
             'register_multiple_conformers can only be used when registerConformers is enabled'
@@ -731,55 +754,15 @@ def register_multiple_conformers(config=None,
 
     cn = connect(config)
     curs = cn.cursor()
-
-    # start by registering the first conformer in order to
-    # get the molregno that we'll use later
-    rc = []
-    mrns = {}
-    confsDone = set()
-    confMrns = []
-    res = []
-    for i, conf in enumerate(tpl.mol.GetConformers()):
-        Chem.AssignStereochemistryFrom3D(tpl.mol, conf.GetId())
-        smi = Chem.MolToSmiles(tpl.mol)
-        if smi not in mrns:
-            mrn, conf_id = _register_mol(tpl,
-                                         escape,
-                                         cn,
-                                         curs,
-                                         config,
-                                         fail_on_duplicate,
-                                         confId=conf.GetId(),
-                                         molCache=rc)
-            if mrn is not None:
-                mrns[smi] = mrn
-                confsDone.add(i)
-                res.append((mrn, conf_id))
-        else:
-            mrn = mrns[smi]
-        confMrns.append(mrn)
-    if not len(res):
-        return RegistrationFailureReasons.FILTERED
-
-    sMol = rc[0]
-    for i, conf in enumerate(sMol.GetConformers()):
-        if i in confsDone:
-            # we already registered the first conformer
-            continue
-        molb = Chem.MolToV3KMolBlock(sMol, confId=conf.GetId())
-        mrn = confMrns[i]
-        conf_id = _register_one_conformer(mrn,
-                                          sMol,
-                                          molb,
-                                          cn,
-                                          curs,
-                                          config,
-                                          fail_on_duplicate,
-                                          confId=conf.GetId())
-        res.append((mrn, conf_id))
+    res = _register_multiple_conformers(tpl=tpl,
+                                        escape=escape,
+                                        cn=cn,
+                                        curs=curs,
+                                        config=config,
+                                        fail_on_duplicate=fail_on_duplicate)
     if not no_verbose:
         print(res)
-    return tuple(res)
+    return res
 
 
 def bulk_register(config=None,
@@ -806,12 +789,6 @@ def bulk_register(config=None,
     :param show_progress: If True, then a progress bar will be shown for the molecules.
     :return: A tuple containing the registry numbers or failure reasons for each molecule.
     """
-
-    if not config:
-        config = _configure()
-    elif isinstance(config, str):
-        config = _configure(filename=config)
-
     if mols:
         pass
     elif sdfile:
@@ -823,7 +800,7 @@ def bulk_register(config=None,
     else:
         raise ValueError('No input molecules provided!')
 
-    _check_config(config)
+    config = _check_config(config)
 
     res = []
     cn = connect(config)
@@ -837,35 +814,44 @@ def bulk_register(config=None,
         f"select value from {registrationMetadataTableName} where key='rdkitVersion'"
     )
     def_rdkit_version_label = curs.fetchone()[0]
+
+    _registerConformers = _lookupWithDefault(config, "registerConformers")
     for mol in tqdm(mols, disable=not show_progress):
         if mol is None:
             res.append(RegistrationFailureReasons.PARSE_FAILURE)
             continue
         tpl = _parse_mol(mol=mol, config=config)
-        try:
-            if escape_property is not None and mol.HasProp(escape_property):
-                escape = mol.GetProp(escape_property)
-            else:
-                escape = None
-            mrn, conf_id = _register_mol(
-                tpl,
-                escape,
-                cn,
-                curs,
-                config,
-                fail_on_duplicate,
-                def_rdkit_version_label=def_rdkit_version_label,
-                def_std_label=def_std_label)
+        if escape_property is not None and mol.HasProp(escape_property):
+            escape = mol.GetProp(escape_property)
+        else:
+            escape = None
+        if _registerConformers:
+            res.append(
+                _register_multiple_conformers(
+                    tpl=tpl,
+                    escape=escape,
+                    cn=cn,
+                    curs=curs,
+                    config=config,
+                    fail_on_duplicate=fail_on_duplicate))
+        else:
+            try:
+                mrn, _ = _register_mol(
+                    tpl,
+                    escape,
+                    cn,
+                    curs,
+                    config,
+                    fail_on_duplicate,
+                    def_rdkit_version_label=def_rdkit_version_label,
+                    def_std_label=def_std_label)
 
+            except _violations:
+                res.append(RegistrationFailureReasons.DUPLICATE)
+                continue
             if mrn is None:
                 mrn = RegistrationFailureReasons.FILTERED
-
-            if not _lookupWithDefault(config, "registerConformers"):
-                res.append(mrn)
-            else:
-                res.append((mrn, conf_id))
-        except _violations:
-            res.append(RegistrationFailureReasons.DUPLICATE)
+            res.append(mrn)
     if not no_verbose:
         print(res)
     return tuple(res)
@@ -894,10 +880,7 @@ def registration_counts(config=None):
     :param config: Configuration dictionary.
     :return: either the number of molecule in the database or a 2-tuple withe (number of molecules, number of conformers).
     """
-    if not config:
-        config = _configure()
-    elif isinstance(config, str):
-        config = _configure(filename=config)
+    config = _check_config(config)
 
     cn = connect(config)
     curs = cn.cursor()
@@ -922,11 +905,7 @@ def get_all_identifiers(config=None):
     :param config: Configuration dictionary.
     :return: A tuple with all of the identifiers in the database.
     """
-    if not config:
-        config = _configure()
-    elif isinstance(config, str):
-        config = _configure(filename=config)
-
+    config = _check_config(config)
     if _lookupWithDefault(config, "registerConformers"):
         cn = connect(config)
         curs = cn.cursor()
@@ -953,11 +932,7 @@ def get_all_registry_numbers(config=None):
         "Use get_all_identifiers() instead.",
         DeprecationWarning,
         stacklevel=2)
-    if not config:
-        config = _configure()
-    elif isinstance(config, str):
-        config = _configure(filename=config)
-
+    config = _check_config(config)
     cn = connect(config)
     curs = cn.cursor()
     curs.execute(f'select molregno from {hashTableName}')
@@ -992,12 +967,7 @@ def query(config=None,
     :raises ValueError: If ids are provided but registerConformers is not enabled.
     :return: List of registry numbers or list of (molregno, conf_id) tuples.
     """
-    if not config:
-        config = _configure()
-    elif isinstance(config, str):
-        config = _configure(filename=config)
-
-    _check_config(config)
+    config = _check_config(config)
 
     if ids is not None:
         if not _lookupWithDefault(config, "registerConformers"):
@@ -1099,13 +1069,7 @@ def retrieve(config=None,
     :param bool no_verbose: If this is False, then the registry number will be printed.
     :return: A dictionary of (data, format) 2-tuples with molregnos as keys.
     """
-
-    if not config:
-        config = _configure()
-    elif isinstance(config, str):
-        config = _configure(filename=config)
-
-    _check_config(config)
+    config = _check_config(config)
 
     registerConformers = _lookupWithDefault(config, "registerConformers")
 
@@ -1214,12 +1178,7 @@ def _initdb(config=None, confirm=False):
     """
     if not confirm:
         return
-    if not config:
-        config = _configure()
-    elif isinstance(config, str):
-        config = _configure(filename=config)
-
-    _check_config(config)
+    config = _check_config(config)
 
     cn = connect(config)
     curs = cn.cursor()
@@ -1318,12 +1277,11 @@ def _check_config(config):
         is raised.
 
     '''
-
     if not config:
         config = _configure()
     elif isinstance(config, str):
         config = _configure(filename=config)
-
     if config.get("dbtype", "sqlite3") not in ('sqlite3', 'postgresql'):
         raise ValueError(
             "Possible values for dbtype are sqlite3 and postgresql")
+    return config

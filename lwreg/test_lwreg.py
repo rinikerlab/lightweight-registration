@@ -3,14 +3,12 @@
 # This file is part of lwreg.
 # The contents are covered by the terms of the MIT license
 # which is included in the file LICENSE,
-import os
 import time
 from datetime import datetime, timedelta
 import unittest
 import sqlite3
 from rdkit import Chem
 from rdkit.Chem import rdDistGeom
-from rdkit.Chem import rdMolTransforms
 import random
 import copy
 import tempfile
@@ -62,8 +60,7 @@ class TestLWReg(unittest.TestCase):
         utils._initdb(config=self._config, confirm=True)
 
         self.assertEqual(utils.registration_counts(config=self._config), 0)
-        self.assertEqual(utils.get_all_identifiers(config=self._config),
-                         ())
+        self.assertEqual(utils.get_all_identifiers(config=self._config), ())
 
         self.assertEqual(utils.register(smiles='CCC', config=self._config), 1)
         self.assertEqual(utils.register(smiles='CCCO', config=self._config), 2)
@@ -739,8 +736,8 @@ class TestRegisterConformers(unittest.TestCase):
         random.shuffle(aorder)
         nmol = Chem.RenumberAtoms(self._mol1, aorder)
         expected = {
-            'sqlite3': ((1, 1), (1, 2), (1, 1), (2, 3)),
-            'postgresql': ((1, 1), (1, 2), (1, 1), (4, 4)),
+            'sqlite3': (((1, 1), ), ((1, 2), ), ((1, 1), ), ((2, 3), )),
+            'postgresql': (((1, 1), ), ((1, 2), ), ((1, 1), ), ((4, 4), )),
         }
         self.assertEqual(
             utils.bulk_register(mols=(self._mol1, self._mol2, nmol,
@@ -756,6 +753,22 @@ class TestRegisterConformers(unittest.TestCase):
         }
         self.assertEqual(utils.get_all_identifiers(config=self._config),
                          expected[self._config['dbtype']])
+
+        # Check that FailureReason is returned when fail_on_duplicate=True
+        utils._initdb(config=self._config, confirm=True)
+        expected = {
+            'sqlite3': (((1, 1), ), ((1, 2), ),
+                        (RegistrationFailureReasons.DUPLICATE, ), ((2, 3), )),
+            'postgresql':
+            (((1, 1), ), ((1, 2), ), (RegistrationFailureReasons.DUPLICATE, ),
+             ((4, 4), )),
+        }
+        self.assertTrue(
+            utils.bulk_register(mols=(self._mol1, self._mol2, nmol,
+                                      self._mol3),
+                                fail_on_duplicate=True,
+                                config=self._config),
+            expected[self._config['dbtype']])
 
     def testNoConformers(self):
         utils._initdb(config=self._config, confirm=True)
@@ -789,7 +802,7 @@ class TestRegisterConformers(unittest.TestCase):
                                                   config=self._config)
         self.assertEqual(len(rres), 11)
         self.assertEqual(len(set(rres)), 10)
-        self.assertEqual(len(set([mrn for mrn, cid in rres])), 1)
+        self.assertEqual(len(set([mrn for mrn, _ in rres])), 1)
 
         # make sure we can add more conformers:
         mol2 = Chem.Mol(mol)
@@ -800,81 +813,126 @@ class TestRegisterConformers(unittest.TestCase):
                                                   config=self._config)
         self.assertEqual(len(rres), 10)
         self.assertEqual(len(set(rres)), 10)
-        self.assertEqual(len(set([mrn for mrn, cid in rres])), 1)
+        self.assertEqual(len(set([mrn for mrn, _ in rres])), 1)
 
         # make sure we can still fail on duplicate conformers:
         utils._initdb(config=self._config, confirm=True)
-        with self.assertRaises(self.integrityError):
+        self.assertIn(
+            RegistrationFailureReasons.DUPLICATE,
             utils.register_multiple_conformers(mol=mol,
                                                fail_on_duplicate=True,
-                                               config=self._config)
+                                               config=self._config))
+
+    def testBulkMultiConfMolecule(self):
+        utils._initdb(config=self._config, confirm=True)
+
+        mol1 = Chem.Mol(self._mol1)
+        cids = rdDistGeom.EmbedMultipleConfs(mol1, 10, randomSeed=0xf00d)
+        self.assertEqual(len(cids), 10)
+        
+        mol2 = Chem.Mol(self._mol1)
+        cids = rdDistGeom.EmbedMultipleConfs(mol2, 10, randomSeed=0xf00d)
+        self.assertEqual(len(cids), 10)
+
+        mol3 = Chem.Mol(self._mol3)
+        cids = rdDistGeom.EmbedMultipleConfs(mol3, 10, randomSeed=0xf00d)
+        self.assertEqual(len(cids), 10)
+
+        mols = (mol1, mol2, mol3)
+        rres = utils.bulk_register(mols=mols,
+                                   fail_on_duplicate=False,
+                                   config=self._config)
+
+        # Get one tuple of tuples per molecule
+        self.assertEqual(len(rres), 3)
+
+        # Expect mol2 should return the same as mol1
+        self.assertEqual(rres[0], rres[1])
+
+        # Check the entries for every mol
+        for res in rres:
+            self.assertEqual(len(res), 10)
+            self.assertEqual(len(set(res)), 10)
+        self.assertEqual(len(set([mrn for res in rres for mrn, _ in res])), 2)
+
+        utils._initdb(config=self._config, confirm=True)
+        rres = utils.bulk_register(mols=mols,
+                                   fail_on_duplicate=True,
+                                   config=self._config)
+        for res in rres:
+            self.assertEqual(len(res), 10)
+
+        # Check for the returned Failure cauases on the duplicate conformers
+        self.assertEqual(set(rres[1]),
+                         {RegistrationFailureReasons.DUPLICATE})
+        self.assertEqual(
+            list(rres[1]).count(RegistrationFailureReasons.DUPLICATE), 10)
 
     def testConformerQuery(self):
         ''' querying using a molecule which has conformers '''
+        mols = (self._mol1, self._mol3)
+
         utils._initdb(config=self._config, confirm=True)
-        regids = utils.bulk_register(mols=(self._mol1, self._mol3),
-                                     config=self._config)
-        self.assertEqual(
-            sorted(utils.query(mol=self._mol1, config=self._config)),
-            [regids[0]])
+        regids = utils.bulk_register(mols=mols, config=self._config)
+
+        for i, m in enumerate(mols):
+            self.assertEqual(sorted(utils.query(mol=m, config=self._config)),
+                             [regids[i][0]])
+
         # matches topology, but not conformer
         self.assertEqual(
             sorted(utils.query(mol=self._mol2, config=self._config)), [])
-        self.assertEqual(
-            sorted(utils.query(mol=self._mol3, config=self._config)),
-            [regids[1]])
 
         # query with no conformer
         qm = Chem.Mol(self._mol1)
         qm.RemoveAllConformers()
         self.assertEqual(sorted(utils.query(mol=qm, config=self._config)),
-                         [regids[0][0]])
+                         [regids[0][0][0]])  # 1st mol, 1st conformer, mrn
 
     def testConformerRetrieve(self):
         ''' querying using a molecule which has conformers '''
         utils._initdb(config=self._config, confirm=True)
-        regids = utils.bulk_register(mols=(self._mol1, self._mol2, self._mol3),
-                                     config=self._config)
+        mols = (self._mol1, self._mol2, self._mol3)
+        regids = utils.bulk_register(mols=mols, config=self._config)
 
-        res = utils.retrieve(ids=(regids[0], regids[2]), config=self._config)
-        self.assertEqual(len(res), 2)
-        self.assertTrue(regids[0] in res)
-        self.assertTrue(regids[2] in res)
-        self.assertIn('M  END', res[regids[0]][0])
-        self.assertEqual(res[regids[0]][1], 'mol')
-        self.assertIn('M  END', res[regids[2]][0])
-        self.assertEqual(res[regids[2]][1], 'mol')
+        res = utils.retrieve(ids=(regids[0][0], regids[2][0]),
+                             config=self._config)
+        self.assertTrue(len(res), 2)
+        mrns = []
+        for i in (0, 2):
+            self.assertIn(regids[i][0], res)
+            self.assertIn('M  END', res[regids[i][0]][0])
+            self.assertIn('mol', res[regids[i][0]][1])
+            mrn = regids[i][0][0]
 
-        # query with just molregnos... then we get back the same thing as if we
-        # were not in conformer mode.
-        mrn0 = regids[0][0]
-        mrn2 = regids[2][0]
+            # Query with just molregno... excpect to get the same thing as if we
+            # were not in conformer mode.
+            mres = utils.retrieve(id=mrn, config=self._config)
+            self.assertIn(mrn, mres)
+            self.assertIn('M  END', mres[mrn][0])
+            mrns.append(mrn)
 
-        res = utils.retrieve(id=mrn0, config=self._config)
-        self.assertIn(mrn0, res)
-        self.assertIn('M  END', res[mrn0][0])
+        res = utils.retrieve(ids=tuple(mrns), config=self._config)
+        self.assertTrue(len(res), 2)
+        for mrn in mrns:
+            self.assertIn(mrn, res)
+            self.assertIn('M  END', res[mrn][0])
+            self.assertEqual('mol', res[mrn][1])
 
-        res = utils.retrieve(ids=(mrn0, mrn2), config=self._config)
-        self.assertEqual(len(res), 2)
-        self.assertTrue(mrn0 in res)
-        self.assertTrue(mrn2 in res)
-        self.assertIn('M  END', res[mrn0][0])
-        self.assertEqual(res[mrn0][1], 'mol')
-        self.assertIn('M  END', res[mrn2][0])
-        self.assertEqual(res[mrn2][1], 'mol')
-
-        res = utils.retrieve(ids=(mrn0, mrn2),
+        res = utils.retrieve(ids=tuple(mrns),
                              config=self._config,
                              as_hashes=True)
-        self.assertIn(mrn0, res)
-        self.assertIn(mrn2, res)
-        self.assertIn('fullhash', res[mrn0])
+        for mrn in mrns:
+            self.assertIn(mrn, res)
+            self.assertIn('fullhash', res[mrn])
 
     def testConformerQueryById(self):
         utils._initdb(config=self._config, confirm=True)
         regids = utils.bulk_register(mols=(self._mol1, self._mol2, self._mol3),
                                      config=self._config)
-        mrns, cids = zip(*regids)
+
+        mrns = [entry[0] for molentry in regids for entry in molentry]
+
         self.assertEqual(
             sorted(utils.query(ids=mrns[0:1], config=self._config)), [(1, 1),
                                                                       (1, 2)])
@@ -1006,9 +1064,11 @@ class TestRegisterConformers(unittest.TestCase):
             pi = conf.GetAtomPosition(i)
             conf.SetAtomPosition(i, (pi.x + 0.5, pi.y - 0.3, pi.z + 1.5))
         cp.AddConformer(self._mol1.GetConformer(), assignId=True)
-        self.assertRaises(
-            self.integrityError, lambda: utils.register_multiple_conformers(
-                mol=cp, fail_on_duplicate=True, config=cfg))
+        self.assertIn(
+            RegistrationFailureReasons.DUPLICATE,
+            utils.register_multiple_conformers(mol=cp,
+                                               fail_on_duplicate=True,
+                                               config=cfg))
 
 
 @unittest.skipIf(psycopg is None, "skipping postgresql tests")

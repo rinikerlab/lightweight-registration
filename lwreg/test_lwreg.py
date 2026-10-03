@@ -38,6 +38,11 @@ if psycopg:
         # server not running
         psycopg = None
 
+try:
+    import duckdb
+except ImportError:
+    duckdb = None
+
 
 class TestLWReg(unittest.TestCase):
     integrityError = sqlite3.IntegrityError
@@ -90,6 +95,7 @@ class TestLWReg(unittest.TestCase):
         expected = {
             'sqlite3': (1, 2, 3, 4),
             'postgresql': (1, 2, 6, 7),
+            'duckdb': (1, 2, 6, 7),
         }
         self.assertEqual(utils.get_all_identifiers(config=self._config),
                          expected[self._config['dbtype']])
@@ -430,7 +436,11 @@ M  END
         curs = None
         timestamps = []
         for row in d:
-            timestamps.append(datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S"))
+            if type(row[1]) is datetime:
+                timestamps.append(row[1])
+            else:
+                timestamps.append(
+                    datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S"))
         self.assertEqual(timestamps[1] - timestamps[0] > timedelta(0), True)
 
     def testConfigFromDatabase(self):
@@ -468,7 +478,7 @@ M  END
 
     def testConfigFromDatabaseWithoutDbType(self):
         # this test only makes sense for sqlite
-        if self._config['dbtype'] == 'postgresql':
+        if self._config['dbtype'] != 'sqlite3':
             return
         tmpfile = tempfile.NamedTemporaryFile()
         tmpfile.close()
@@ -599,6 +609,58 @@ class TestLWRegPSQL(TestLWReg):
         cn.rollback()
 
 
+@unittest.skipIf(duckdb is None, "skipping duckdb tests")
+class TestLWRegDuckDB(TestLWReg):
+    integrityError = duckdb.IntegrityError if duckdb else None
+
+    def setUp(self):
+        self._config = utils.defaultConfig()
+        self._config['dbname'] = 'lwreg_tests.duck'
+        self._config['dbtype'] = 'duckdb'
+
+    def testConfigFromDatabaseWithoutDbType(self):
+        tmpfile = tempfile.NamedTemporaryFile()
+        tmpfile.close()
+        lconfig = self._config.copy()
+        if 'connection' in lconfig:
+            del lconfig['connection']
+        lconfig['dbname'] = tmpfile.name
+        lconfig['standardization'] = 'charge'
+        utils._initdb(config=lconfig, confirm=True)
+        self.assertEqual(
+            utils.register(smiles='CCC[O-].[Na+]', config=lconfig), 1)
+        self.assertEqual(
+            utils.register(smiles='CCC(=O)[O-].[Na+]', config=lconfig), 2)
+        self.assertEqual(utils.registration_counts(config=lconfig), 2)
+        nconfig = utils.configure_from_database(
+            connection=None,
+            dbname=lconfig['dbname'],
+            dbtype=None,
+            lwregSchema=lconfig['lwregSchema'])
+        print(lconfig)
+        print(nconfig)
+        self.assertEqual(nconfig['dbtype'], 'duckdb')
+        self.assertEqual(nconfig, lconfig)
+
+    def testDbIntegrityConstraints(self):
+        cfg = self._config
+        utils.set_default_config(cfg)
+        utils._initdb(confirm=True)
+        self.assertEqual(utils.register(smiles='CCO'), 1)
+        self.assertEqual(utils.register(smiles='CCOC'), 2)
+        cn = utils.connect(cfg)
+        curs = cn.cursor()
+
+        self.assertRaises(
+            duckdb.ConstraintException, lambda: curs.execute(
+                "insert into orig_data (molregno, data, datatype) values (4, 'foo', 'bar')"
+            ))
+
+        self.assertRaises(
+            duckdb.ConstraintException, lambda: curs.execute(
+                "insert into molblocks values (4, 'foo', 'bar')"))
+
+
 @unittest.skipIf(psycopg is None, "skipping postgresql tests")
 class TestLWRegPSQLWithSchema(TestLWRegPSQL):
 
@@ -606,6 +668,21 @@ class TestLWRegPSQLWithSchema(TestLWRegPSQL):
         self._config = utils.defaultConfig()
         self._config['dbname'] = 'lwreg_tests'
         self._config['dbtype'] = 'postgresql'
+        self._config['lwregSchema'] = 'lwreg'
+
+    def testSchema(self):
+        utils._initdb(config=self._config, confirm=True)
+        self.assertEqual(utils.registrationMetadataTableName,
+                         'lwreg.registration_metadata')
+
+
+@unittest.skipIf(duckdb is None, "skipping duckdb tests")
+class TestLWRegDuckDBWithSchema(TestLWRegDuckDB):
+
+    def setUp(self):
+        self._config = utils.defaultConfig()
+        self._config['dbname'] = 'lwreg_tests.duckdb'
+        self._config['dbtype'] = 'duckdb'
         self._config['lwregSchema'] = 'lwreg'
 
     def testSchema(self):
@@ -829,7 +906,7 @@ class TestRegisterConformers(unittest.TestCase):
         mol1 = Chem.Mol(self._mol1)
         cids = rdDistGeom.EmbedMultipleConfs(mol1, 10, randomSeed=0xf00d)
         self.assertEqual(len(cids), 10)
-        
+
         mol2 = Chem.Mol(self._mol1)
         cids = rdDistGeom.EmbedMultipleConfs(mol2, 10, randomSeed=0xf00d)
         self.assertEqual(len(cids), 10)
@@ -863,8 +940,7 @@ class TestRegisterConformers(unittest.TestCase):
             self.assertEqual(len(res), 10)
 
         # Check for the returned Failure cauases on the duplicate conformers
-        self.assertEqual(set(rres[1]),
-                         {RegistrationFailureReasons.DUPLICATE})
+        self.assertEqual(set(rres[1]), {RegistrationFailureReasons.DUPLICATE})
         self.assertEqual(
             list(rres[1]).count(RegistrationFailureReasons.DUPLICATE), 10)
 

@@ -20,13 +20,20 @@ from tqdm import tqdm
 import base64
 import warnings
 
-_violations = (sqlite3.IntegrityError, )
+_violations = [sqlite3.IntegrityError]
 try:
     import psycopg
-    _violations = (sqlite3.IntegrityError, psycopg.errors.UniqueViolation)
+    _violations.append(psycopg.errors.UniqueViolation)
 except ImportError:
     psycopg = None
 
+try:
+    import duckdb
+    _violations.append(duckdb.ConstraintException)
+except ImportError:
+    duckdb = None
+
+_violations = tuple(_violations)
 from collections import namedtuple
 
 standardizationOptions = {
@@ -119,8 +126,22 @@ def configure_from_database(dbname=None,
         config['dbtype'] = dbtype
     else:
         if os.path.exists(dbname):
-            # if the db is a file, then we'll assume sqlite
-            config['dbtype'] = 'sqlite3'
+            # if we have duckdb installed and the path is non-empty,
+            # we have to check if the file is duckdb or sqlite3:
+            if duckdb is not None and os.path.getsize(dbname) > 0:
+                cn = sqlite3.connect(dbname)
+                curs = cn.cursor()
+                try:
+                    curs.execute('PRAGMA quick_check')
+                    config['dbtype'] = 'sqlite3'
+                except sqlite3.DatabaseError:
+                    import traceback
+                    traceback.print_exc()
+                    config['dbtype'] = 'duckdb'
+                cn = None
+            else:
+                # we'll assume sqlite
+                config['dbtype'] = 'sqlite3'
         elif host is not None:
             # if they provided a host, it's probably postgresql
             config['dbtype'] = 'postgresql'
@@ -193,6 +214,7 @@ _baseorigDataTableName = 'orig_data'
 _basehashTableName = 'hashes'
 _basemolblocksTableName = 'molblocks'
 _baseconformersTableName = 'conformers'
+_baseIdSequenceName = 'id_sequence'
 
 _dbConnection = None
 _dbConfig = None
@@ -214,6 +236,7 @@ def connect(config):
     global molblocksTableName
     global conformersTableName
     global lwregSchema
+    global idSequenceName
 
     config = _check_config(config)
 
@@ -234,10 +257,13 @@ def connect(config):
             cn = psycopg.connect(
                 f'''host={config.get("host","''")} dbname={dbnm} user={config.get("user","''")} password={config.get("password","''")}'''
             )
-
+        elif dbtype == "duckdb":
+            if duckdb is None:
+                raise ValueError("duckdb package not installed")
+            cn = duckdb.connect(database=dbnm)
     schemaBase = ''
     lwregSchema = ''
-    if dbtype == 'postgresql':
+    if dbtype in ('postgresql', 'duckdb'):
         lwregSchema = config.get('lwregSchema', '')
         if lwregSchema:
             schemaBase = config['lwregSchema'] + '.'
@@ -246,6 +272,7 @@ def connect(config):
     hashTableName = schemaBase + _basehashTableName
     molblocksTableName = schemaBase + _basemolblocksTableName
     conformersTableName = schemaBase + _baseconformersTableName
+    idSequenceName = schemaBase + _baseIdSequenceName
 
     _dbtype = dbtype
     if dbtype == 'postgresql':
@@ -482,6 +509,7 @@ def _register_mol(tpl,
     mrn = None
     conf_id = None
     try:
+
         sMol = standardize_mol(tpl.mol, config=config)
         if confId != -1:
             Chem.AssignStereochemistryFrom3D(sMol, confId)
@@ -505,7 +533,9 @@ def _register_mol(tpl,
         regtuple = tuple(regtuple)
         qs = ','.join('?' * len(regtuple))
         # will fail if the fullhash is already there
-        if _dbtype != 'postgresql':
+        if _dbtype == 'duckdb':
+            cn.begin()
+        if _dbtype == 'sqlite3':
             curs.execute(
                 _replace_placeholders(
                     f'insert into {hashTableName} values (NULL,{qs})'),
@@ -1183,7 +1213,7 @@ def _initdb(config=None, confirm=False):
     cn = connect(config)
     curs = cn.cursor()
 
-    if lwregSchema and _dbtype == 'postgresql':
+    if lwregSchema and _dbtype in ('postgresql', 'duckdb'):
         curs.execute(f'create schema if not exists {lwregSchema}')
     curs.execute(f'drop table if exists {registrationMetadataTableName}')
     curs.execute(
@@ -1191,11 +1221,15 @@ def _initdb(config=None, confirm=False):
     _registerMetadata(curs, config)
     cn.commit()
 
-    if _dbtype != 'postgresql':
+    curs.execute(f'drop table if exists {origDataTableName}')
+    curs.execute(f'drop table if exists {molblocksTableName}')
+    curs.execute(f'drop table if exists {conformersTableName}')
+
+    if _dbtype == 'sqlite3':
         curs.execute(f'drop table if exists {hashTableName}')
     else:
         curs.execute(f'drop table if exists {hashTableName} cascade')
-    if _dbtype != 'postgresql':
+    if _dbtype == 'sqlite3':
         curs.execute(
             f'''create table {hashTableName} (molregno integer primary key, fullhash text unique, 
             formula text, canonical_smiles text, no_stereo_smiles text, 
@@ -1203,6 +1237,19 @@ def _initdb(config=None, confirm=False):
         )
         curs.execute(
             f'''create unique index {hashTableName}_fullhash_idx on {hashTableName} 
+                (fullhash)''')
+    elif _dbtype == 'duckdb':
+        curs.execute(f'DROP SEQUENCE IF EXISTS {idSequenceName};')
+        curs.execute(f'CREATE SEQUENCE {idSequenceName} START 1;')
+        curs.execute(
+            f'''create table {hashTableName} (molregno integer primary key default nextval('{idSequenceName}'), 
+            fullhash text unique, 
+            formula text, canonical_smiles text, no_stereo_smiles text, 
+            tautomer_hash text, no_stereo_tautomer_hash text, "escape" text, sgroup_data text, rdkitVersion text)'''
+        )
+        # as of v1.5 duckdb doesn't seem to allow indices in schemas:
+        curs.execute(
+            f'''create unique index {_basehashTableName}_fullhash_idx on {hashTableName} 
                 (fullhash)''')
     else:
         curs.execute(
@@ -1213,7 +1260,6 @@ def _initdb(config=None, confirm=False):
         curs.execute(
             f'''create index {hashTableName.replace(".","_")}_fullhash_idx on {hashTableName} 
                 using hash(fullhash)''')
-    curs.execute(f'drop table if exists {origDataTableName}')
     if _dbtype != 'postgresql':
         curs.execute(
             f'create table {origDataTableName} (molregno integer unique not null, data text, datatype text, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, foreign key(molregno) references {hashTableName} (molregno))'
@@ -1222,12 +1268,10 @@ def _initdb(config=None, confirm=False):
         curs.execute(
             f'create table {origDataTableName} (molregno integer unique not null references {hashTableName} (molregno), data text, datatype text, timestamp TIMESTAMP default now())'
         )
-    curs.execute(f'drop table if exists {molblocksTableName}')
     curs.execute(
         f'create table {molblocksTableName} (molregno integer unique not null references {hashTableName} (molregno), molblock text, standardization text, foreign key(molregno) references {hashTableName} (molregno))'
     )
 
-    curs.execute(f'drop table if exists {conformersTableName}')
     if _lookupWithDefault(config, "registerConformers"):
         if _dbtype != 'postgresql':
             curs.execute(
@@ -1281,7 +1325,8 @@ def _check_config(config):
         config = _configure()
     elif isinstance(config, str):
         config = _configure(filename=config)
-    if config.get("dbtype", "sqlite3") not in ('sqlite3', 'postgresql'):
+    if config.get("dbtype",
+                  "sqlite3") not in ('sqlite3', 'postgresql', 'duckdb'):
         raise ValueError(
-            "Possible values for dbtype are sqlite3 and postgresql")
+            "Possible values for dbtype are sqlite3, postgresql, and duckdb")
     return config

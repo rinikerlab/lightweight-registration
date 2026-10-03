@@ -135,9 +135,8 @@ def configure_from_database(dbname=None,
                     curs.execute('PRAGMA quick_check')
                     config['dbtype'] = 'sqlite3'
                 except sqlite3.DatabaseError:
-                    import traceback
-                    traceback.print_exc()
                     config['dbtype'] = 'duckdb'
+                cn.close()
                 cn = None
             else:
                 # we'll assume sqlite
@@ -280,6 +279,8 @@ def connect(config):
     else:
         _replace_placeholders = _replace_placeholders_noop
     if _lookupWithDefault(config, "cacheConnection"):
+        if _dbConnection is not None and _dbConnection is not cn:
+            _dbConnection.close()
         _dbConnection = cn
     else:
         _dbConnection = None
@@ -290,6 +291,8 @@ def connect(config):
 def _clear_cached_connection():
     global _dbConnection
     global _dbConfig
+    if _dbConnection is not None:
+        _dbConnection.close()
     _dbConnection = None
     _dbConfig = None
 

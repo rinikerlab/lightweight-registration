@@ -52,6 +52,11 @@ class TestLWReg(unittest.TestCase):
         self._config = utils.defaultConfig()
         self._config['connection'] = cn
 
+    def tearDown(self):
+        utils._clear_cached_connection()
+        self._config = None
+        return super().tearDown()
+
     def baseRegister(self):
         smis = ('CC[C@H](F)Cl', 'CC[C@@H](F)Cl', 'CCC(F)Cl', 'CC(F)(Cl)C')
         utils._initdb(config=self._config, confirm=True)
@@ -700,6 +705,11 @@ class TestStandardizationLabels(unittest.TestCase):
         self._config = utils.defaultConfig()
         self._config['connection'] = cn
 
+    def tearDown(self):
+        utils._clear_cached_connection()
+        self._config = None
+        return super().tearDown()
+
     def testStandards(self):
         cfg = self._config
         for k in utils.standardizationOptions:
@@ -787,6 +797,11 @@ class TestRegisterConformers(unittest.TestCase):
         self.assertNotEqual(Chem.MolToSmiles(m1), Chem.MolToSmiles(m2))
         m1.AddConformer(m2.GetConformer(), assignId=True)
         self._chiralMol = m1
+
+    def tearDown(self):
+        utils._clear_cached_connection()
+        self._config = None
+        return super().tearDown()
 
     def testConformerDupes(self):
         utils._initdb(config=self._config, confirm=True)

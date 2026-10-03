@@ -599,13 +599,14 @@ class TestLWRegPSQL(TestLWReg):
 
         self.assertRaises(
             psycopg.errors.ForeignKeyViolation, lambda: curs.execute(
-                "insert into orig_data (molregno, data, datatype) values (4, 'foo', 'bar')"
+                f"insert into {utils.origDataTableName} (molregno, data, datatype) values (4, 'foo', 'bar')"
             ))
         cn.rollback()
 
         self.assertRaises(
             psycopg.errors.ForeignKeyViolation, lambda: curs.execute(
-                "insert into molblocks values (4, 'foo', 'bar')"))
+                f"insert into {utils.molblocksTableName} values (4, 'foo', 'bar')"
+            ))
         cn.rollback()
 
 
@@ -653,12 +654,13 @@ class TestLWRegDuckDB(TestLWReg):
 
         self.assertRaises(
             duckdb.ConstraintException, lambda: curs.execute(
-                "insert into orig_data (molregno, data, datatype) values (4, 'foo', 'bar')"
+                f"insert into {utils.origDataTableName} (molregno, data, datatype) values (4, 'foo', 'bar')"
             ))
 
         self.assertRaises(
             duckdb.ConstraintException, lambda: curs.execute(
-                "insert into molblocks values (4, 'foo', 'bar')"))
+                f"insert into {utils.molblocksTableName} values (4, 'foo', 'bar')"
+            ))
 
 
 @unittest.skipIf(psycopg is None, "skipping postgresql tests")

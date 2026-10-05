@@ -214,6 +214,7 @@ _basehashTableName = 'hashes'
 _basemolblocksTableName = 'molblocks'
 _baseconformersTableName = 'conformers'
 _baseIdSequenceName = 'id_sequence'
+_baseConfIdSequenceName = 'confid_sequence'
 
 _dbConnection = None
 _dbConfig = None
@@ -236,6 +237,7 @@ def connect(config):
     global conformersTableName
     global lwregSchema
     global idSequenceName
+    global confidSequenceName
 
     config = _check_config(config)
 
@@ -272,6 +274,7 @@ def connect(config):
     molblocksTableName = schemaBase + _basemolblocksTableName
     conformersTableName = schemaBase + _baseconformersTableName
     idSequenceName = schemaBase + _baseIdSequenceName
+    confidSequenceName = schemaBase + _baseConfIdSequenceName
 
     _dbtype = dbtype
     if dbtype == 'postgresql':
@@ -430,6 +433,12 @@ def _register_one_conformer(mrn,
                             config,
                             fail_on_duplicate,
                             confId=-1):
+
+    if _dbtype == 'duckdb':
+        # handle duckdb connection peculiarities: each cursor acts as a separate connection
+        cn = curs
+        curs.begin()
+
     try:
         chash = _get_conformer_hash(sMol,
                                     _lookupWithDefault(config,
@@ -437,7 +446,7 @@ def _register_one_conformer(mrn,
                                     confId=confId)
         regtuple = (mrn, chash, molb)
         qs = '?,?,?'
-        if _dbtype != 'postgresql':
+        if _dbtype == 'sqlite3':
             curs.execute(
                 _replace_placeholders(
                     f'insert into {conformersTableName} values (NULL,{qs})'),
@@ -488,6 +497,9 @@ def _register_mol(tpl,
             "attempt to register a molecule without conformers when registerConformers is set"
         )
 
+    # handle duckdb connection peculiarities: each cursor acts as a separate connection
+    if _dbtype == 'duckdb':
+        cn = curs
     if hasattr(cn, 'autocommit') and cn.autocommit is True:
         logging.warn("setting autocommit on the database connection to False")
         cn.autocommit = False
@@ -537,7 +549,7 @@ def _register_mol(tpl,
         qs = ','.join('?' * len(regtuple))
         # will fail if the fullhash is already there
         if _dbtype == 'duckdb':
-            cn.begin()
+            curs.begin()
         if _dbtype == 'sqlite3':
             curs.execute(
                 _replace_placeholders(
@@ -1214,7 +1226,10 @@ def _initdb(config=None, confirm=False):
     config = _check_config(config)
 
     cn = connect(config)
-    curs = cn.cursor()
+    if _dbtype != 'duckdb':
+        curs = cn.cursor()
+    else:
+        curs = cn
 
     if lwregSchema and _dbtype in ('postgresql', 'duckdb'):
         curs.execute(f'create schema if not exists {lwregSchema}')
@@ -1276,13 +1291,24 @@ def _initdb(config=None, confirm=False):
     )
 
     if _lookupWithDefault(config, "registerConformers"):
-        if _dbtype != 'postgresql':
+        if _dbtype == 'sqlite3':
             curs.execute(
                 f'''create table {conformersTableName} (conf_id integer primary key, molregno integer not null, 
                    conformer_hash text not null unique, molblock text, foreign key(molregno) references {hashTableName} (molregno))'''
             )
             curs.execute(
                 f'''create unique index {conformersTableName}_hash_idx on {conformersTableName} 
+                    (conformer_hash)''')
+        elif _dbtype == 'duckdb':
+            curs.execute(f'DROP SEQUENCE IF EXISTS {confidSequenceName};')
+            curs.execute(f'CREATE SEQUENCE {confidSequenceName} START 1;')
+            curs.execute(
+                f'''create table {conformersTableName} (conf_id integer primary key default nextval('{confidSequenceName}'), 
+                 molregno integer references {hashTableName} (molregno), 
+                   conformer_hash text not null unique, molblock text)''')
+            # as of v1.5 duckdb doesn't seem to allow indices in schemas:
+            curs.execute(
+                f'''create unique index {conformersTableName}_fullhash_idx on {conformersTableName} 
                     (conformer_hash)''')
         else:
             curs.execute(

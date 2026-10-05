@@ -832,6 +832,7 @@ class TestRegisterConformers(unittest.TestCase):
         expected = {
             'sqlite3': (((1, 1), ), ((1, 2), ), ((1, 1), ), ((2, 3), )),
             'postgresql': (((1, 1), ), ((1, 2), ), ((1, 1), ), ((4, 4), )),
+            'duckdb': (((1, 1), ), ((1, 2), ), ((1, 1), ), ((4, 4), )),
         }
         self.assertEqual(
             utils.bulk_register(mols=(self._mol1, self._mol2, nmol,
@@ -844,6 +845,7 @@ class TestRegisterConformers(unittest.TestCase):
         expected = {
             'sqlite3': ((1, 1), (1, 2), (2, 3)),
             'postgresql': ((1, 1), (1, 2), (4, 4)),
+            'duckdb': ((1, 1), (1, 2), (4, 4)),
         }
         self.assertEqual(utils.get_all_identifiers(config=self._config),
                          expected[self._config['dbtype']])
@@ -856,6 +858,8 @@ class TestRegisterConformers(unittest.TestCase):
             'postgresql':
             (((1, 1), ), ((1, 2), ), (RegistrationFailureReasons.DUPLICATE, ),
              ((4, 4), )),
+            'duckdb': (((1, 1), ), ((1, 2), ),
+                       (RegistrationFailureReasons.DUPLICATE, ), ((4, 4), )),
         }
         self.assertTrue(
             utils.bulk_register(mols=(self._mol1, self._mol2, nmol,
@@ -1032,6 +1036,7 @@ class TestRegisterConformers(unittest.TestCase):
         expected = {
             'sqlite3': [(1, 1), (1, 2), (2, 3)],
             'postgresql': [(1, 1), (1, 2), (3, 3)],
+            'duckdb': [(1, 1), (1, 2), (3, 3)],
         }
         self.assertEqual(sorted(utils.query(ids=mrns, config=self._config)),
                          expected[self._config['dbtype']])
@@ -1053,6 +1058,10 @@ class TestRegisterConformers(unittest.TestCase):
                 (2, 2),
             ),
             'postgresql': (
+                (1, 1),
+                (2, 2),
+            ),
+            'duckdb': (
                 (1, 1),
                 (2, 2),
             ),
@@ -1100,6 +1109,10 @@ class TestRegisterConformers(unittest.TestCase):
                 (2, 2),
                 (1, 1),
             ),
+            'duckdb': (
+                (2, 2),
+                (1, 1),
+            ),
         }
         self.assertEqual(
             utils.register_multiple_conformers(mol=self._chiralMol,
@@ -1120,6 +1133,10 @@ class TestRegisterConformers(unittest.TestCase):
                 (2, 2),
             ),
             'postgresql': (
+                (1, 1),
+                (3, 3),
+            ),
+            'duckdb': (
                 (1, 1),
                 (3, 3),
             ),
@@ -1199,6 +1216,17 @@ class TestRegisterConformersPSQL(TestRegisterConformers):
             dbname=self._config['dbname'], dbtype=self._config['dbtype'])
         self.assertFalse(
             any(v in config_from_database for v in ('user', 'password')))
+
+
+@unittest.skipIf(duckdb is None, "skipping duckdb tests")
+class TestRegisterConformersDuckDB(TestRegisterConformers):
+    integrityError = duckdb.ConstraintException if duckdb else None
+
+    def setUp(self):
+        super(TestRegisterConformersDuckDB, self).setUp()
+        self._config['dbname'] = 'lwreg_tests.duck'
+        self._config['dbtype'] = 'duckdb'
+        self._config['password'] = 'testpw'
 
 
 if __name__ == '__main__':

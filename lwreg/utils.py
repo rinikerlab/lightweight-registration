@@ -98,7 +98,7 @@ def configure_from_database(dbname=None,
     If 'dbtype' is not provided, the following heuristics are used:
 
       - if 'dbname' corresponds to an existing file:
-          - if duckdb is installed and the file is not a sqlite3 file, duckdb will be usd.
+          - if duckdb is installed and the file is not a sqlite3 file, duckdb will be used.
           - otherwise sqlite3 is used
       - if 'host' is provided, then postgresql is used
       - otherwise the default dbtype, currently sqlite3, is used
@@ -1310,7 +1310,7 @@ def _initdb(config=None, confirm=False):
                    conformer_hash text not null unique, molblock text)''')
             # as of v1.5 duckdb doesn't seem to allow indices in schemas:
             curs.execute(
-                f'''create unique index {conformersTableName}_fullhash_idx on {conformersTableName} 
+                f'''create unique index {_baseconformersTableName}_fullhash_idx on {conformersTableName} 
                     (conformer_hash)''')
         else:
             curs.execute(

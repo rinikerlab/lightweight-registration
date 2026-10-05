@@ -97,7 +97,9 @@ def configure_from_database(dbname=None,
     provide 'lwregSchema' here.
     If 'dbtype' is not provided, the following heuristics are used:
 
-      - if 'dbname' corresponds to an existing file, then sqlite3 is used
+      - if 'dbname' corresponds to an existing file:
+          - if duckdb is installed and the file is not a sqlite3 file, duckdb will be usd.
+          - otherwise sqlite3 is used
       - if 'host' is provided, then postgresql is used
       - otherwise the default dbtype, currently sqlite3, is used
 
